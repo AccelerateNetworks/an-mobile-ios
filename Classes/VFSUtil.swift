@@ -27,7 +27,7 @@ import os
 
 @objc class VFSUtil: NSObject {
 	
-	@objc static let keyChainSharingGroup = "org.linphone.phone" // Enable Keychain Sharing capabilities in app and all app extensions that need to activate VFS and set key chain group to be the bundle ID for all and here
+	@objc static let keyChainSharingGroup = "com.acceleratenetworks.linphone" // Enable Keychain Sharing capabilities in app and all app extensions that need to activate VFS and set key chain group to be the bundle ID for all and here
 	@objc static let TEAM_ID = "Z2V957B3D6" // Apple TEAM ID
 	
 	@objc static let keyName = "\(keyChainSharingGroup).vfskey"
