@@ -136,13 +136,13 @@ static UICompositeViewDescription *compositeDescription = nil;
     _qrCodeButton.hidden = !ENABLE_QRCODE;
 	[self resetLiblinphone:FALSE];
 	[self enableWelcomeViewButtons];
-	NSString *message = NSLocalizedString(@"I accept Belledonne Communications’ terms of use and privacy policy", nil);
+	NSString *message = NSLocalizedString(@"I accept Accelerate Network's privacy policy", nil);
 	NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:message attributes:@{NSForegroundColorAttributeName : [UIColor systemGrayColor]}];
+//	[attributedString addAttribute:NSLinkAttributeName
+//						 value:@"https://www.linphone.org/general-terms"
+//						 range:[[attributedString string] rangeOfString:NSLocalizedString(@"terms of use", nil)]];
 	[attributedString addAttribute:NSLinkAttributeName
-						 value:@"https://www.linphone.org/general-terms"
-						 range:[[attributedString string] rangeOfString:NSLocalizedString(@"terms of use", nil)]];
-	[attributedString addAttribute:NSLinkAttributeName
-						 value:@"https://www.linphone.org/privacy-policy"
+						 value:@"https://acceleratenetworks.com/privacy"
 						 range:[[attributedString string] rangeOfString:NSLocalizedString(@"privacy policy", nil)]];
 
 	NSDictionary *linkAttributes = @{NSForegroundColorAttributeName : [UIColor redColor],
@@ -1425,7 +1425,7 @@ UIColor *previousColor = (UIColor*)[sender backgroundColor]; \
 	if ([self checkFields]) {
 		ONCLICKBUTTON(sender, 100, {
 			_activationTitle.text = @"CREATE ACCOUNT";
-			_waitView.hidden = NO;
+			_waitView.hidden = YES;
 			linphone_account_creator_is_account_exist(account_creator);
 		});
 	}

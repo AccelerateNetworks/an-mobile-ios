@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="19529" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="19519"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -20,8 +20,6 @@
                 <outlet property="createAccountActivateSMSView" destination="101" id="SAS-8i-4Ao"/>
                 <outlet property="createAccountView" destination="44" id="70"/>
                 <outlet property="downloadButton" destination="eM0-bn-v3C" id="hsP-3U-clZ"/>
-                <outlet property="gotoCreateAccountButton" destination="36" id="bZf-lI-yJp"/>
-                <outlet property="gotoLinphoneLoginButton" destination="38" id="K1E-r5-WiL"/>
                 <outlet property="gotoLinphoneSpecificFeatureWarningButton" destination="39" id="U5E-VI-lU1"/>
                 <outlet property="gotoLoginButton" destination="8Uk-jk-U5R" id="8hN-LJ-hac"/>
                 <outlet property="gotoRemoteProvisioningButton" destination="Kbn-dL-C5h" id="zLh-uO-x8P"/>
@@ -49,7 +47,7 @@
             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <subviews>
                 <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" text="WELCOME" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="126" userLabel="titleLabel">
-                    <rect key="frame" x="36" y="0.0" width="303" height="36"/>
+                    <rect key="frame" x="36" y="0.0" width="303" height="29"/>
                     <accessibility key="accessibilityConfiguration" label="Account setup assistant"/>
                     <fontDescription key="fontDescription" type="system" weight="light" pointSize="24"/>
                     <nil key="textColor"/>
@@ -57,7 +55,7 @@
                     <size key="shadowOffset" width="-1" height="-1"/>
                 </label>
                 <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" text="This assistant will help you configure and use your SIP account." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="Yci-5h-O4o" userLabel="subtitleLabel">
-                    <rect key="frame" x="36" y="36" width="303" height="58"/>
+                    <rect key="frame" x="36" y="29" width="303" height="58"/>
                     <accessibility key="accessibilityConfiguration" label="Account setup assistant"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="58" id="5LG-5A-dY3"/>
@@ -68,10 +66,16 @@
                     <size key="shadowOffset" width="-1" height="-1"/>
                 </label>
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="plw-Mp-teD" userLabel="acceptView">
-                    <rect key="frame" x="36" y="94" width="303" height="58"/>
+                    <rect key="frame" x="36" y="87" width="303" height="58"/>
                     <subviews>
-                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tZu-nz-jXM" userLabel="acceptButton">
-                            <rect key="frame" x="20" y="2" width="54" height="54"/>
+                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" editable="NO" text="I accept Belledonne Communications’ terms of use and privacy policy" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="R4J-fD-JSt" userLabel="acceptText">
+                            <rect key="frame" x="30" y="0.0" width="273" height="58"/>
+                            <color key="textColor" systemColor="systemGrayColor"/>
+                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                        </textView>
+                        <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="tZu-nz-jXM" userLabel="acceptButton">
+                            <rect key="frame" x="-16" y="2" width="54" height="54"/>
                             <constraints>
                                 <constraint firstAttribute="width" constant="54" id="4WQ-mk-JlN"/>
                             </constraints>
@@ -80,12 +84,6 @@
                                 <action selector="onAcceptTermsClick:" destination="-1" eventType="touchUpInside" id="grZ-W7-Lyz"/>
                             </connections>
                         </button>
-                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" text="I accept Belledonne Communications’ terms of use and privacy policy" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="R4J-fD-JSt" userLabel="acceptText">
-                            <rect key="frame" x="68" y="0.0" width="235" height="58"/>
-                            <color key="textColor" systemColor="systemGrayColor"/>
-                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
-                        </textView>
                     </subviews>
                     <constraints>
                         <constraint firstItem="tZu-nz-jXM" firstAttribute="top" secondItem="plw-Mp-teD" secondAttribute="top" constant="2" id="34h-dq-qBh"/>
@@ -98,73 +96,8 @@
                         <constraint firstAttribute="height" constant="58" id="zjY-mm-MaQ"/>
                     </constraints>
                 </view>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="36" userLabel="createAccountButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="40" y="153" width="299" height="40"/>
-                    <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                    <accessibility key="accessibilityConfiguration" label="Create account">
-                        <bool key="isElement" value="YES"/>
-                    </accessibility>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="40" id="qdu-b3-MtX"/>
-                    </constraints>
-                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="CREATE ACCOUNT">
-                        <color key="titleColor" systemColor="labelColor"/>
-                    </state>
-                    <state key="disabled">
-                        <color key="titleColor" systemColor="systemGray2Color"/>
-                    </state>
-                    <state key="highlighted" backgroundImage="color_F.png"/>
-                    <connections>
-                        <action selector="onGotoCreateAccountClick:" destination="-1" eventType="touchUpInside" id="Meo-Hq-8td"/>
-                    </connections>
-                </button>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="38" userLabel="linphoneLoginButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="40" y="227" width="299" height="40"/>
-                    <accessibility key="accessibilityConfiguration" label="Use Linphone account">
-                        <bool key="isElement" value="NO"/>
-                    </accessibility>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="40" id="NkG-qe-o3R"/>
-                    </constraints>
-                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="USE LINPHONE ACCOUNT">
-                        <color key="titleColor" systemColor="labelColor"/>
-                    </state>
-                    <state key="disabled">
-                        <color key="titleColor" systemColor="systemGray2Color"/>
-                    </state>
-                    <state key="highlighted" backgroundImage="color_F.png">
-                        <color key="titleColor" red="0.67030966281890869" green="0.71867996454238892" blue="0.75078284740447998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    </state>
-                    <connections>
-                        <action selector="onGotoLinphoneLoginClick:" destination="-1" eventType="touchUpInside" id="4AG-ng-fIB"/>
-                    </connections>
-                </button>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="39" userLabel="loginButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="40" y="301" width="299" height="40"/>
-                    <accessibility key="accessibilityConfiguration" label="Use SIP account">
-                        <bool key="isElement" value="YES"/>
-                    </accessibility>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="40" id="K0C-dP-WWB"/>
-                    </constraints>
-                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="USE SIP ACCOUNT">
-                        <color key="titleColor" systemColor="labelColor"/>
-                    </state>
-                    <state key="disabled">
-                        <color key="titleColor" systemColor="systemGray2Color"/>
-                    </state>
-                    <state key="highlighted" backgroundImage="color_F.png">
-                        <color key="titleColor" red="0.67030966281890869" green="0.71867996454238892" blue="0.75078284740447998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    </state>
-                    <connections>
-                        <action selector="onGoToNonLinphoneInfoPage:" destination="-1" eventType="touchUpInside" id="bYh-d2-kHK"/>
-                    </connections>
-                </button>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="Kbn-dL-C5h" userLabel="remoteProvisioningButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="40" y="376" width="299" height="40"/>
+                <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="Kbn-dL-C5h" userLabel="remoteProvisioningButton" customClass="UIRoundBorderedButton">
+                    <rect key="frame" x="38" y="167" width="299" height="40"/>
                     <accessibility key="accessibilityConfiguration" label="Fetch remote configuration">
                         <bool key="isElement" value="YES"/>
                     </accessibility>
@@ -172,7 +105,7 @@
                         <constraint firstAttribute="height" constant="40" id="eU8-Iz-vaN"/>
                     </constraints>
                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="FETCH REMOTE CONFIGURATION">
+                    <state key="normal" title="AUTOMATIC CONFIGURATION">
                         <color key="titleColor" systemColor="labelColor"/>
                     </state>
                     <state key="disabled">
@@ -185,32 +118,45 @@
                         <action selector="onGotoRemoteProvisioningClick:" destination="-1" eventType="touchUpInside" id="cAo-3u-yUT"/>
                     </connections>
                 </button>
+                <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="39" userLabel="loginButton" customClass="UIRoundBorderedButton">
+                    <rect key="frame" x="38" y="231" width="299" height="40"/>
+                    <accessibility key="accessibilityConfiguration" label="Use SIP account">
+                        <bool key="isElement" value="YES"/>
+                    </accessibility>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="40" id="K0C-dP-WWB"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                    <state key="normal" title="TYPE IN SIP CREDENTIALS MANUALLY">
+                        <color key="titleColor" systemColor="labelColor"/>
+                    </state>
+                    <state key="disabled">
+                        <color key="titleColor" systemColor="systemGray2Color"/>
+                    </state>
+                    <state key="highlighted" backgroundImage="color_F.png">
+                        <color key="titleColor" red="0.67030966281890869" green="0.71867996454238892" blue="0.75078284740447998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    </state>
+                    <connections>
+                        <action selector="onGoToNonLinphoneInfoPage:" destination="-1" eventType="touchUpInside" id="bYh-d2-kHK"/>
+                    </connections>
+                </button>
             </subviews>
             <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
             <constraints>
-                <constraint firstItem="38" firstAttribute="leading" secondItem="39" secondAttribute="leading" id="23x-IR-Mtg"/>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="top" secondItem="Yci-5h-O4o" secondAttribute="bottom" id="94M-05-soq"/>
-                <constraint firstItem="39" firstAttribute="top" secondItem="38" secondAttribute="bottom" constant="34" id="CyI-RI-Fpo"/>
                 <constraint firstItem="126" firstAttribute="top" secondItem="33" secondAttribute="top" id="Dck-Yc-Nhv"/>
                 <constraint firstItem="39" firstAttribute="leading" secondItem="Kbn-dL-C5h" secondAttribute="leading" id="JTU-gj-eeY"/>
                 <constraint firstItem="126" firstAttribute="leading" secondItem="33" secondAttribute="leading" constant="36" id="Mwl-ls-3tB"/>
                 <constraint firstAttribute="bottom" secondItem="Kbn-dL-C5h" secondAttribute="bottom" constant="10" id="PWn-9N-k5j"/>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="top" secondItem="Yci-5h-O4o" secondAttribute="bottom" id="RUw-sM-ywE"/>
-                <constraint firstItem="36" firstAttribute="leading" secondItem="38" secondAttribute="leading" id="Yd2-4o-VP3"/>
-                <constraint firstItem="36" firstAttribute="top" secondItem="plw-Mp-teD" secondAttribute="bottom" constant="1" id="b8b-dc-3cx"/>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="leading" secondItem="33" secondAttribute="leading" constant="36" id="caQ-q5-EyX"/>
-                <constraint firstItem="38" firstAttribute="top" secondItem="36" secondAttribute="bottom" constant="34" id="drU-e1-uCL"/>
-                <constraint firstItem="36" firstAttribute="trailing" secondItem="38" secondAttribute="trailing" id="gNw-r2-XIi"/>
                 <constraint firstItem="39" firstAttribute="trailing" secondItem="Kbn-dL-C5h" secondAttribute="trailing" id="gpT-pW-S1w"/>
                 <constraint firstItem="126" firstAttribute="trailing" secondItem="Yci-5h-O4o" secondAttribute="trailing" id="jg6-gT-PIu"/>
                 <constraint firstItem="126" firstAttribute="leading" secondItem="Yci-5h-O4o" secondAttribute="leading" id="ld3-Mh-y8J"/>
-                <constraint firstItem="36" firstAttribute="leading" secondItem="33" secondAttribute="leading" constant="40" id="nWj-20-FOd"/>
                 <constraint firstItem="Kbn-dL-C5h" firstAttribute="top" secondItem="39" secondAttribute="bottom" constant="35" id="niQ-BM-5yR"/>
-                <constraint firstAttribute="trailing" secondItem="36" secondAttribute="trailing" constant="36" id="uIa-qF-c8m"/>
                 <constraint firstItem="Yci-5h-O4o" firstAttribute="top" secondItem="126" secondAttribute="bottom" id="v51-4n-Jq1"/>
                 <constraint firstAttribute="trailing" secondItem="plw-Mp-teD" secondAttribute="trailing" constant="36" id="wSJ-2t-lWy"/>
                 <constraint firstItem="126" firstAttribute="centerX" secondItem="33" secondAttribute="centerX" id="z6G-VJ-BQy"/>
-                <constraint firstItem="38" firstAttribute="trailing" secondItem="39" secondAttribute="trailing" id="z7W-lC-fXR"/>
             </constraints>
             <nil key="simulatedStatusBarMetrics"/>
             <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
