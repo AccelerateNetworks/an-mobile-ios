@@ -84,6 +84,7 @@ static UICompositeViewDescription *compositeDescription = nil;
 	_room = NULL;
 	_chatRoomCbs = NULL;
 	_peerAddress = NULL;
+	_localAddress = NULL;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -153,10 +154,11 @@ static UICompositeViewDescription *compositeDescription = nil;
 
 - (void)onLinphoneCoreReady:(NSNotification *)notif {
 	if ((LinphoneGlobalState)[[[notif userInfo] valueForKey:@"state"] integerValue] == LinphoneGlobalOn) {
-		if (!_create && _peerAddress) {
+		if (!_create && _peerAddress && _localAddress) {
 			LinphoneAddress *peerAddr = linphone_core_create_address([LinphoneManager getLc], _peerAddress);
-			if (peerAddr) {
-				_room = linphone_core_get_chat_room([LinphoneManager getLc], peerAddr);
+			LinphoneAddress *localAddr = linphone_core_create_address([LinphoneManager getLc], _localAddress);
+			if (peerAddr && localAddr) {
+				_room = linphone_core_search_chat_room([LinphoneManager getLc], NULL, localAddr, peerAddr, NULL);
 			}
 			[self configure];
 		}
@@ -270,9 +272,11 @@ static UICompositeViewDescription *compositeDescription = nil;
 - (IBAction)onBackClick:(id)sender {
 	if(_create) {
 		ChatConversationCreateView *view = VIEW(ChatConversationCreateView);
+		[view fragmentCompositeDescription];
 		view.tableController.contactsGroup = [_contacts mutableCopy];
 		view.tableController.notFirstTime = TRUE;
 		view.isForEditing = FALSE;
+		view.isForVoipConference = FALSE;
 		[PhoneMainView.instance popToView:view.compositeViewDescription];
 	} else {
 		ChatConversationView *view = VIEW(ChatConversationView);
@@ -295,10 +299,12 @@ static UICompositeViewDescription *compositeDescription = nil;
 - (IBAction)onAddClick:(id)sender {
 	if (_create || _imAdmin) {
 		ChatConversationCreateView *view = VIEW(ChatConversationCreateView);
+		[view fragmentCompositeDescription];
 		view.tableController.notFirstTime = TRUE;
 		view.isForEditing = !_create;
 		view.isGroupChat = TRUE;
 		view.tableController.contactsGroup = [_contacts mutableCopy];
+		view.isForVoipConference = FALSE;
 		[PhoneMainView.instance popToView:view.compositeViewDescription];
 	}
 }

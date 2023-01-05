@@ -21,6 +21,7 @@
 #import "PhoneMainView.h"
 #import "LinphoneManager.h"
 #import "Utils.h"
+#import "linphoneapp-Swift.h"
 
 @implementation UIChatCell
 
@@ -38,6 +39,10 @@
 		[self addSubview:sub];
 	}
 	[_imdmIcon setHidden:TRUE];
+	_unreadCountView.backgroundColor = VoipTheme.primary_color;
+	_unreadCountView.layer.cornerRadius = 10;
+	_unreadCountView.clipsToBounds = true;
+	_unreadCountLabel.textAlignment = NSTextAlignmentCenter;
 	return self;
 }
 
@@ -132,7 +137,8 @@
                 _chatContentLabel.frame = newFrame;
             }
         } else {
-            NSString *text = [[FastAddressBook displayNameForAddress:linphone_chat_message_get_from_address(last_msg)]
+					NSString  *conferenceInfo = [ICSBubbleView getConferenceSummaryWithCmessage:last_msg];
+					NSString *text =  conferenceInfo != nil ? conferenceInfo : [[FastAddressBook displayNameForAddress:linphone_chat_message_get_from_address(last_msg)]
                               stringByAppendingFormat:@" : %@", [UIChatBubbleTextCell TextMessageForChat:last_msg]];
             // shorten long messages
             /*if ([text length] > 50)

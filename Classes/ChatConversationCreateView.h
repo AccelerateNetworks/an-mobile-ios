@@ -40,14 +40,23 @@
 @property (weak, nonatomic) IBOutlet UIView *switchView;
 @property (weak, nonatomic) IBOutlet UIImageView *chiffreImage;
 @property (weak, nonatomic) IBOutlet UIButton *chiffreButton;
+@property (weak, nonatomic) IBOutlet UIView *topBar;
 
 @property(nonatomic) Boolean isForEditing;
 @property(nonatomic) Boolean isGroupChat;
 @property(nonatomic) Boolean isEncrypted;
 
+@property(nonatomic) Boolean isForVoipConference;
+@property(nonatomic) Boolean isForOngoingVoipConference;
+
+@property (weak, nonatomic) IBOutlet UILabel *voipTitle;
+
 - (IBAction)onBackClick:(id)sender;
 - (IBAction)onNextClick:(id)sender;
 - (IBAction)onChiffreClick:(id)sender;
+
+-(void) unfragmentCompositeDescription;
+-(void) fragmentCompositeDescription;
 
 @end
 

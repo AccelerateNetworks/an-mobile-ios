@@ -22,12 +22,12 @@
 #import "LinphoneAppDelegate.h"
 #import "PhoneMainView.h"
 #import "Utils.h"
+#import "linphoneapp-Swift.h"
 
 #import "DCRoundSwitch.h"
 
 #import "IASKSpecifierValuesViewController.h"
 #import "IASKPSTextFieldSpecifierViewCell.h"
-#import "IASKPSTitleValueSpecifierViewCell.h"
 #import "IASKSpecifier.h"
 #import "IASKTextField.h"
 #include "linphone/lpconfig.h"
@@ -247,7 +247,7 @@
 		[field setTextColor:LINPHONE_MAIN_COLOR];
 	}
 
-	if ([cell isKindOfClass:[IASKPSTitleValueSpecifierViewCell class]]) {
+	if ([cell isKindOfClass:[UITableViewCell class]]) {
 		cell.detailTextLabel.textColor = [UIColor grayColor];
 	} else {
 		cell.detailTextLabel.textColor = LINPHONE_MAIN_COLOR;
@@ -445,8 +445,11 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 	linphone_account_creator_set_password(creator, _tmpPwd.UTF8String);
 	[settingsStore setObject:_tmpPwd forKey:@"account_mandatory_password_preference"];
 	
+	MSList *accountList = [LinphoneManager.instance createAccountsNotHiddenList];
 	LinphoneAccount *account = bctbx_list_nth_data(linphone_core_get_account_list(LC),
 													  [settingsStore integerForKey:@"current_proxy_config_preference"]);
+	bctbx_free(accountList);
+	
 	if (account != NULL) {
 		const LinphoneAuthInfo *auth = linphone_account_find_auth_info(account);
 		if (auth) {
@@ -521,11 +524,50 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 		[keys addObject:@"download_bandwidth_preference"];
     } else if ([@"auto_download_mode" compare:notif.object] == NSOrderedSame) {
         NSString *download_mode = [notif.userInfo objectForKey:@"auto_download_mode"];
-        removeFromHiddenKeys = [download_mode isEqualToString:@"Customize"];
-        if (removeFromHiddenKeys)
-            [LinphoneManager.instance lpConfigSetInt:10000000 forKey:@"auto_download_incoming_files_max_size"];
-        [keys addObject:@"auto_download_incoming_files_max_size"];
-    }
+		if([download_mode isEqualToString:@"Customize"]){
+			[LinphoneManager.instance lpConfigSetBool:FALSE forKey:@"auto_download_mode_is_never"];
+			removeFromHiddenKeys = [download_mode isEqualToString:@"Customize"];
+			[LinphoneManager.instance lpConfigSetInt:10000000 forKey:@"auto_download_incoming_files_max_size"];
+			[keys addObject:@"auto_download_incoming_files_max_size"];
+			[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+		} else if([download_mode isEqualToString:@"Never"]){
+			[LinphoneManager.instance lpConfigSetBool:TRUE forKey:@"auto_download_mode_is_never"];
+			removeFromHiddenKeys = [download_mode isEqualToString:@"Never"];
+			if(![LinphoneManager.instance lpConfigBoolForKey:@"vfs_enabled_mode"])
+				[keys addObject:@"auto_write_to_gallery_mode"];
+			else
+				[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+			[hiddenKeys addObject:@"auto_download_incoming_files_max_size"];
+		} else {
+			[LinphoneManager.instance lpConfigSetBool:FALSE forKey:@"auto_download_mode_is_never"];
+			[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+			[hiddenKeys addObject:@"auto_download_incoming_files_max_size"];
+		}
+    }else if ([@"vfs_enabled_mode" compare:notif.object] == NSOrderedSame) {
+		removeFromHiddenKeys = [[notif.userInfo objectForKey:@"vfs_enabled_mode"] boolValue];
+		if(removeFromHiddenKeys){
+			[LinphoneManager.instance lpConfigSetBool:TRUE forKey:@"vfs_enabled_mode"];
+			[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+			[hiddenKeys addObject:@"vfs_enabled_mode"];
+			[keys addObject:@"vfs_enabled"];
+		}else{
+			if(![LinphoneManager.instance lpConfigBoolForKey:@"auto_download_mode_is_never"]){
+				[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+			}
+		}
+	}
+	else if ([@"auto_write_to_gallery_mode" compare:notif.object] == NSOrderedSame) {
+		removeFromHiddenKeys = ![[notif.userInfo objectForKey:@"auto_write_to_gallery_mode"] boolValue];
+		if(![LinphoneManager.instance lpConfigBoolForKey:@"vfs_enabled_mode"]){
+			if(!removeFromHiddenKeys){
+				[LinphoneManager.instance lpConfigSetBool:TRUE forKey:@"auto_write_to_gallery_mode"];
+				[hiddenKeys addObject:@"auto_download_mode"];
+			}else{
+				[LinphoneManager.instance lpConfigSetBool:FALSE forKey:@"auto_write_to_gallery_mode"];
+				[keys addObject:@"auto_download_mode"];
+			}
+		}
+	}
 
 	for (NSString *key in keys) {
 		if (removeFromHiddenKeys)
@@ -552,11 +594,12 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 			return [[IASKSpecifier alloc] initWithSpecifier:dict];
 		}
 	} else {
-		if ([[specifier key] isEqualToString:@"media_encryption_preference"]) {
+		BOOL pq_available = linphone_core_get_post_quantum_available();
+		if ([[specifier key] isEqualToString:pq_available ? @"media_encryption_preference_pq_enabled" : @"media_encryption_preference"]) {
 			NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:[specifier specifierDict]];
 			if (!linphone_core_media_encryption_supported(LC, LinphoneMediaEncryptionZRTP)) {
 				NSMutableArray *titles = [NSMutableArray arrayWithArray:[dict objectForKey:@"Titles"]];
-				[titles removeObject:@"ZRTP"];
+				[titles removeObject:pq_available ? @"ZRTP" : @"ZRTP Post Quantum"];
 				[dict setObject:titles forKey:@"Titles"];
 				NSMutableArray *values = [NSMutableArray arrayWithArray:[dict objectForKey:@"Values"]];
 				[values removeObject:@"ZRTP"];
@@ -583,7 +626,7 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 	}
 
 	if ([specifier.key hasPrefix:@"menu_account_"]) {
-		const bctbx_list_t *accounts = linphone_core_get_account_list(LC);
+		MSList *accounts = [LinphoneManager.instance createAccountsNotHiddenList];
 		int index = [specifier.key substringFromIndex:@"menu_account_".length].intValue - 1;
 		if (index < bctbx_list_size(accounts)) {
 			LinphoneAccount *account = (LinphoneAccount *)bctbx_list_nth_data(accounts, index);
@@ -591,6 +634,7 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 				stringWithUTF8String:linphone_address_get_username(linphone_account_params_get_identity_address(linphone_account_get_params(account)))];
 			[specifier.specifierDict setValue:name forKey:kIASKTitle];
 		}
+		bctbx_free(accounts);
 	}
 	
 	if ([specifier.key hasPrefix:@"ldap_"]) {
@@ -625,18 +669,25 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 - (NSSet *)findHiddenKeys {
 	LinphoneManager *lm = LinphoneManager.instance;
 	NSMutableSet *hiddenKeys = [NSMutableSet set];
-
-	const MSList *accounts = linphone_core_get_account_list(LC);
+	
+	MSList *accounts = [LinphoneManager.instance createAccountsNotHiddenList];
 	for (size_t i = bctbx_list_size(accounts) + 1; i <= 5; i++) {
 		[hiddenKeys addObject:[NSString stringWithFormat:@"menu_account_%lu", i]];
 	}
-
+	bctbx_free(accounts);
 	const MSList *ldaps = linphone_core_get_ldap_list(LC);
 	for (size_t i = bctbx_list_size(ldaps) + 1; i <= 5; i++) {
 		[hiddenKeys addObject:[NSString stringWithFormat:@"ldap_%lu", i]];
 	}
 	if (!linphone_core_sip_transport_supported(LC, LinphoneTransportTls)) {
 		[hiddenKeys addObject:@"media_encryption_preference"];
+		[hiddenKeys addObject:@"media_encryption_preference_pq_enabled"];
+	} else {
+		if (linphone_core_get_post_quantum_available()) {
+			[hiddenKeys addObject:@"media_encryption_preference"];
+		} else {
+			[hiddenKeys addObject:@"media_encryption_preference_pq_enabled"];
+		}
 	}
 
 	if (!linphone_core_ldap_available(LC)) {
@@ -761,6 +812,21 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
     if (![[lm lpConfigStringForKey:@"auto_download_mode"] isEqualToString:@"Customize"]) {
         [hiddenKeys addObject:@"auto_download_incoming_files_max_size"];
     }
+
+	if (![[lm lpConfigStringForKey:@"auto_download_mode"] isEqualToString:@"Never"]) {
+		[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+	}
+	
+	if ([lm lpConfigBoolForKey:@"vfs_enabled_mode"]) {
+		[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+		[hiddenKeys addObject:@"vfs_enabled_mode"];
+	}else{
+		[hiddenKeys addObject:@"vfs_enabled"];
+	}
+	
+	if ([lm lpConfigBoolForKey:@"auto_write_to_gallery_mode"]) {
+		[hiddenKeys addObject:@"auto_write_to_gallery_mode"];
+	}
 
 	return hiddenKeys;
 }
@@ -901,8 +967,11 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 																   if (pwd && ![pwd isEqualToString:@""]) {
 																	   if ([pwd isEqualToString:conf_pwd]) {
 																		   _tmpPwd = pwd;
-																		   LinphoneAccount *account = bctbx_list_nth_data(linphone_core_get_account_list(LC),
-																													[settingsStore integerForKey:@"current_proxy_config_preference"]);
+																		   
+																		   MSList *accounts = [LinphoneManager.instance createAccountsNotHiddenList];
+																		   LinphoneAccount *account = bctbx_list_nth_data(accounts,
+																														  [settingsStore integerForKey:@"current_proxy_config_preference"]);
+																		   bctbx_free(accounts);
 																		   const LinphoneAuthInfo *ai = linphone_account_find_auth_info(account);
 																   
 																		   LinphoneAccountCreator *account_creator = linphone_account_creator_new(

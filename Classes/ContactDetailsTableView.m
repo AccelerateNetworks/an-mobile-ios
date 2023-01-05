@@ -160,15 +160,15 @@
 		/*first and last name only when editting */
 		return (self.tableView.isEditing) ? 1 : 0;
 	} else if (section == ContactSections_Sip) {
-		return _contact.createdFromLdap ? 0 : _contact.sipAddresses.count;
+		return [_contact getSipAddressesWithoutDuplicatePhoneNumbers].count;
 	} else if (section == ContactSections_Number) {
-          return _contact.phones.count;
-        } else if (section == ContactSections_Email) {
-          BOOL showEmails = [LinphoneManager.instance
-              lpConfigBoolForKey:@"show_contacts_emails_preference"];
-          return showEmails ? _contact.emails.count : 0;
-        }
-        return 0;
+		return _contact.phones.count;
+	} else if (section == ContactSections_Email) {
+		BOOL showEmails = [LinphoneManager.instance
+						   lpConfigBoolForKey:@"show_contacts_emails_preference"];
+		return showEmails ? _contact.emails.count : 0;
+	}
+	return 0;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -200,7 +200,7 @@
 		LinphoneAddress *addr = NULL;
 		if ([LinphoneManager.instance
 			 lpConfigBoolForKey:@"contact_display_username_only"] &&
-			(addr = linphone_core_interpret_url(LC, [value UTF8String]))) {
+			(addr = linphone_core_interpret_url_2(LC, [value UTF8String], YES))) {
 			value =
 			[NSString stringWithCString:linphone_address_get_username(addr)
 							   encoding:[NSString defaultCStringEncoding]];
@@ -283,7 +283,7 @@
 		if (section == ContactSections_Number) {
 			text = NSLocalizedString(@"Phone numbers", nil);
 			addEntryName = NSLocalizedString(@"Add new phone number", nil);
-		} else if (section == ContactSections_Sip && !_contact.createdFromLdap) {
+		} else if (section == ContactSections_Sip && !_contact.createdFromLdapOrProvisioning) {
 			text = NSLocalizedString(@"SIP addresses", nil);
 			addEntryName = NSLocalizedString(@"Add new SIP address", nil);
 		} else if (section == ContactSections_Email &&

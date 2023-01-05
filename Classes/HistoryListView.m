@@ -23,7 +23,7 @@
 
 @implementation HistoryListView
 
-typedef enum _HistoryView { History_All, History_Missed, History_MAX } HistoryView;
+typedef enum _HistoryView { History_All, History_Missed, History_Conference, History_MAX } HistoryView;
 
 #pragma mark - UICompositeViewDelegate Functions
 
@@ -48,6 +48,11 @@ static UICompositeViewDescription *compositeDescription = nil;
 
 #pragma mark - ViewController Functions
 
+-(void) viewDidLoad {
+	[super viewDidLoad];
+	_conferenceButton.imageView.contentMode = UIViewContentModeScaleAspectFit;
+}
+
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
@@ -62,28 +67,46 @@ static UICompositeViewDescription *compositeDescription = nil;
 	// Fake event
 	[NSNotificationCenter.defaultCenter postNotificationName:kLinphoneCallUpdate object:self];
 	[_toggleSelectionButton setImage:[UIImage imageNamed:@"select_all_default.png"] forState:UIControlStateSelected];
+	[NSNotificationCenter.defaultCenter addObserver:self
+																				 selector:@selector(displayModeChanged)
+																						 name:kDisplayModeChanged
+																					 object:nil];
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
 	self.view = NULL;
+	[NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 #pragma mark -
+
 
 - (void)changeView:(HistoryView)view {
 	CGRect frame = _selectedButtonImage.frame;
 	if (view == History_All) {
 		frame.origin.x = _allButton.frame.origin.x;
 		_allButton.selected = TRUE;
-		[_tableController setMissedFilter:FALSE];
+		[_tableController removeFIlters];
 		_missedButton.selected = FALSE;
+		_conferenceButton.selected = false;
+	} else if (view == History_Conference) {
+		frame.origin.x = _conferenceButton.frame.origin.x;
+		_conferenceButton.selected = TRUE;
+		[_tableController setConfFilter:true];
+		_missedButton.selected = FALSE;
+		_allButton.selected = FALSE;
 	} else {
 		frame.origin.x = _missedButton.frame.origin.x;
 		_missedButton.selected = TRUE;
 		[_tableController setMissedFilter:TRUE];
 		_allButton.selected = FALSE;
+		_conferenceButton.selected = false;
 	}
 	_selectedButtonImage.frame = frame;
+}
+
+- (void)displayModeChanged{
+	[self.tableController.tableView reloadData];
 }
 
 #pragma m ~ark - Action Functions
@@ -94,6 +117,10 @@ static UICompositeViewDescription *compositeDescription = nil;
 
 - (IBAction)onMissedClick:(id)event {
 	[self changeView:History_Missed];
+}
+
+- (IBAction)onConferenceClick:(id)sender {
+	[self changeView:History_Conference];
 }
 
 - (IBAction)onDeleteClick:(id)event {

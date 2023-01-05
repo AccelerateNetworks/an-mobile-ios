@@ -20,6 +20,7 @@
 #import "ChatConversationCreateView.h"
 #import "PhoneMainView.h"
 #import "UIChatCreateCollectionViewCell.h"
+#import "linphoneapp-Swift.h"
 
 @implementation ChatConversationCreateView
 
@@ -44,6 +45,21 @@ static UICompositeViewDescription *compositeDescription = nil;
 	return self.class.compositeViewDescription;
 }
 
+-(void) unfragmentCompositeDescription {
+	if (!IPAD)
+		return;
+	compositeDescription.isLeftFragment = true;
+	compositeDescription.otherFragment = nil;
+}
+
+-(void) fragmentCompositeDescription {
+	if (!IPAD)
+		return;
+	compositeDescription.otherFragment = IPAD ? NSStringFromClass(ChatsListView.class) : nil;
+	compositeDescription.isLeftFragment = false;
+}
+
+
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc]
@@ -53,14 +69,16 @@ static UICompositeViewDescription *compositeDescription = nil;
 	[self.view addGestureRecognizer:tap];
 	UICollectionViewFlowLayout *layout = [[UICollectionViewFlowLayout alloc] init];
 	layout.scrollDirection = UICollectionViewScrollDirectionHorizontal;
-	layout.itemSize = CGSizeMake(100.0 , 50.0);
+	layout.estimatedItemSize =  UICollectionViewFlowLayoutAutomaticSize;
 	_collectionController.collectionView = _collectionView;
 	_collectionController = (ChatConversationCreateCollectionViewController *)[[UICollectionViewController alloc] initWithCollectionViewLayout:layout];
 	_collectionView.dataSource = self;
 	[_collectionView setCollectionViewLayout:layout];
 	_tableController.collectionView = _collectionView;
 	_tableController.controllerNextButton = _nextButton;
-	_isForEditing = FALSE; 
+	_isForEditing = FALSE;
+	_voipTitle.text = VoipTexts.call_action_participants_list;
+
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -72,6 +90,10 @@ static UICompositeViewDescription *compositeDescription = nil;
                                                selector:@selector(viewUpdateEvent:)
                                                    name:kLinphoneChatCreateViewChange
                                                  object:nil];
+	[NSNotificationCenter.defaultCenter addObserver:self
+																				 selector:@selector(displayModeChanged)
+																						 name:kDisplayModeChanged
+																					 object:nil];
 	LinphoneAccount *defaultAccount = linphone_core_get_default_account(LC);
 	_chiffreOptionView.hidden = !(defaultAccount && linphone_account_params_get_conference_factory_uri(linphone_account_get_params(defaultAccount)));
 	if ([LinphoneManager.instance lpConfigBoolForKey:@"hide_linphone_contacts" inSection:@"app"]) {
@@ -80,6 +102,46 @@ static UICompositeViewDescription *compositeDescription = nil;
 		CGRect frame = _allButton.frame;
 		frame.origin.x = _linphoneButton.frame.origin.x;
 		_allButton.frame = frame;
+
+	}
+	
+	if ([LinphoneManager.instance lpConfigBoolForKey:@"force_lime_chat_rooms"]) {
+		_chiffreOptionView.hidden = true;
+		_isEncrypted = true;
+		_tableController.isEncrypted = true;
+		_allButton.hidden = true;
+	}
+	
+	if (_isForVoipConference) {
+		_switchView.hidden = true;
+		_chiffreOptionView.hidden = true;
+		_voipTitle.hidden = false;
+		if (_isForOngoingVoipConference) {
+			[_nextButton setImage:[UIImage imageNamed:@"valid_default"] forState:UIControlStateNormal];
+		} else {
+			[_nextButton setImage:[UIImage imageNamed:@"next_default"] forState:UIControlStateNormal];
+		}
+	} else {
+		_voipTitle.hidden = true;
+		[_nextButton setImage:[UIImage imageNamed:@"next_default"] forState:UIControlStateNormal];
+	}
+	[self displayModeChanged];
+}
+
+- (void)displayModeChanged{
+	[self.tableController.tableView reloadData];
+	if (_isForVoipConference) {
+		_topBar.backgroundColor = [VoipTheme.voipToolbarBackgroundColor get];
+		self.view.backgroundColor = [VoipTheme.voipBackgroundBWColor get];
+		_tableController.tableView.backgroundColor = [VoipTheme.voipBackgroundBWColor get];
+		_tableController.searchBar.backgroundColor = [VoipTheme.voipBackgroundBWColor get];
+		_tableController.collectionView.backgroundColor = [VoipTheme.voipBackgroundBWColor get];
+	} else {
+		_topBar.backgroundColor = UIColor.secondarySystemBackgroundColor;
+		self.view.backgroundColor = [VoipTheme.backgroundWhiteBlack get];
+		_tableController.tableView.backgroundColor = [VoipTheme.backgroundWhiteBlack get];
+		_tableController.searchBar.backgroundColor = [VoipTheme.backgroundWhiteBlack get];
+		_tableController.collectionView.backgroundColor = [VoipTheme.backgroundWhiteBlack get];
 	}
 }
 
@@ -95,17 +157,17 @@ static UICompositeViewDescription *compositeDescription = nil;
         frame.origin.x = self.view.frame.size.width * 0.192;
     }
     _chiffreOptionView.frame = frame;
-    _isEncrypted = FALSE;
+	_isEncrypted = [LinphoneManager.instance lpConfigBoolForKey:@"force_lime_chat_rooms"]; // false by default
     CGRect buttonFrame = _chiffreButton.frame;
-    _tableController.isEncrypted = _isEncrypted;
 
-    // no encrypted by default
-    buttonFrame.origin.x = 2;
-    [_chiffreImage setImage:[UIImage imageNamed:@"security_toogle_background_grey.png"]];
-    _chiffreButton.frame = buttonFrame;
+	if (!_isEncrypted) {
+		buttonFrame.origin.x = 2;
+		[_chiffreImage setImage:[UIImage imageNamed:@"security_toogle_background_grey.png"]];
+		_chiffreButton.frame = buttonFrame;
+	}
 
 	_waitView.hidden = YES;
-	_backButton.hidden = IPAD;
+	_backButton.hidden = IPAD && !(_isForVoipConference||_isForOngoingVoipConference);
 	if(_tableController.contactsGroup.count == 0) {
 		if (!_isForEditing)
 			_nextButton.enabled = FALSE;
@@ -128,9 +190,8 @@ static UICompositeViewDescription *compositeDescription = nil;
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    if (IPAD)
-        [NSNotificationCenter.defaultCenter removeObserver:self];
+	[super viewWillDisappear:animated];
+	[NSNotificationCenter.defaultCenter removeObserver:self];
 }
 
 #pragma mark - Chat room functions
@@ -146,18 +207,37 @@ static UICompositeViewDescription *compositeDescription = nil;
 
 - (IBAction)onBackClick:(id)sender {
 	[_tableController.contactsGroup removeAllObjects];
-	if (_tableController.isForEditing)
-		[PhoneMainView.instance popToView:ChatConversationInfoView.compositeViewDescription];
-	else
-		[PhoneMainView.instance popToView:ChatsListView.compositeViewDescription];
+	if (_isForVoipConference) {
+		if (_isForOngoingVoipConference) {
+			[PhoneMainView.instance popToView:VIEW(ConferenceCallView).compositeViewDescription];
+			[ControlsViewModelBridge showParticipants];
+		} else {
+			[PhoneMainView.instance popToView:ConferenceSchedulingView.compositeViewDescription];
+		}
+	} else {
+		if (_tableController.isForEditing)
+			[PhoneMainView.instance popToView:ChatConversationInfoView.compositeViewDescription];
+		else
+			[PhoneMainView.instance popToView:ChatsListView.compositeViewDescription];
+	}
 }
 
 - (IBAction)onNextClick:(id)sender {
-	ChatConversationInfoView *view = VIEW(ChatConversationInfoView);
-	view.contacts = _tableController.contactsGroup;
-	view.create = !_isForEditing;
-    view.encrypted = _isEncrypted;
-	[PhoneMainView.instance changeCurrentView:view.compositeViewDescription];
+	if (_isForVoipConference) {
+		if (_isForOngoingVoipConference) {
+			[PhoneMainView.instance popToView:VIEW(ConferenceCallView).compositeViewDescription];
+			[ConferenceViewModelBridge updateParticipantsListWithAddresses:_tableController.contactsGroup];
+		} else {
+			[PhoneMainView.instance changeCurrentView:VIEW(ConferenceSchedulingSummaryView).compositeViewDescription];
+			[VIEW(ConferenceSchedulingSummaryView) setParticipantsWithAddresses:_tableController.contactsGroup];
+		}
+	} else {
+		ChatConversationInfoView *view = VIEW(ChatConversationInfoView);
+		view.contacts = _tableController.contactsGroup;
+		view.create = !_isForEditing;
+    	view.encrypted = _isEncrypted;
+		[PhoneMainView.instance changeCurrentView:view.compositeViewDescription];
+	}
 }
 
 - (IBAction)onChiffreClick:(id)sender {
@@ -225,7 +305,7 @@ typedef enum { ContactsAll, ContactsLinphone, ContactsMAX } ContactsCategory;
 	return NO;
 }
 
-#pragma mark - UICollectionViewDataSource
+#pragma mark - UICollectionViewDataSource & Delegate
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
 	return _tableController.contactsGroup.count;
 }
@@ -247,9 +327,10 @@ typedef enum { ContactsAll, ContactsLinphone, ContactsMAX } ContactsCategory;
 		ms_free(phone);
 	} else
 		addr = linphone_address_new(uri.UTF8String);
-	cell = [cell initWithName:[FastAddressBook displayNameForAddress:addr]];
+	[cell.nameLabel setText:[FastAddressBook displayNameForAddress:addr]];
 	linphone_address_unref(addr);
 	return cell;
 }
+
 
 @end

@@ -29,6 +29,8 @@
 
 @implementation UIChatBubbleTextCell
 
+
+
 #pragma mark - Lifecycle Functions
 
 
@@ -43,6 +45,9 @@
 			UIView *sub = ((UIView *)[arrayOfViews objectAtIndex:arrayOfViews.count - 1]);
 			[self setFrame:CGRectMake(0, 0, sub.frame.size.width, sub.frame.size.height)];
 			[self addSubview:sub];
+			self.icsBubbleView = [[ICSBubbleView alloc] init];
+			[self.innerView addSubview:self.icsBubbleView];
+			[(ICSBubbleView*)self.icsBubbleView setLayoutConstraintsWithView:self.backgroundColorImage];
 		}
 	}
 	
@@ -161,7 +166,7 @@
 		return;
 	}
 
-	if (_messageText && ![LinphoneManager getMessageAppDataForKey:@"localvideo" inMessage:_message]) {
+	if (_messageText && ![LinphoneManager getMessageAppDataForKey:@"localvideo" inMessage:_message] && ![ICSBubbleView isConferenceInvitationMessageWithCmessage:self.message]) {
 		[_messageText setHidden:FALSE];
 		/* We need to use an attributed string here so that data detector don't mess
 		 * with the text style. See http://stackoverflow.com/a/20669356 */
@@ -275,6 +280,18 @@
 			_replyView.view.hidden = true;
 	}
 	
+	// ICS for conference invitations
+	
+	if ([ICSBubbleView isConferenceInvitationMessageWithCmessage:self.message]) {
+		[(ICSBubbleView*)self.icsBubbleView setFromChatMessageWithCmessage:self.message];
+		self.icsBubbleView.hidden = false;
+		_messageText.hidden = true;
+	} else {
+		self.icsBubbleView.hidden = true;
+		_messageText.hidden = false;
+	}
+	
+	
 }
 
 - (void)setEditing:(BOOL)editing {
@@ -327,8 +344,10 @@ static void message_status(LinphoneChatMessage *msg, LinphoneChatMessageState st
 }
 
 static void participant_imdn_status(LinphoneChatMessage* msg, const LinphoneParticipantImdnState *state) {
-    ChatConversationImdnView *imdnView = VIEW(ChatConversationImdnView);
-    [imdnView updateImdnList];
+	dispatch_async(dispatch_get_main_queue(), ^{
+		ChatConversationImdnView *imdnView = VIEW(ChatConversationImdnView);
+		[imdnView updateImdnList];
+	});
 }
 
 - (void)displayImdmStatus:(LinphoneChatMessageState)state {
@@ -380,7 +399,7 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 		return cached;
 	}
 	
-    CGSize size = [self ViewHeightForMessageText:chat withWidth:width textForImdn:nil];
+	CGSize size = [self ViewHeightForMessageText:chat withWidth:width textForImdn:nil];
 	size.height += linphone_chat_message_is_forward(chat) || linphone_chat_message_is_reply(chat) ? REPLY_OR_FORWARD_TAG_HEIGHT : 0;
 	size.height += linphone_chat_message_is_reply(chat) ? REPLY_CHAT_BUBBLE_HEIGHT+5 : 0;
 	
@@ -470,6 +489,11 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 }
 
 + (CGSize)ViewHeightForMessageText:(LinphoneChatMessage *)chat withWidth:(int)width textForImdn:(NSString *)imdnText {
+	
+	if ([ICSBubbleView isConferenceInvitationMessageWithCmessage:chat]) {
+		return  CGSizeMake(CONFERENCE_INVITATION_WIDTH, CONFERENCE_INVITATION_HEIGHT+[ICSBubbleView getDescriptionHeightFromContentWithCmessage:chat]);
+	}
+	
     NSString *messageText = [UIChatBubbleTextCell TextMessageForChat:chat];
     static UIFont *messageFont = nil;
 
@@ -767,6 +791,8 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 
 		_replyTransferIcon.hidden = ! linphone_chat_message_is_reply(_message) && !linphone_chat_message_is_forward(_message);
 		_replyTransferLabel.hidden = ! linphone_chat_message_is_reply(_message) && !linphone_chat_message_is_forward(_message);
+		[(ICSBubbleView*)self.icsBubbleView updateTopLayoutConstraintsWithView:self.backgroundColorImage replyOrForward:linphone_chat_message_is_reply(_message)||linphone_chat_message_is_forward(_message)];
+
 		
 		if (linphone_chat_message_is_reply(_message)) {
 			CGRect replyFrame = CGRectMake(10, _replyTransferLabel.frame.origin.y+_replyTransferLabel.frame.size.height+5,MAX(self.contactDateLabel.frame.size.width-20,180), REPLY_CHAT_BUBBLE_HEIGHT);
@@ -824,10 +850,13 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 
 -(void) buildActions {
 	LinphoneChatMessage *message = self.message;
+	LinphoneEventLog *event = self.event;
+
 	_messageActionsTitles = [[NSMutableArray alloc] init];
 	_messageActionsBlocks = [[NSMutableArray alloc] init];
 	_messageActionsIcons = [[NSMutableArray alloc] init];
-
+	
+	[VIEW(ChatConversationView).messageField resignFirstResponder];
 	UIChatBubbleTextCell *thiz = self;
 	
 	LinphoneChatMessageState state = linphone_chat_message_get_state(self.message);
@@ -845,7 +874,7 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 	}
 	
 
-	if (linphone_chat_message_get_utf8_text(message)) {
+	if (linphone_chat_message_get_utf8_text(message) && ![ICSBubbleView isConferenceInvitationMessageWithCmessage:message]) {
 		[_messageActionsTitles addObject:NSLocalizedString(@"Copy text", nil)];
 		[_messageActionsIcons addObject:@"menu_copy_text_default"];
 		[_messageActionsBlocks addObject:^{
@@ -872,14 +901,41 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 		[VIEW(ChatConversationView) initiateReplyViewForMessage:message];
 	}];
 	
-	if (linphone_chat_message_is_outgoing(self.message) || linphone_chat_room_get_nb_participants(linphone_chat_message_get_chat_room(self.message)) > 1) {
+	LinphoneChatRoom *chatroom = linphone_chat_message_get_chat_room(self.message);
+	
+	if (linphone_chat_room_get_nb_participants(chatroom) > 1) {
 		[_messageActionsTitles addObject:NSLocalizedString(@"Infos", nil)];
 		[_messageActionsIcons addObject:@"menu_info"];
 		[_messageActionsBlocks addObject:^{
 			[thiz dismissPopup];
 			ChatConversationImdnView *view = VIEW(ChatConversationImdnView);
-			view.msg = message;
+			view.event = event;
 			[PhoneMainView.instance changeCurrentView:view.compositeViewDescription];
+		}];
+	}
+
+	if (!linphone_chat_message_is_outgoing(self.message)
+		&& [FastAddressBook getContactWithAddress:linphone_chat_message_get_from_address(self.message)] == nil
+		&& !(linphone_chat_room_get_capabilities(chatroom) & LinphoneChatRoomCapabilitiesOneToOne) ) {
+		
+		LinphoneAddress *fromAddress = linphone_address_clone(linphone_chat_message_get_from_address(self.message));
+		[_messageActionsTitles addObject:NSLocalizedString(@"Add to contact", nil)];
+		[_messageActionsIcons addObject:@"contact_add_default"];
+		[_messageActionsBlocks addObject:^{
+			[thiz dismissPopup];
+			linphone_address_clean(fromAddress);
+			char *lAddress = linphone_address_as_string_uri_only(fromAddress);
+			if (lAddress != NULL) {
+				NSString *normSip = [NSString stringWithUTF8String:lAddress];
+				normSip = [normSip hasPrefix:@"sip:"] ? [normSip substringFromIndex:4] : normSip;
+				normSip = [normSip hasPrefix:@"sips:"] ? [normSip substringFromIndex:5] : normSip;
+				[ContactSelection setAddAddress:normSip];
+				[ContactSelection setSelectionMode:ContactSelectionModeEdit];
+				[ContactSelection enableSipFilter:FALSE];
+				[PhoneMainView.instance changeCurrentView:ContactsListView.compositeViewDescription];
+				ms_free(lAddress);
+			}
+			linphone_address_unref(fromAddress);
 		}];
 	}
 	
@@ -906,7 +962,7 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 	int cellHeight = 45;
 	int numberOfItems = (int) _messageActionsTitles.count;
 	CGRect screenRect = UIScreen.mainScreen.bounds;
-	int menuHeight = numberOfItems * cellHeight + 15;
+	int menuHeight = numberOfItems * cellHeight;
 	
 	CGRect frame = CGRectMake(
 							  linphone_chat_message_is_outgoing(self.message) ? screenRect.size.width - width - 10 : 10,
@@ -918,7 +974,8 @@ static const CGFloat REPLY_OR_FORWARD_TAG_HEIGHT  = 18;
 	_popupMenu.scrollEnabled = false;
 	_popupMenu.dataSource = self;
 	_popupMenu.delegate = self;
-	
+	_popupMenu.separatorStyle = UITableViewCellSeparatorStyleNone;
+
 	_popupMenu.layer.masksToBounds = false;
 	
 	_popupMenu.layer.shadowColor = [UIColor darkGrayColor].CGColor;

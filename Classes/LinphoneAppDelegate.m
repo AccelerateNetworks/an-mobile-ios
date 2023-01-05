@@ -17,7 +17,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#import "linphoneapp-Swift.h"
 #import "LinphoneAppDelegate.h"
 #import "ContactDetailsView.h"
 #import "ContactsListView.h"
@@ -35,6 +34,8 @@
 #import <Intents/Intents.h>
 #import <IntentsUI/IntentsUI.h>
 #import "linphoneapp-Swift.h"
+
+#import "SVProgressHUD.h"
 
 
 #ifdef USE_CRASHLYTICS
@@ -86,6 +87,7 @@
     [LinphoneManager.instance.fastAddressBook reloadFriends];
 	
     [NSNotificationCenter.defaultCenter postNotificationName:kLinphoneMessageReceived object:nil];
+	
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {
@@ -138,7 +140,6 @@
 			if ((floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_9_x_Max)) {
 				if ([LinphoneManager.instance lpConfigBoolForKey:@"autoanswer_notif_preference"]) {
 					linphone_call_accept(call);
-					[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
 				} else {
 					[PhoneMainView.instance displayIncomingCall:call];
 				}
@@ -157,7 +158,9 @@
         [self handleShortcut:_shortcutItem];
         _shortcutItem = nil;
     }
-	
+
+#if TARGET_IPHONE_SIMULATOR
+#else
 	[[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound | UNAuthorizationOptionBadge)
 																		completionHandler:^(BOOL granted, NSError *_Nullable error) {
 		if (error)
@@ -183,6 +186,16 @@
 		}
 		
 	}];
+#endif
+
+	
+	if ([UIDeviceBridge switchedDisplayMode]) {
+		[AvatarBridge prepareIt];
+		[NSNotificationCenter.defaultCenter postNotificationName:kDisplayModeChanged object:nil];
+		[PhoneMainView.instance.mainViewController removeEntryFromCache:ChatConversationCreateView.compositeViewDescription.name];
+		[PhoneMainView.instance.mainViewController changeView:PhoneMainView.instance.currentView];
+		[UIDeviceBridge notifyDisplayModeSwitch];
+	}
 	
 }
 
@@ -332,6 +345,9 @@
         return NO;
     }
 
+	[PhoneMainView.instance.mainViewController getCachedController:SingleCallView.compositeViewDescription.name]; // This will create the single instance of the SingleCallView including listeneres
+	[PhoneMainView.instance.mainViewController getCachedController:ConferenceCallView.compositeViewDescription.name]; // This will create the single instance of the ConferenceCallView including listeneres
+	[CallsViewModelBridge setupCallsViewNavigation];
 	return YES;
 }
 
@@ -351,6 +367,7 @@
 - (BOOL)handleShortcut:(UIApplicationShortcutItem *)shortcutItem {
     BOOL success = NO;
     if ([shortcutItem.type isEqualToString:@"linphone.phone.action.newMessage"]) {
+				[VIEW(ChatConversationCreateView) fragmentCompositeDescription];
         [PhoneMainView.instance changeCurrentView:ChatConversationCreateView.compositeViewDescription];
         success = YES;
     }
@@ -387,7 +404,15 @@
 
 		[PhoneMainView.instance presentViewController:errView animated:YES completion:nil];
     } else if([[url scheme] isEqualToString:@"message-linphone"]) {
-        [PhoneMainView.instance popToView:ChatsListView.compositeViewDescription];
+		if ([[PhoneMainView.instance currentView] equal:ChatsListView.compositeViewDescription]) {
+			VIEW(ChatConversationView).sharingMedia = TRUE;
+			ChatsListView *view = VIEW(ChatsListView);
+			[view mediaSharing];
+		}else{
+			[SVProgressHUD dismiss];
+			VIEW(ChatConversationView).sharingMedia = TRUE;
+			[PhoneMainView.instance popToView:ChatsListView.compositeViewDescription];
+		}
     } else if ([scheme isEqualToString:@"sip"]||[scheme isEqualToString:@"sips"]) {
         // remove "sip://" from the URI, and do it correctly by taking resourceSpecifier and removing leading and
         // trailing "/"
@@ -422,13 +447,6 @@
 // used for callkit. Called when active video.
 - (BOOL)application:(UIApplication *)application continueUserActivity:(nonnull NSUserActivity *)userActivity restorationHandler:(nonnull void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler
 {
-	
-	
-	if ([userActivity.activityType isEqualToString:@"INStartVideoCallIntent"]) {
-		LOGI(@"CallKit: satrt video.");
-		CallView *view = VIEW(CallView);
-		[view.videoButton setOn];
-	}
 	if ([userActivity.activityType isEqualToString:@"INStartAudioCallIntent"]) { // tel URI handler.
 		INInteraction *interaction = userActivity.interaction;
 		INStartAudioCallIntent *startAudioCallIntent = (INStartAudioCallIntent *)interaction.intent;
@@ -509,15 +527,15 @@
 
 - (void) userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler {
 	// If an app extension launch a user notif while app is in fg, it is catch by the app
-    NSString *category = [[[notification request] content] categoryIdentifier];
-    if (category && [category isEqualToString:@"app_active"]) {
-        return;
-    }
-
+	NSString *category = [[[notification request] content] categoryIdentifier];
+	if (category && [category isEqualToString:@"app_active"]) {
+		return;
+	}
+	
 	if (category && [category isEqualToString:@"msg_cat"] && [UIApplication sharedApplication].applicationState == UIApplicationStateActive) {
 		if ((PhoneMainView.instance.currentView == ChatsListView.compositeViewDescription))
 			return;
-
+		
 		if (PhoneMainView.instance.currentView == ChatConversationView.compositeViewDescription) {
 			NSDictionary *userInfo = [[[notification request] content] userInfo];
 			NSString *peerAddress = userInfo[@"peer_addr"];
@@ -525,12 +543,12 @@
 			if (peerAddress && localAddress) {
 				LinphoneAddress *peer = linphone_core_create_address([LinphoneManager getLc], peerAddress.UTF8String);
 				LinphoneAddress *local = linphone_core_create_address([LinphoneManager getLc], localAddress.UTF8String);
-				LinphoneChatRoom *room = linphone_core_find_chat_room([LinphoneManager getLc], peer, local);
+				LinphoneChatRoom *room = linphone_core_search_chat_room([LinphoneManager getLc], NULL, local, peer, NULL);
 				if (room == PhoneMainView.instance.currentRoom) return;
 			}
 		}
 	}
-
+	
 	completionHandler(UNNotificationPresentationOptionAlert);
 }
 
@@ -552,7 +570,7 @@
 
 	if ([response.actionIdentifier isEqual:@"Answer"]) {
 		// use the standard handler
-		[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
+		[CallManager.instance acceptCallWithCall:call hasVideo:NO];
 		linphone_call_accept(call);
 	} else if ([response.actionIdentifier isEqual:@"Decline"]) {
 		linphone_call_decline(call, LinphoneReasonDeclined);
@@ -590,7 +608,6 @@
 			return;
 
 		[[UNUserNotificationCenter currentNotificationCenter] removeAllDeliveredNotifications];
-		[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
 		[CallManager.instance acceptVideoWithCall:call confirm:TRUE];
   	} else if ([response.actionIdentifier isEqual:@"Confirm"]) {
 	  	if (linphone_core_get_current_call(LC) == call)
@@ -623,7 +640,6 @@
 			}
 		} else if ([response.notification.request.content.categoryIdentifier isEqual:@"video_request"]) {
 			if (!call) return;
-			[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
 		  	NSTimer *videoDismissTimer = nil;
 		  	UIConfirmationDialog *sheet = [UIConfirmationDialog ShowWithMessage:response.notification.request.content.body
 																  cancelMessage:nil
@@ -707,8 +723,7 @@
 		if ([notification.category isEqualToString:@"incoming_call"]) {
 			if ([identifier isEqualToString:@"answer"]) {
 				// use the standard handler
-				[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
-				linphone_call_accept(call);
+				[CallManager.instance acceptCallWithCall:call hasVideo:NO];
 			} else if ([identifier isEqualToString:@"decline"]) {
 				LinphoneCall *call = linphone_core_get_current_call(LC);
 				if (call)
@@ -745,8 +760,7 @@
 	if ([notification.category isEqualToString:@"incoming_call"]) {
 		if ([identifier isEqualToString:@"answer"]) {
 			// use the standard handler
-			[PhoneMainView.instance changeCurrentView:CallView.compositeViewDescription];
-			linphone_call_accept(call);
+			[CallManager.instance acceptCallWithCall:call hasVideo:NO];
 		} else if ([identifier isEqualToString:@"decline"]) {
 			LinphoneCall *call = linphone_core_get_current_call(LC);
 			if (call)

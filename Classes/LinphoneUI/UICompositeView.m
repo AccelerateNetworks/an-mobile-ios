@@ -22,6 +22,7 @@
 #import "LinphoneAppDelegate.h"
 #import "Utils.h"
 #import "SideMenuView.h"
+#import "linphoneapp-Swift.h"
 
 @implementation UICompositeViewDescription
 
@@ -304,12 +305,18 @@
 	return nil;
 }
 
+- (void)removeEntryFromCache:(NSString *)key {
+	[viewControllerCache removeObjectForKey:key];
+}
+
 - (void)clearCache:(NSArray *)exclude {
+	
+	
 	for (NSString *key in [viewControllerCache allKeys]) {
 		bool remove = true;
 
 		/*ImagePickerView can be used as popover and we do NOT want to free it*/;
-		if ([key isEqualToString:ImagePickerView.compositeViewDescription.name]) {
+		if ([key isEqualToString:ImagePickerView.compositeViewDescription.name] || [key isEqualToString:SingleCallView.compositeViewDescription.name]  || [key isEqualToString:ConferenceCallView.compositeViewDescription.name]) {
 			remove = false;
 		} else if (exclude != nil) {
 			for (UICompositeViewDescription *description in exclude) {
@@ -332,6 +339,9 @@
 }
 
 - (IBAction)onRightSwipe:(id)sender {
+	if (linphone_core_get_calls_nb(LC) > 0) {
+		return;
+	}
 	[self hideSideMenu:NO];
 }
 

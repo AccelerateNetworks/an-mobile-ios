@@ -56,12 +56,14 @@
     UIConfirmationDialog *securityDialog;
     UIRefreshControl *refreshControl;
 	BOOL isOneToOne;
+	BOOL isEncrypted;
 }
 
 @property(nonatomic) LinphoneChatRoom *chatRoom;
 @property(nonatomic) LinphoneChatRoomCbs *chatRoomCbs;
 @property(nonatomic) Boolean markAsRead;
 @property(nonatomic) const char *peerAddress;
+@property(nonatomic) const char *localAddress;
 
 @property (strong, nonatomic) FileDataSource *FileDataSource;
 
@@ -80,7 +82,6 @@
 @property(nonatomic, strong) IBOutlet UIButton *pictureButton;
 @property(weak, nonatomic) IBOutlet UIButton *callButton;
 @property(weak, nonatomic) IBOutlet UIBackToCallButton *backToCallButton;
-@property (weak, nonatomic) IBOutlet UIButton *infoButton;
 @property (weak, nonatomic) IBOutlet UILabel *particpantsLabel;
 @property NSMutableArray <NSNumber *> *qualitySettingsArray;
 @property (weak, nonatomic) IBOutlet UICollectionView *imagesCollectionView;
@@ -112,6 +113,7 @@
 @property LinphonePlayer *sharedVoicePlayer;
 @property BOOL showVoiceRecorderView;
 @property BOOL preservePendingActions;
+@property BOOL *sharingMedia;
 
 // Reply
 @property (weak, nonatomic) IBOutlet UIView *replyView;
@@ -159,5 +161,7 @@
 -(BOOL) sharedPlayedIsPlaying:(const char *)path;
 
 -(void) initiateReplyViewForMessage:(LinphoneChatMessage *)message;
+
+-(void) stopVoiceRecording;
 
 @end

@@ -32,7 +32,6 @@
 #import "LinphoneCoreSettingsStore.h"
 #import "LinphoneAppDelegate.h"
 #import "LinphoneManager.h"
-#import "Utils/AudioHelper.h"
 #import "Utils/FileTransferDelegate.h"
 
 #include "linphone/factory.h"
@@ -82,6 +81,8 @@ NSString *const kLinphoneConfStateChanged = @"kLinphoneConfStateChanged";
 NSString *const kLinphoneConfStateParticipantListChanged = @"kLinphoneConfStateParticipantListChanged";
 NSString *const kLinphoneMagicSearchStarted = @"LinphoneMagicSearchStarted";
 NSString *const kLinphoneMagicSearchFinished = @"LinphoneMagicSearchFinished";
+NSString *const kLinphoneMagicSearchMoreAvailable = @"LinphoneMagicSearchMoreAvailable";
+NSString *const kDisplayModeChanged = @"DisplayModeChanged";
 
 NSString *const kLinphoneMsgNotificationAppGroupId = @"group.com.acceleratenetworks.linphone";
 
@@ -276,6 +277,14 @@ struct codec_name_pref_table codec_pref_table[] = {{"speex", 8000, "speex_8k_pre
 #else
 			[self lpConfigSetString:@"conflate" forKey:@"handle_content_encoding" inSection:@"misc"];
 #endif
+		}
+        
+        if ([self lpConfigStringForKey:@"display_link_account_popup"] == nil) {
+            [self lpConfigSetBool:true forKey:@"display_link_account_popup"];
+        }
+		
+		if ([self lpConfigStringForKey:@"hide_link_phone_number"] == nil) {
+			[self lpConfigSetInt:1 forKey:@"hide_link_phone_number"];
 		}
 
 		[self migrateFromUserPrefs];
@@ -482,6 +491,20 @@ static int check_should_migrate_images(void *data, int argc, char **argv, char *
 				   linphone_account_set_params(account, newAccountParams);
 			   }
 		   }
+		   if (!linphone_account_params_get_audio_video_conference_factory_address(newAccountParams) && strcmp(appDomain.UTF8String, linphone_account_params_get_domain(newAccountParams)) == 0) {
+			   NSString *uri = [self lpConfigStringForKey:@"default_audio_video_conference_factory_uri" withDefault:@"sip:videoconference-factory2@sip.linphone.org"];
+			   LinphoneAddress *a = linphone_factory_create_address(linphone_factory_get(), uri.UTF8String);
+			   if (a) {
+				   linphone_account_params_set_audio_video_conference_factory_address(newAccountParams, a);
+				   linphone_account_set_params(account, newAccountParams);
+			   }
+		   }
+		   
+		   if (strcmp(appDomain.UTF8String, linphone_account_params_get_domain(newAccountParams)) == 0 && !linphone_account_params_rtp_bundle_enabled(newAccountParams)) {
+			   linphone_account_params_enable_rtp_bundle(newAccountParams, true);
+			   linphone_account_set_params(account,newAccountParams);
+		   }
+		 
 		   linphone_account_params_unref(newAccountParams);
 		   accounts = accounts->next;
 	   }
@@ -624,6 +647,11 @@ static void linphone_iphone_global_state_changed(LinphoneCore *lc, LinphoneGloba
 		if (theLinphoneCore && linphone_core_get_global_state(theLinphoneCore) != LinphoneGlobalOff)
 			[NSNotificationCenter.defaultCenter postNotificationName:kLinphoneGlobalStateUpdate object:self userInfo:dict];
 	});
+	
+	if (state == LinphoneGlobalOn) {
+		// reload friends
+		[self.fastAddressBook fetchContactsInBackGroundThread];
+	}
 }
 
 - (void)globalStateChangedNotificationHandler:(NSNotification *)notif {
@@ -848,7 +876,7 @@ static void linphone_iphone_popup_password_request(LinphoneCore *lc, LinphoneAut
 	if ((linphone_core_get_max_size_for_auto_download_incoming_files(LC) > -1) && linphone_chat_message_get_file_transfer_information(msg))
 		hasFile = TRUE;
 
-	if (!linphone_chat_message_is_file_transfer(msg) && !linphone_chat_message_is_text(msg) && !hasFile)
+	if (!linphone_chat_message_is_file_transfer(msg) && !linphone_chat_message_is_text(msg) && !hasFile  && ![ICSBubbleView isConferenceInvitationMessageWithCmessage:msg])
 		return;
     
 	if (hasFile) {
@@ -1183,6 +1211,8 @@ static void linphone_iphone_is_composing_received(LinphoneCore *lc, LinphoneChat
 	[NSNotificationCenter.defaultCenter postNotificationName:kLinphoneCoreUpdate
 	 object:LinphoneManager.instance
 	 userInfo:dict];
+
+	
 }
 
 static BOOL libStarted = FALSE;
@@ -1239,7 +1269,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 		[LinphoneManager.instance lpConfigSetInt:0 forKey:@"must_link_account_time"];
 	} else {
 		LinphoneAccount *account = linphone_core_get_default_account(LC);
-		LinphoneAccountParams const *accountParams = linphone_account_get_params(account);
+		LinphoneAccountParams const *accountParams = account ? linphone_account_get_params(account) : NULL;
 		if (account &&
 		    strcmp(linphone_account_params_get_domain(accountParams),
 			   [LinphoneManager.instance lpConfigStringForKey:@"domain_name"
@@ -1260,7 +1290,14 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 							 handler:^(UIAlertAction * action) {
 					[PhoneMainView.instance changeCurrentView:AssistantLinkView.compositeViewDescription];
 				}];
+                   
+            UIAlertAction* otherAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Never ask again", nil)
+                        style:UIAlertActionStyleDefault
+                        handler:^(UIAlertAction * action) {
+                [LinphoneManager.instance lpConfigSetBool:false forKey:@"display_link_account_popup"];
+            }];
 			defaultAction.accessibilityLabel = @"Later";
+            [errView addAction:otherAction];
 			[errView addAction:defaultAction];
 			[errView addAction:continueAction];
 			[PhoneMainView.instance presentViewController:errView animated:YES completion:nil];
@@ -1279,7 +1316,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 	NSDate *nextTime =
 		[NSDate dateWithTimeIntervalSince1970:[self lpConfigIntForKey:@"must_link_account_time" withDefault:1]];
 	NSDate *now = [NSDate date];
-	if (nextTime.timeIntervalSince1970 > 0 && [now earlierDate:nextTime] == nextTime) {
+    if (nextTime.timeIntervalSince1970 > 0 && [now earlierDate:nextTime] == nextTime && [LinphoneManager.instance lpConfigBoolForKey:@"display_link_account_popup"] && ![LinphoneManager.instance lpConfigIntForKey:@"hide_link_phone_number"]) {
 		LinphoneAccount *account = linphone_core_get_default_account(LC);
 		if (account) {
 			const char *username = linphone_address_get_username(linphone_account_params_get_identity_address(linphone_account_get_params(account)));
@@ -1444,6 +1481,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 - (void)destroyLinphoneCore {
 	// just in case
 	[self removeCTCallCenterCb];
+	[MagicSearchSingleton destroyInstance];
 
 	if (theLinphoneCore != nil) { // just in case application terminate before linphone core initialization
 
@@ -1473,8 +1511,6 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 - (void)resetLinphoneCore {
 	[self destroyLinphoneCore];
 	[self createLinphoneCore];
-	// reload friends
-	[self.fastAddressBook fetchContactsInBackGroundThread];
 }
 
 static int comp_call_id(const LinphoneCall *call, const char *callid) {
@@ -1869,7 +1905,8 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
 	}
 	[self checkLocalNetworkPermission];
 	// For OutgoingCall, show CallOutgoingView
-	[CallManager.instance startCallWithAddr:iaddr isSas:FALSE];
+	BOOL initiateVideoCall = linphone_core_get_video_activation_policy(LC) && linphone_video_activation_policy_get_automatically_initiate(linphone_core_get_video_activation_policy(LC));
+	[CallManager.instance startCallWithAddr:iaddr isSas:FALSE isVideo:initiateVideoCall isConference:false];
 }
 
 #pragma mark - Misc Functions
@@ -2195,6 +2232,23 @@ static int comp_call_state_paused(const LinphoneCall *call, const void *param) {
 
 #pragma mark -
 
+- (MSList *) createAccountsNotHiddenList {
+	MSList *list = NULL;
+	const MSList *accounts = linphone_core_get_account_list(LC);
+	while (accounts) {
+		const char *isHidden = linphone_account_get_custom_param(accounts->data, "hidden");
+		if (isHidden == NULL || strcmp(linphone_account_get_custom_param(accounts->data, "hidden"), "1") != 0) {
+			if (!list) {
+				list = bctbx_list_new(accounts->data);
+			} else {
+				bctbx_list_append(list, accounts->data);
+			}
+		}
+		accounts = accounts->next;
+	}
+	return list;
+}
+
 - (void)removeAllAccounts {
 	linphone_core_clear_accounts(LC);
 	linphone_core_clear_all_auth_info(LC);
@@ -2288,6 +2342,31 @@ void linphone_iphone_conference_state_changed(LinphoneCore *lc, LinphoneConferen
 	[NSNotificationCenter.defaultCenter postNotificationName:kLinphoneConfStateChanged object:nil userInfo:dict];
 }
 
++ (BOOL) getChatroomPushEnabled:(LinphoneChatRoom *)chatroom {
+	bool currently_enabled = true;
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kLinphoneMsgNotificationAppGroupId];
+	NSDictionary *chatroomsPushStatus = [defaults dictionaryForKey:@"chatroomsPushStatus"];
+	if (chatroomsPushStatus != nil && chatroom) {
+		char *uri = linphone_address_as_string_uri_only(linphone_chat_room_get_peer_address(chatroom));
+		NSString* pushStatus = [chatroomsPushStatus objectForKey:[NSString stringWithUTF8String:uri]];
+		currently_enabled = (pushStatus == nil) || [pushStatus isEqualToString:@"enabled"];
+		ms_free(uri);
+	}
+	return currently_enabled;
+}
 
++ (void) setChatroomPushEnabled:(LinphoneChatRoom *)chatroom withPushEnabled:(BOOL)enabled {
+	if (!chatroom) return;
+	
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:kLinphoneMsgNotificationAppGroupId];
+	NSMutableDictionary *chatroomsPushStatus = [[NSMutableDictionary alloc] initWithDictionary:[defaults dictionaryForKey:@"chatroomsPushStatus"]];
+	if (chatroomsPushStatus == nil) chatroomsPushStatus = [[NSMutableDictionary dictionary] init];
+	
+	char *uri = linphone_address_as_string_uri_only(linphone_chat_room_get_peer_address(chatroom));
+	[chatroomsPushStatus setValue:(enabled ? @"enabled" : @"disabled") forKey:[NSString stringWithUTF8String:uri]];
+	ms_free(uri);
+	
+	[defaults setObject:chatroomsPushStatus forKey:@"chatroomsPushStatus"];
+}
 
 @end

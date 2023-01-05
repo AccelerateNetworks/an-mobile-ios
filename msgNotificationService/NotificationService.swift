@@ -64,6 +64,21 @@ class NotificationService: UNNotificationServiceExtension {
 			createCore()
 			NotificationService.log.message(message: "received push payload : \(bestAttemptContent.userInfo.debugDescription)")
 
+			
+			let defaults = UserDefaults.init(suiteName: APP_GROUP_ID)
+			if let chatroomsPushStatus = defaults?.dictionary(forKey: "chatroomsPushStatus") {
+				let aps = bestAttemptContent.userInfo["aps"] as? NSDictionary
+				let alert = aps?["alert"] as? NSDictionary
+				let fromAddresses = alert?["loc-args"] as? [String]
+				
+				if let from = fromAddresses?.first {
+					if ((chatroomsPushStatus[from] as? String) == "disabled") {
+						NotificationService.log.message(message: "message comes from a muted chatroom, ignore it")
+						contentHandler(UNNotificationContent())
+					}
+				}
+			}
+			
 			if let chatRoomInviteAddr = bestAttemptContent.userInfo["chat-room-addr"] as? String, !chatRoomInviteAddr.isEmpty {
 				NotificationService.log.message(message: "fetch chat room for invite, addr: \(chatRoomInviteAddr)")
 				let chatRoom = lc!.getNewChatRoomFromConfAddr(chatRoomAddr: chatRoomInviteAddr)
@@ -149,7 +164,18 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
 	func parseMessage(message: PushNotificationMessage) -> MsgData? {
-		let content = message.isText ? message.textContent : "🗻"
+		
+		var content = ""
+		if (message.isConferenceInvitationNew) {
+			content = NSLocalizedString("📅 You are invited to a meeting", comment: "")
+		} else if (message.isConferenceInvitationUpdate) {
+			content =  NSLocalizedString("📅 Meeting has been modified", comment: "")
+		} else if (message.isConferenceInvitationCancellation) {
+			content =  NSLocalizedString("📅 Meeting has been cancelled", comment: "")
+		} else {
+			content = message.isText ? message.textContent : "🗻"
+		}
+		
 		let fromAddr = message.fromAddr?.username
 		let callId = message.callId
 		let localUri = message.localAddr?.asStringUriOnly()
@@ -227,7 +253,12 @@ class NotificationService: UNNotificationServiceExtension {
 				return nil
 			}
 
-			if let simpleAddr = lc?.interpretUrl(url: sipAddr) {
+			var usePrefix = true;
+			if let account = lc?.defaultAccount, let params = account.params {
+				usePrefix = params.useInternationalPrefixForCallsAndChats
+			}
+			
+			if let simpleAddr = lc?.interpretUrl(url: sipAddr, applyInternationalPrefix: usePrefix) {
 				simpleAddr.clean()
 				let nomalSipaddr = simpleAddr.asString()
 				if let displayName = addressBook?[nomalSipaddr] as? String {

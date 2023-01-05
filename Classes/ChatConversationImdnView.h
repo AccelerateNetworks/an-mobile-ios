@@ -24,6 +24,7 @@
 
 #import "UICompositeView.h"
 #import "UIRoundBorderedButton.h"
+#import "UIChatBubbleTextCell.h"
 
 @interface ChatConversationImdnView : UIViewController <UICompositeViewDelegate, UITableViewDelegate, UITableViewDataSource>
 {
@@ -31,7 +32,7 @@
     NSString *messageText;
 }
 
-@property(nonatomic) LinphoneChatMessage *msg;
+@property(nonatomic) LinphoneEventLog *event;
 @property(nonatomic) bctbx_list_t *displayedList;
 @property(nonatomic) bctbx_list_t *receivedList;
 @property(nonatomic) bctbx_list_t *notReceivedList;

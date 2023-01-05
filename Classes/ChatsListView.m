@@ -39,6 +39,10 @@
 										   selector:@selector(ephemeralDeleted:)
 											   name:kLinphoneEphemeralMessageDeletedInRoom
 											 object:nil];
+	[NSNotificationCenter.defaultCenter addObserver:self
+																				 selector:@selector(displayModeChanged)
+																						 name:kDisplayModeChanged
+																					 object:nil];
 	[_backToCallButton update];
 	self.tableController.waitView = _waitView;
 	[self setEditing:NO];
@@ -54,20 +58,43 @@
         forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:button];*/
 	
-	BOOL forwardMode = VIEW(ChatConversationView).pendingForwardMessage != nil;
+	[self mediaSharing];
 
+}
+
+- (void)mediaSharing{
+	BOOL forwardMode;
+	
+	NSString* groupName = [NSString stringWithFormat:@"group.%@.linphoneExtension",[[NSBundle mainBundle] bundleIdentifier]];
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:groupName];
+	NSDictionary *dict = [defaults valueForKey:@"photoData"];
+	NSDictionary *dictFile = [defaults valueForKey:@"icloudData"];
+	NSDictionary *dictUrl = [defaults valueForKey:@"url"];
+	if(dict||dictFile||dictUrl) VIEW(ChatConversationView).sharingMedia = TRUE;
+
+	if(VIEW(ChatConversationView).sharingMedia == nil){
+		forwardMode = VIEW(ChatConversationView).pendingForwardMessage != nil;
+	}else{
+		forwardMode = VIEW(ChatConversationView).sharingMedia != nil;
+	}
 	_tableController.editButton.hidden = forwardMode;
-	_forwardTitle.text =  NSLocalizedString(@"Select a discussion or create a new one",nil);
+	if(VIEW(ChatConversationView).sharingMedia == nil){
+		_forwardTitle.text =  NSLocalizedString(@"Select a discussion or create a new one",nil);
+	}
+	else{
+		_forwardTitle.text =  NSLocalizedString(@"Select or create a conversation to share the file(s)",nil);
+	}
 	_forwardTitle.hidden = !forwardMode;
 	_cancelForwardButton.hidden = !forwardMode;
 	
 	_tableController.tableView.frame = CGRectMake(0, 66 + (forwardMode ? _forwardTitle.frame.size.height : 0), _tableController.tableView.frame.size.width,  self.view.frame.size.height - 66 - ( forwardMode ? _forwardTitle.frame.size.height : 0 ));
 	_addButton.frame = CGRectMake(forwardMode ? 82 : 0 , _addButton.frame.origin.y, _addButton.frame.size.width, _addButton.frame.size.height);
 	_addGroupChatButton.frame = CGRectMake(forwardMode ? 164 : 82 , _addGroupChatButton.frame.origin.y, _addGroupChatButton.frame.size.width, _addGroupChatButton.frame.size.height);
-
 }
 
-
+- (void)displayModeChanged{
+	[self.tableController.tableView reloadData];
+}
 
 - (void)ephemeralDeleted:(NSNotification *)notif {
 	//LinphoneChatRoom *r =[[notif.userInfo objectForKey:@"room"] intValue];
@@ -117,9 +144,11 @@ static UICompositeViewDescription *compositeDescription = nil;
 
 - (void)newChatCreate:(BOOL)isGroup {
     ChatConversationCreateView *view = VIEW(ChatConversationCreateView);
+		[view fragmentCompositeDescription];
     view.isForEditing = false;
     view.isGroupChat = isGroup;
     view.tableController.notFirstTime = FALSE;
+		view.isForVoipConference = FALSE;
     [view.tableController.contactsGroup removeAllObjects];
     [PhoneMainView.instance changeCurrentView:view.compositeViewDescription];
 }
@@ -171,8 +200,16 @@ static UICompositeViewDescription *compositeDescription = nil;
 }
 
 - (IBAction)onCancelForwardClicked:(id)sender {
+	VIEW(ChatConversationView).sharingMedia = nil;
 	VIEW(ChatConversationView).pendingForwardMessage = nil;
+	NSString* groupName = [NSString stringWithFormat:@"group.%@.linphoneExtension",[[NSBundle mainBundle] bundleIdentifier]];
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] initWithSuiteName:groupName];
+	[defaults removeObjectForKey:@"photoData"];
+	[defaults removeObjectForKey:@"icloudData"];
+	[defaults removeObjectForKey:@"url"];
 	[PhoneMainView.instance popCurrentView];
 }
+
+
 
 @end
