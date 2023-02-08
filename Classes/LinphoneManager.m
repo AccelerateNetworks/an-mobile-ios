@@ -1340,7 +1340,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 		LinphoneAccountParams * accountParams = linphone_account_params_clone(linphone_account_get_params(account));
 		// In linphone-iphone, remote and voip push autorisations always go together.
 		bool accountPushAllowed = linphone_account_params_get_push_notification_allowed(accountParams);
-		linphone_account_params_set_remote_push_notification_allowed(accountParams, accountPushAllowed);
+		linphone_account_params_set_remote_push_notification_allowed(accountParams, true);
 		
 		
 		LinphonePushNotificationConfig *pushConfig = linphone_account_params_get_push_notification_config(accountParams);
@@ -1378,7 +1378,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 
 - (void)startLinphoneCore {
 	bool corePushEnabled = [self lpConfigIntForKey:@"net" inSection:@"push_notification"];
-	linphone_core_set_push_notification_enabled([LinphoneManager getLc], corePushEnabled);
+	linphone_core_set_push_notification_enabled([LinphoneManager getLc], true);
 	linphone_core_start([LinphoneManager getLc]);
 	
 	[self configurePushProviderForAccounts];
