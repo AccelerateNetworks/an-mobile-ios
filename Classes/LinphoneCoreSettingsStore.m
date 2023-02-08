@@ -701,7 +701,7 @@
 
 		// use empty string "" instead of NULL to avoid being overwritten by default proxy config values
 		linphone_account_params_set_push_notification_allowed(newAccountParams, true);
-		linphone_account_params_set_remote_push_notification_allowed(newAccountParams, true);
+		linphone_account_params_set_remote_push_notification_allowed(newAccountParams, false);
 
 		linphone_account_params_set_register_enabled(newAccountParams, is_enabled);
 		linphone_account_params_set_avpf_mode(newAccountParams, use_avpf);

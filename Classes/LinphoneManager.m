@@ -467,7 +467,7 @@ static int check_should_migrate_images(void *data, int argc, char **argv, char *
 				pushEnabled = true;
 			}
 			linphone_account_params_set_push_notification_allowed(newAccountParams, true);
-			linphone_account_params_set_remote_push_notification_allowed(newAccountParams, true);
+			linphone_account_params_set_remote_push_notification_allowed(newAccountParams, false);
 			linphone_account_set_params(account, newAccountParams);
 			linphone_account_params_unref(newAccountParams);
 			accounts = accounts->next;
@@ -518,7 +518,7 @@ static int check_should_migrate_images(void *data, int argc, char **argv, char *
 			LinphoneAccount *account = accounts->data;
 			LinphoneAccountParams *newAccountParams = linphone_account_params_clone(linphone_account_get_params(account));
 			linphone_account_params_set_push_notification_allowed(newAccountParams, true);
-			linphone_account_params_set_remote_push_notification_allowed(newAccountParams, true);
+			linphone_account_params_set_remote_push_notification_allowed(newAccountParams, false);
 			linphone_account_set_params(account, newAccountParams);
 			linphone_account_params_unref(newAccountParams);
 			accounts = accounts->next;
@@ -1339,7 +1339,7 @@ void popup_link_account_cb(LinphoneAccountCreator *creator, LinphoneAccountCreat
 		LinphoneAccount * account = accountsList->data;
 		LinphoneAccountParams * accountParams = linphone_account_params_clone(linphone_account_get_params(account));
 		// In linphone-iphone, remote and voip push autorisations always go together.
-		linphone_account_params_set_remote_push_notification_allowed(accountParams, true);
+		linphone_account_params_set_remote_push_notification_allowed(accountParams, false);
 		
 		
 		LinphonePushNotificationConfig *pushConfig = linphone_account_params_get_push_notification_config(accountParams);
