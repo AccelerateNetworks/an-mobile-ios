@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
     <device id="retina4_7" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -20,7 +20,6 @@
                 <outlet property="createAccountActivateSMSView" destination="101" id="SAS-8i-4Ao"/>
                 <outlet property="createAccountView" destination="44" id="70"/>
                 <outlet property="downloadButton" destination="eM0-bn-v3C" id="hsP-3U-clZ"/>
-                <outlet property="gotoLinphoneSpecificFeatureWarningButton" destination="39" id="U5E-VI-lU1"/>
                 <outlet property="gotoLoginButton" destination="8Uk-jk-U5R" id="8hN-LJ-hac"/>
                 <outlet property="gotoRemoteProvisioningButton" destination="Kbn-dL-C5h" id="zLh-uO-x8P"/>
                 <outlet property="infoLoginButton" destination="ZDs-1W-ZXo" id="aoP-Mb-gPi"/>
@@ -54,14 +53,14 @@
                     <nil key="highlightedColor"/>
                     <size key="shadowOffset" width="-1" height="-1"/>
                 </label>
-                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" text="This assistant will help you configure and use your SIP account." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="Yci-5h-O4o" userLabel="subtitleLabel">
+                <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" layoutMarginsFollowReadableWidth="YES" text="Before we can get you setup to place and receive calls, you will need to accept our privacy policy." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="Yci-5h-O4o" userLabel="subtitleLabel">
                     <rect key="frame" x="36" y="29" width="303" height="58"/>
                     <accessibility key="accessibilityConfiguration" label="Account setup assistant"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="58" id="5LG-5A-dY3"/>
                     </constraints>
                     <fontDescription key="fontDescription" type="system" pointSize="13"/>
-                    <color key="textColor" red="0.42667588591575623" green="0.4266631007194519" blue="0.42667034268379211" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <nil key="highlightedColor"/>
                     <size key="shadowOffset" width="-1" height="-1"/>
                 </label>
@@ -70,7 +69,7 @@
                     <subviews>
                         <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" editable="NO" text="I accept Belledonne Communications’ terms of use and privacy policy" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="R4J-fD-JSt" userLabel="acceptText">
                             <rect key="frame" x="30" y="0.0" width="273" height="58"/>
-                            <color key="textColor" systemColor="systemGrayColor"/>
+                            <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
                             <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                         </textView>
@@ -96,8 +95,9 @@
                         <constraint firstAttribute="height" constant="58" id="zjY-mm-MaQ"/>
                     </constraints>
                 </view>
-                <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="Kbn-dL-C5h" userLabel="remoteProvisioningButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="38" y="167" width="299" height="40"/>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" id="Kbn-dL-C5h" userLabel="remoteProvisioningButton" customClass="UIRoundBorderedButton">
+                    <rect key="frame" x="37" y="194" width="299" height="40"/>
+                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     <accessibility key="accessibilityConfiguration" label="Fetch remote configuration">
                         <bool key="isElement" value="YES"/>
                     </accessibility>
@@ -105,9 +105,7 @@
                         <constraint firstAttribute="height" constant="40" id="eU8-Iz-vaN"/>
                     </constraints>
                     <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="AUTOMATIC CONFIGURATION">
-                        <color key="titleColor" systemColor="labelColor"/>
-                    </state>
+                    <state key="normal" title="Continue"/>
                     <state key="disabled">
                         <color key="titleColor" systemColor="systemGray2Color"/>
                     </state>
@@ -118,42 +116,17 @@
                         <action selector="onGotoRemoteProvisioningClick:" destination="-1" eventType="touchUpInside" id="cAo-3u-yUT"/>
                     </connections>
                 </button>
-                <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" lineBreakMode="wordWrap" translatesAutoresizingMaskIntoConstraints="NO" id="39" userLabel="loginButton" customClass="UIRoundBorderedButton">
-                    <rect key="frame" x="38" y="231" width="299" height="40"/>
-                    <accessibility key="accessibilityConfiguration" label="Use SIP account">
-                        <bool key="isElement" value="YES"/>
-                    </accessibility>
-                    <constraints>
-                        <constraint firstAttribute="height" constant="40" id="K0C-dP-WWB"/>
-                    </constraints>
-                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
-                    <state key="normal" title="TYPE IN SIP CREDENTIALS MANUALLY">
-                        <color key="titleColor" systemColor="labelColor"/>
-                    </state>
-                    <state key="disabled">
-                        <color key="titleColor" systemColor="systemGray2Color"/>
-                    </state>
-                    <state key="highlighted" backgroundImage="color_F.png">
-                        <color key="titleColor" red="0.67030966281890869" green="0.71867996454238892" blue="0.75078284740447998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                    </state>
-                    <connections>
-                        <action selector="onGoToNonLinphoneInfoPage:" destination="-1" eventType="touchUpInside" id="bYh-d2-kHK"/>
-                    </connections>
-                </button>
             </subviews>
             <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
             <constraints>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="top" secondItem="Yci-5h-O4o" secondAttribute="bottom" id="94M-05-soq"/>
                 <constraint firstItem="126" firstAttribute="top" secondItem="33" secondAttribute="top" id="Dck-Yc-Nhv"/>
-                <constraint firstItem="39" firstAttribute="leading" secondItem="Kbn-dL-C5h" secondAttribute="leading" id="JTU-gj-eeY"/>
                 <constraint firstItem="126" firstAttribute="leading" secondItem="33" secondAttribute="leading" constant="36" id="Mwl-ls-3tB"/>
                 <constraint firstAttribute="bottom" secondItem="Kbn-dL-C5h" secondAttribute="bottom" constant="10" id="PWn-9N-k5j"/>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="top" secondItem="Yci-5h-O4o" secondAttribute="bottom" id="RUw-sM-ywE"/>
                 <constraint firstItem="plw-Mp-teD" firstAttribute="leading" secondItem="33" secondAttribute="leading" constant="36" id="caQ-q5-EyX"/>
-                <constraint firstItem="39" firstAttribute="trailing" secondItem="Kbn-dL-C5h" secondAttribute="trailing" id="gpT-pW-S1w"/>
                 <constraint firstItem="126" firstAttribute="trailing" secondItem="Yci-5h-O4o" secondAttribute="trailing" id="jg6-gT-PIu"/>
                 <constraint firstItem="126" firstAttribute="leading" secondItem="Yci-5h-O4o" secondAttribute="leading" id="ld3-Mh-y8J"/>
-                <constraint firstItem="Kbn-dL-C5h" firstAttribute="top" secondItem="39" secondAttribute="bottom" constant="35" id="niQ-BM-5yR"/>
                 <constraint firstItem="Yci-5h-O4o" firstAttribute="top" secondItem="126" secondAttribute="bottom" id="v51-4n-Jq1"/>
                 <constraint firstAttribute="trailing" secondItem="plw-Mp-teD" secondAttribute="trailing" constant="36" id="wSJ-2t-lWy"/>
                 <constraint firstItem="126" firstAttribute="centerX" secondItem="33" secondAttribute="centerX" id="z6G-VJ-BQy"/>
@@ -1543,7 +1516,7 @@ Once it is done, come back here and click on the button.</string>
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
             <subviews>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gPg-U6-Op5">
-                    <rect key="frame" x="10" y="10" width="335" height="183"/>
+                    <rect key="frame" x="10" y="10" width="335" height="182.66666666666666"/>
                     <string key="text">Some features require a Linphone account, such as group messaging or ephemeral messaging.  These features are hidden when you register with a third party SIP account.
 
 To enable it in a commercial project, please contact us.</string>
@@ -1552,13 +1525,13 @@ To enable it in a commercial project, please contact us.</string>
                     <nil key="highlightedColor"/>
                 </label>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="https://www.linphone.org/contact" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gol-XQ-ghT">
-                    <rect key="frame" x="50" y="213" width="275" height="21"/>
+                    <rect key="frame" x="50" y="212.66666666666666" width="275" height="21"/>
                     <fontDescription key="fontDescription" type="system" pointSize="17"/>
                     <color key="textColor" red="0.9497097135" green="0.27055108550000001" blue="0.030769694600000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <nil key="highlightedColor"/>
                 </label>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8Uk-jk-U5R">
-                    <rect key="frame" x="110" y="259" width="155" height="31"/>
+                    <rect key="frame" x="110" y="258.66666666666669" width="155" height="34.333333333333314"/>
                     <color key="backgroundColor" red="0.9497097135" green="0.27055108550000001" blue="0.030769694600000001" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                     <state key="normal" title="Button"/>
@@ -1587,7 +1560,7 @@ To enable it in a commercial project, please contact us.</string>
         <image name="checkbox_unchecked.png" width="27.200000762939453" height="27.200000762939453"/>
         <image name="color_F.png" width="2" height="2"/>
         <systemColor name="labelColor">
-            <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+            <color red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
         <systemColor name="secondarySystemBackgroundColor">
             <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
@@ -1597,9 +1570,6 @@ To enable it in a commercial project, please contact us.</string>
         </systemColor>
         <systemColor name="systemGray2Color">
             <color red="0.68235294117647061" green="0.68235294117647061" blue="0.69803921568627447" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-        </systemColor>
-        <systemColor name="systemGrayColor">
-            <color red="0.55686274509803924" green="0.55686274509803924" blue="0.57647058823529407" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>
     </resources>
 </document>

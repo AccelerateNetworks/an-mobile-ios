@@ -5726,7 +5726,7 @@
 					"-DENABLE_QRCODE=TRUE",
 					"-DENABLE_SMS_INVITE=TRUE",
 					"$(inherited)",
-					"-DLINPHONE_SDK_VERSION=\\\"5.1.0-beta.78+7b10b226\\\"",
+					"-DLINPHONE_SDK_VERSION=\\\"5.2.27\\\"",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.linphone;
@@ -5852,7 +5852,7 @@
 					"-DENABLE_QRCODE=TRUE",
 					"-DENABLE_SMS_INVITE=TRUE",
 					"$(inherited)",
-					"-DLINPHONE_SDK_VERSION=\\\"5.1.0-beta.78+7b10b226\\\"",
+					"-DLINPHONE_SDK_VERSION=\\\"5.2.27\\\"",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.linphone;
@@ -5977,7 +5977,7 @@
 					"-DENABLE_QRCODE=TRUE",
 					"-DENABLE_SMS_INVITE=TRUE",
 					"$(inherited)",
-					"-DLINPHONE_SDK_VERSION=\\\"5.1.0-beta.78+7b10b226\\\"",
+					"-DLINPHONE_SDK_VERSION=\\\"5.2.27\\\"",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.linphone;
@@ -6101,7 +6101,7 @@
 					"-DENABLE_QRCODE=TRUE",
 					"-DENABLE_SMS_INVITE=TRUE",
 					"$(inherited)",
-					"-DLINPHONE_SDK_VERSION=\\\"5.1.0-beta.78+7b10b226\\\"",
+					"-DLINPHONE_SDK_VERSION=\\\"5.2.27\\\"",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.linphone;
