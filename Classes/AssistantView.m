@@ -864,7 +864,7 @@ static UICompositeViewDescription *compositeDescription = nil;
 			  when:^BOOL(NSString *inputEntry) {
 				if (inputEntry.length > 0) {
 					bool isValid = linphone_core_set_provisioning_uri(LC, [self addSchemeToProvisiionninUriIMissing:inputEntry].UTF8String) != 0;
-					linphone_core_set_provisioning_uri(LC,NULL);
+//					linphone_core_set_provisioning_uri(LC,NULL);
 					return isValid;
 				}
 				return TRUE;
@@ -1590,7 +1590,7 @@ UIColor *previousColor = (UIColor*)[sender backgroundColor]; \
 	ONNEWCLICKBUTTON(sender, 100, {
 		if (number_of_accounts_before > 0) {
 			// TODO remove ME when it is fixed in SDK.
-			linphone_core_set_provisioning_uri(LC, NULL);
+//			linphone_core_set_provisioning_uri(LC, NULL);
 			UIAlertController *errView = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Provisioning Load error", nil)
 																			 message:NSLocalizedString(@"Please remove other accounts before remote provisioning.", nil)
 																	  preferredStyle:UIAlertControllerStyleAlert];

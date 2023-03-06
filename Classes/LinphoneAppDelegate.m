@@ -293,7 +293,7 @@
 
 	LinphoneManager *instance = [LinphoneManager instance];
 	//init logs asapt
-	[Log enableLogs:[[LinphoneManager instance] lpConfigIntForKey:@"debugenable_preference"]];
+	[Log enableLogs:ORTP_DEBUG];
 	
 	
 	
