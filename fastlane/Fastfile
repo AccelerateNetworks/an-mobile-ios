@@ -17,6 +17,7 @@ platform :ios do
       output_name: "an-mobile-release.ipa",
       scheme: "linphone",
       workspace: "linphone.xcworkspace",
+      xcargs: "-allowProvisioningUpdates",
     )
   end
 end
