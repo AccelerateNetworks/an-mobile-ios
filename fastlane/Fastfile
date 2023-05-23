@@ -8,7 +8,7 @@ platform :ios do
     cocoapods
     get_certificates
     get_provisioning_profile(
-      app_identifier="com.acceleratenetworks.linphone"
+      app_identifier: "com.acceleratenetworks.linphone"
     )
     gym(
       clean: true,
