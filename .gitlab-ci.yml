@@ -5,8 +5,8 @@ build:ios:
     - pod install --repo-update
     - pwd
     # - sed 's/fileprivate let tableView =/public let tableView =/g' ./Pods/DropDown/DropDown/src/DropDown.swift > tmp.swift && mv -f tmp.swift ./Pods/DropDown/DropDown/src/DropDown.swift
-    - xcodebuild archive -scheme $archive_scheme -archivePath ./$archive_path -configuration Release -workspace ./linphone.xcworkspace -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
-    - xcodebuild -exportArchive -archivePath  ./$archive_path -exportPath ./$export_path -exportOptionsPlist ./$export_options_plist -allowProvisioningUpdates -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
+    - xcodebuild archive -scheme linphone -archivePath ./linphone.xcarchive -configuration Release -workspace ./linphone.xcworkspace -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
+    - xcodebuild -exportArchive -archivePath  ./linphone.xcarchive -exportPath ./linphone-adhoc-ipa -exportOptionsPlist ./linphone-adhoc.plist -allowProvisioningUpdates -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
   artifacts:
     paths:
       - linphone.xcarchive
