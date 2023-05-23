@@ -5,17 +5,13 @@ default_platform(:ios)
 
 platform :ios do
   lane :build_release do
-    if is_ci?
-      unlock_keychain
-    end
-    appstore_profiles
     gym(
       clean: true,
       configuration: "Release",
       output_directory: "builds/",
-      output_name: "#{app_name}-release.ipa",
+      output_name: "an-mobile-release.ipa",
       project: "linphone.xcodeproj",
-      scheme: "#{app_name}",
+      scheme: "com.acceleratenetworks.mobile",
     )
   end
 end
