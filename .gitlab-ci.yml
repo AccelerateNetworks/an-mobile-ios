@@ -5,7 +5,8 @@ build:ios:
     # - pod install --repo-update
     # - xcodebuild archive -scheme linphone -archivePath ./linphone.xcarchive -configuration Release -workspace ./linphone.xcworkspace -UseModernBuildSystem=YES -destination 'generic/platform=iOS' -allowProvisioningUpdates
     # - xcodebuild -exportArchive -archivePath ./linphone.xcarchive -exportPath ./linphone-adhoc-ipa -exportOptionsPlist ./linphone-adhoc.plist -allowProvisioningUpdates -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
-    - fastlane build_release
+    - bundle install
+    - bundle exec fastlane build_release
   # artifacts:
   #   paths:
   #     - linphone.xcarchive
