@@ -2,9 +2,6 @@ build:ios:
   stage: build
   tags: ["mac-mini"]
   script:
-    # - pod install --repo-update
-    # - xcodebuild archive -scheme linphone -archivePath ./linphone.xcarchive -configuration Release -workspace ./linphone.xcworkspace -UseModernBuildSystem=YES -destination 'generic/platform=iOS' -allowProvisioningUpdates
-    # - xcodebuild -exportArchive -archivePath ./linphone.xcarchive -exportPath ./linphone-adhoc-ipa -exportOptionsPlist ./linphone-adhoc.plist -allowProvisioningUpdates -UseModernBuildSystem=YES -destination 'generic/platform=iOS'
     - bundle install
     - bundle exec fastlane build_release
   # artifacts:
