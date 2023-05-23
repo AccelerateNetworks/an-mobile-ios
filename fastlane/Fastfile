@@ -7,7 +7,9 @@ platform :ios do
     unlock_keychain
     cocoapods
     get_certificates
-    get_provisioning_profile
+    get_provisioning_profile(
+      app_identifier="com.acceleratenetworks.linphone"
+    )
     gym(
       clean: true,
       configuration: "Release",
