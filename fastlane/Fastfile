@@ -11,7 +11,6 @@ platform :ios do
       configuration: "Release",
       output_directory: "builds/",
       output_name: "an-mobile-release.ipa",
-      project: "linphone.xcodeproj",
       scheme: "linphone",
       workspace: "linphone.xcworkspace",
     )
