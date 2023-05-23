@@ -9,7 +9,7 @@ platform :ios do
     get_certificates
     get_provisioning_profile(
       app_identifier: "com.acceleratenetworks.linphone",
-      cert_id: "84B763L3NG",
+      cert_id: Actions.lane_context[SharedValues::CERT_CERTIFICATE_ID],
     )
     gym(
       clean: true,
