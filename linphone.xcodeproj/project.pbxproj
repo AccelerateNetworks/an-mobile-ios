@@ -5712,6 +5712,7 @@
 				IBC_MODULE = linphoneapp;
 				IBSC_MODULE = linphoneapp;
 				INFOPLIST_FILE = "linphone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "AN Mobile";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
@@ -5719,7 +5720,7 @@
 					"$(inherited)",
 				);
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MARKETING_VERSION = 5.0.1;
+				MARKETING_VERSION = 5.0.1.1;
 				OTHER_CFLAGS = (
 					"-DBCTBX_LOG_DOMAIN=\\\"ios\\\"",
 					"-DCHECK_VERSION_UPDATE=FALSE",
@@ -5838,6 +5839,7 @@
 				IBC_MODULE = linphoneapp;
 				IBSC_MODULE = linphoneapp;
 				INFOPLIST_FILE = "linphone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "AN Mobile";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
@@ -5845,7 +5847,7 @@
 					"$(inherited)",
 				);
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MARKETING_VERSION = 5.0.1;
+				MARKETING_VERSION = 5.0.1.1;
 				OTHER_CFLAGS = (
 					"-DBCTBX_LOG_DOMAIN=\\\"ios\\\"",
 					"-DCHECK_VERSION_UPDATE=FALSE",
@@ -5963,6 +5965,7 @@
 				IBC_MODULE = linphoneapp;
 				IBSC_MODULE = linphoneapp;
 				INFOPLIST_FILE = "linphone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "AN Mobile";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
@@ -5970,7 +5973,7 @@
 					"$(inherited)",
 				);
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MARKETING_VERSION = 5.0.1;
+				MARKETING_VERSION = 5.0.1.1;
 				OTHER_CFLAGS = (
 					"-DBCTBX_LOG_DOMAIN=\\\"ios\\\"",
 					"-DCHECK_VERSION_UPDATE=FALSE",
@@ -6087,6 +6090,7 @@
 				IBC_MODULE = linphoneapp;
 				IBSC_MODULE = linphoneapp;
 				INFOPLIST_FILE = "linphone-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "AN Mobile";
 				IPHONEOS_DEPLOYMENT_TARGET = 11.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				LIBRARY_SEARCH_PATHS = (
@@ -6094,7 +6098,7 @@
 					"$(inherited)",
 				);
 				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MARKETING_VERSION = 5.0.1;
+				MARKETING_VERSION = 5.0.1.1;
 				OTHER_CFLAGS = (
 					"-DBCTBX_LOG_DOMAIN=\\\"ios\\\"",
 					"-DCHECK_VERSION_UPDATE=FALSE",
