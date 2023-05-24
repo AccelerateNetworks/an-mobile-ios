@@ -273,7 +273,12 @@ import AVFoundation
 			print("Can not start a call with null address!")
 			return
 		}
-
+        do {
+            let addr = try Factory.Instance.createAddress(addr: Address.getSwiftObject(cObject: addr!).asStringUriOnly().replacingOccurrences(of: "sip:", with: "sips:"))
+        } catch {
+            Log.directLog(BCTBX_LOG_ERROR, text: "placing call failed \(error)")
+            return
+        }
 		let sAddr = Address.getSwiftObject(cObject: addr!)
 		if (CallManager.callKitEnabled() && !CallManager.instance().nextCallIsTransfer && lc?.conference?.isIn != true) {
 			let uuid = UUID()
@@ -295,7 +300,8 @@ import AVFoundation
 	
 	func startCall(addr:String, isSas: Bool = false, isVideo: Bool, isConference: Bool = false) {
 		do {
-		 let address = try Factory.Instance.createAddress(addr: addr)
+            
+            let address = try Factory.Instance.createAddress(addr: addr.replacingOccurrences(of: "sip:", with: "sips:"))
 			startCall(addr: address.getCobject,isSas: isSas, isVideo: isVideo, isConference:isConference)
 		} catch {
 			Log.e("[CallManager] unable to create address for a new outgoing call : \(addr) \(error) ")
@@ -303,6 +309,7 @@ import AVFoundation
 	}
 
 	func doCall(addr: Address, isSas: Bool, isVideo: Bool, isConference:Bool = false) throws {
+        let addr = try Factory.Instance.createAddress(addr: addr.asStringUriOnly().replacingOccurrences(of: "sip:", with: "sips:"))
 		let displayName = FastAddressBook.displayName(for: addr.getCobject)
 
 		let lcallParams = try CallManager.instance().lc!.createCallParams(call: nil)
