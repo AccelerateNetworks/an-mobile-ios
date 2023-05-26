@@ -19,6 +19,11 @@ platform :ios do
       scheme: "linphone",
       workspace: "linphone.xcworkspace",
       xcargs: "-allowProvisioningUpdates",
+      export_options: {
+        provisioningProfiles: {
+          "com.acceleratenetworks.linphone" => "com.acceleratenetworks.linphone AppStore 1685121971"
+        }
+      }
     )
   end
 end
