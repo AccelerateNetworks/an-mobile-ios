@@ -5,12 +5,8 @@ default_platform(:ios)
 platform :ios do
   lane :build_release do
     unlock_keychain
+    match
     cocoapods
-    get_certificates
-    get_provisioning_profile(
-      app_identifier: "com.acceleratenetworks.linphone",
-      cert_id: Actions.lane_context[SharedValues::CERT_CERTIFICATE_ID],
-    )
     gym(
       clean: true,
       configuration: "Release",
