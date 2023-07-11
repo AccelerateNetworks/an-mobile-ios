@@ -67,7 +67,7 @@ class ActiveCallView: UIView { // = currentCall
 					displayNameTop.text = displayName+" - "
 					displayNameBottom.text = displayName
 				}
-				sipAddress.text = $0.asStringUriOnly()
+				sipAddress.text = $0.username
 			}
 			self.remotelyRecordedIndicator.isRemotelyRecorded = callData.isRemotelyRecorded
 			callData.isRecording.readCurrentAndObserve { (selected) in

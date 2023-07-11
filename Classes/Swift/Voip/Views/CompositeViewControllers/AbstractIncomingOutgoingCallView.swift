@@ -47,7 +47,7 @@ import linphonesw
 			callData?.call.remoteAddress.map {
 				avatar.fillFromAddress(address: $0)
 				displayName.text = $0.addressBookEnhancedDisplayName()
-				sipAddress.text = $0.asStringUriOnly()
+				sipAddress.text = $0.username
 			}
 		}
 	}

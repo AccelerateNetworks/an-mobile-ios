@@ -54,7 +54,7 @@ class VoipParticipantCell: UITableViewCell {
 				limeBadge.isHidden = true
 				avatar.fillFromAddress(address: data.participant.address!)
 				displayName.text = data.participant.address?.addressBookEnhancedDisplayName()
-				sipAddress.text = data.participant.address?.asStringUriOnly()
+                sipAddress.text = data.participant.address?.username
 				data.isAdmin.readCurrentAndObserve { _ in
 					self.setAdminStatus(data: data)
 				}
@@ -87,7 +87,7 @@ class VoipParticipantCell: UITableViewCell {
 			if let address = scheduleConfParticipantAddress {
 				avatar.fillFromAddress(address: address)
 				displayName.text = address.addressBookEnhancedDisplayName()
-				sipAddress.text = address.asStringUriOnly()
+				sipAddress.text = address.username
 				self.isAdminView.isHidden = true
 				self.removePart.isHidden = true
 			}
