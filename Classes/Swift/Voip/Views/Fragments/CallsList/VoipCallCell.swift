@@ -57,7 +57,7 @@ class VoipCallCell: UITableViewCell {
 				} else {
 					displayName.text = data.call.remoteAddress?.addressBookEnhancedDisplayName()
 					avatar.fillFromAddress(address: data.call.remoteAddress!)
-					sipAddress.text = data.call.remoteAddress?.asStringUriOnly()
+					sipAddress.text = data.call.remoteAddress?.username
 				}
 				displayName.applyStyle(data.isPaused.value == true ? VoipTheme.call_list_name_font : VoipTheme.call_list_active_name_font)
 				sipAddress.applyStyle(data.isPaused.value == true ? VoipTheme.call_list_sip_uri_font : VoipTheme.call_list_active_sip_uri_font)

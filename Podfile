@@ -57,6 +57,7 @@ post_install do |installer|
 	installer.pod_targets.each do |target|
 		if target.pod_name == 'linphone-sdk'
 			target.specs.each do |spec|
+				config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
 				$linphone_sdk_version = spec.version
 			end
 		end
@@ -70,7 +71,7 @@ post_install do |installer|
 					if config.name == "Debug" then
 						config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited) DEBUG=1'
 						else
-						config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited)'
+						config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = '$(inherited) DEBUG=1'
 					end
 					config.build_settings['OTHER_SWIFT_FLAGS'] = '$(inherited)'
 				else
