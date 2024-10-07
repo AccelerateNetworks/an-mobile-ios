@@ -23,7 +23,7 @@ import linphonesw
 import Firebase
 #endif
 
-var APP_GROUP_ID = "group.org.linphone.phone.msgNotification"
+var APP_GROUP_ID = "group.com.acceleratenetworks.mobile"
 var LINPHONE_DUMMY_SUBJECT = "dummy subject"
 
 struct MsgData: Codable {
@@ -73,12 +73,12 @@ class NotificationService: UNNotificationServiceExtension {
 						let alert = aps?["alert"] as? NSDictionary
 						let fromAddresses = alert?["loc-args"] as? [String]
 						
-						if let from = fromAddresses?.first {
-							if ((chatroomsPushStatus[from] as? String) == "disabled") {
-								NotificationService.log.message(message: "message comes from a muted chatroom, ignore it")
-								contentHandler(UNNotificationContent())
-							}
-						}
+//						if let from = fromAddresses?.first {
+//							if ((chatroomsPushStatus[from] as? String) == "disabled") {
+//								NotificationService.log.message(message: "message comes from a muted chatroom, ignore it")
+//								contentHandler(UNNotificationContent())
+//							}
+//						}
 					}
 					
 					if let chatRoomInviteAddr = bestAttemptContent.userInfo["chat-room-addr"] as? String, !chatRoomInviteAddr.isEmpty {

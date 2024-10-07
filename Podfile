@@ -74,7 +74,7 @@ end
 #end
 
 post_install do |installer|
-        system("sed 's/fileprivate let tableView =/public let tableView =/g' ./Pods/DropDown/DropDown/src/DropDown.swift > tmp.swift && mv -f tmp.swift ./Pods/DropDown/DropDown/src/DropDown.swift")
+        system("sed 's/fileprivate let tableView =/public let tableView =/g' ${POD_HOME:=./Pods}/DropDown/DropDown/src/DropDown.swift > tmp.swift && mv -f tmp.swift ${POD_HOME}/DropDown/DropDown/src/DropDown.swift")
 	# Get the version of linphone-sdk
 	installer.pod_targets.each do |target|
 		if target.pod_name == 'linphone-sdk'
@@ -84,7 +84,8 @@ post_install do |installer|
 		end
 	end
 			
-	app_project = Xcodeproj::Project.open(Dir.glob("*.xcodeproj")[0])
+  app_root = ENV.has_key?("CI_PRIMARY_REPOSITORY_PATH") ? ENV["CI_PRIMARY_REPOSITORY_PATH"] : '.'
+  app_project = Xcodeproj::Project.open(app_root + "/" + Dir.glob("*.xcodeproj", base: app_root)[0])
 	app_project.native_targets.each do |target|
 		target.build_configurations.each do |config|
 			if target.name == "linphone" || target.name == 'msgNotificationService' || target.name == 'msgNotificationContent'
