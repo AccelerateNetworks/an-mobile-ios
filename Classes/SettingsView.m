@@ -1088,15 +1088,12 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 			message = NSLocalizedString(
 				@"Warning: an email will be created with 3 attachments:\n- Application "
 				@"logs\n- Linphone configuration\n- Chats history.\nThey may contain "
-				@"private informations (MIGHT contain clear-text password!).\nYou can remove one or several "
-				@"of these attachments before sending your email, however there are all "
+				@"private information (MIGHT contain clear-text password!).\nYou can remove one or several "
+				@"of these attachments before sending your email, however they are all "
 				@"important to diagnostize your issue.",
 				nil);
 		} else {
-			message = NSLocalizedString(@"Warning: an email will be created with application "
-										@"logs. It may contain "
-										@"private informations (but no password!).\nThese logs are "
-										@"important to diagnostize your issue.",
+			message = NSLocalizedString(@"Warning: To diagnose your issue an email will be created with application logs that contain Contacts, Phone Calls and other app data. Our privacy policy is accessible at https://acceleratenetworks.com/privacy",
 										nil);
 		}
 		UIAlertController *errView = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Sending logs", nil)
@@ -1107,7 +1104,7 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 																style:UIAlertActionStyleDefault
 															  handler:^(UIAlertAction * action) {}];
 		
-		UIAlertAction* continueAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"I got it, continue", nil)
+		UIAlertAction* continueAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Create Email", nil)
 																 style:UIAlertActionStyleDefault
 															   handler:^(UIAlertAction * action) {
 																   [self sendEmailWithDebugAttachments];
