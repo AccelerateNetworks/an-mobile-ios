@@ -1109,9 +1109,16 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
 															   handler:^(UIAlertAction * action) {
 																   [self sendEmailWithDebugAttachments];
 															   }];
+        UIAlertAction* viewPolicyAction = [UIAlertAction
+            actionWithTitle:NSLocalizedString(@"View Privacy Policy", nil)
+            style:UIAlertActionStyleDefault
+            handler:^(UIAlertAction *action) {
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://acceleratenetworks.com/privacy"]];
+        }];
 		
 		[errView addAction:defaultAction];
 		[errView addAction:continueAction];
+        [errView addAction:viewPolicyAction];
 		[self presentViewController:errView animated:YES completion:nil];
 	} else if ([key isEqual:@"send_db_button"]) {
 		 [self sendEmailWithPrivacyAttachments];
