@@ -103,7 +103,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Share photos with your friends and customize avatars</string>
 	<key>NSContactsUsageDescription</key>
-	<string>Be able to use your contacts within the app (Contact phone numbers will be visible in logs)</string>
+	<string>Use your contacts within the app. Contact information will remain local to this device unless you go to Settings > Advanced > Send Logs and email your logs for debugging use. When doing so, you will be prompted to review our privacy policy.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Stream audio and video through the local network</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
