@@ -1113,7 +1113,7 @@ void update_hash_cbs(LinphoneAccountCreator *creator, LinphoneAccountCreatorStat
             actionWithTitle:NSLocalizedString(@"View Privacy Policy", nil)
             style:UIAlertActionStyleDefault
             handler:^(UIAlertAction *action) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://acceleratenetworks.com/privacy"]];
+            [SwiftUtil openUrlWithUrlString:@"https://acceleratenetworks.com/privacy"];
         }];
 		
 		[errView addAction:defaultAction];
