@@ -401,7 +401,7 @@
 	NSString *scheme = [[url scheme] lowercaseString];
 	if ([scheme isEqualToString:@"linphone-config"]) {
 		NSString *encodedURL =
-			[[url absoluteString] stringByReplacingOccurrencesOfString:@"linphone-config:" withString:@""];
+			[[url absoluteString] stringByReplacingOccurrencesOfString:@"linphone-config://" withString:@"https://"];
 		self.configURL = [encodedURL stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 
 		BOOL auto_apply_provisioning = 	[LinphoneManager.instance lpConfigBoolForKey:@"auto_apply_provisioning_config_uri_handler" inSection:@"app" withDefault:FALSE];
