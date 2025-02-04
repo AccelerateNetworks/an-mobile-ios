@@ -681,7 +681,7 @@ static UICompositeViewDescription *compositeDescription = nil;
 			//fetch phone locale
 			for (NSString* lang in [NSLocale preferredLanguages]) {
 				NSUInteger idx = [lang rangeOfString:@"-"].location;
-				idx = (idx == NSNotFound) ? idx = 0 : idx + 1;
+				idx = (idx == NSNotFound) ? 0 : idx + 1;
 				if ((country = [CountryListView countryWithIso:[lang substringFromIndex:idx]]) != nil)
 					break;
 			}
