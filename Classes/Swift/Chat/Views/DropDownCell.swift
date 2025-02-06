@@ -20,7 +20,7 @@
 import UIKit
 import DropDown
 
-class MyCell: DropDownCell {
+@objc(MyCell) class MyCell: DropDownCell {
 	
 	@IBOutlet var myImageView: UIImageView!
 	@IBOutlet var myEmojisView: UIView!
