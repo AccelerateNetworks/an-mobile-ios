@@ -271,10 +271,18 @@ import AVFoundation
 	
 	// for outgoing call. There is not yet callId
 	@objc func startCall(addr: OpaquePointer?, isSas: Bool, isVideo: Bool, isConference: Bool = false) {
-		guard addr != nil, let sAddr = Address.getSwiftObject(cObject: addr!).clone() else {
+        guard addr != nil, let sAddr = Address.getSwiftObject(cObject: addr!).clone() else {
 			Log.i("Can not start a call with null address!")
 			return
 		}
+        
+        //strip all non-numeric characters. named extensions are not part of our use case
+        do {
+            try sAddr.setUsername(newValue: sAddr.username!.filter("0123456789".contains))
+        } catch let err {
+            print(err)
+            // TODO understand this failure domain
+        }
 		
 		if (CallManager.callKitEnabled() && !CallManager.instance().nextCallIsTransfer && lc?.conference?.isIn != true) {
 			let uuid = UUID()
