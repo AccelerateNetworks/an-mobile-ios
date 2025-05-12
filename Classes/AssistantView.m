@@ -1727,7 +1727,23 @@ UIColor *previousColor = (UIColor*)[sender backgroundColor]; \
 
 - (IBAction)onRemoteProvisioningDownloadClick:(id)sender {
 	ONNEWCLICKBUTTON(sender, 100, {
-		if (number_of_accounts_before > 0) {
+        //filter for valid fusionpbx provisioning urls
+        NSURL *url = [NSURL URLWithString:[self findTextField:ViewElement_URL].text];
+        if (!url || !url.path || ![url.path isEqualToString:@"/app/linphone/provision/index.php"]) {
+            // TODO remove ME when it is fixed in SDK.
+            linphone_core_set_provisioning_uri(LC, NULL);
+            UIAlertController *errView = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Provisioning Load error", nil)
+                                                                             message:NSLocalizedString(@"Must be a valid url with the path: \"/app/linphone/provision/index.php\"", nil)
+                                                                      preferredStyle:UIAlertControllerStyleAlert];
+                
+            UIAlertAction* defaultAction = [UIAlertAction actionWithTitle:@"OK"
+                                                                    style:UIAlertActionStyleDefault
+                                                                handler:^(UIAlertAction * action) {}];
+            
+            [errView addAction:defaultAction];
+            [self presentViewController:errView animated:YES completion:nil];
+            _waitView.hidden = TRUE;
+        } else if (number_of_accounts_before > 0) {
 			// TODO remove ME when it is fixed in SDK.
 			linphone_core_set_provisioning_uri(LC, NULL);
 			UIAlertController *errView = [UIAlertController alertControllerWithTitle:NSLocalizedString(@"Provisioning Load error", nil)
