@@ -278,7 +278,7 @@ import AVFoundation
         
         //strip all non-numeric characters. named extensions are not part of our use case
         do {
-            try sAddr.setUsername(newValue: sAddr.username!.filter("0123456789".contains))
+            try sAddr.setUsername(newValue: sAddr.username!.filter("#*0123456789".contains))
         } catch let err {
             print(err)
             // TODO understand this failure domain
