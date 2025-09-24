@@ -27,11 +27,13 @@ struct ThirdPartySipAccountLoginFragment: View {
 	@Environment(\.dismiss) var dismiss
 	
 	@State private var isSecured: Bool = true
+    @State private var advancedSettingsIsOpen: Bool = true
 	
 	@FocusState var isNameFocused: Bool
 	@FocusState var isPasswordFocused: Bool
 	@FocusState var isDomainFocused: Bool
 	@FocusState var isDisplayNameFocused: Bool
+    @FocusState var isSipProxyUrlFocused: Bool
 	
 	var body: some View {
 		GeometryReader { geometry in
@@ -208,6 +210,72 @@ struct ThirdPartySipAccountLoginFragment: View {
 						.stroke(Color.gray200, lineWidth: 1)
 				)
 				.padding(.bottom)
+                
+                HStack(alignment: .center) {
+                    Text("settings_advanced_title")
+                        .default_text_style_800(styleSize: 18)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Spacer()
+                    
+                    Image(advancedSettingsIsOpen ? "caret-up" : "caret-down")
+                        .renderingMode(.template)
+                        .resizable()
+                        .foregroundStyle(Color.grayMain2c600)
+                        .frame(width: 25, height: 25, alignment: .leading)
+                        .padding(.all, 10)
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 10)
+                .background(.white)
+                .onTapGesture {
+                    withAnimation {
+                        advancedSettingsIsOpen.toggle()
+                    }
+                }
+                
+                if advancedSettingsIsOpen {
+                    VStack(alignment: .leading) {
+                        Text("authentication_id")
+                            .default_text_style_700(styleSize: 15)
+                            .padding(.bottom, -5)
+                        
+                        TextField("authentication_id", text: $accountLoginViewModel.displayName)
+                            .default_text_style(styleSize: 15)
+                            .frame(height: 25)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 15)
+                            .background(.white)
+                            .cornerRadius(60)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 60)
+                                    .inset(by: 0.5)
+                                    .stroke(isSipProxyUrlFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+                            )
+                            .focused($isSipProxyUrlFocused)
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text("account_settings_sip_proxy_url_title")
+                            .default_text_style_700(styleSize: 15)
+                            .padding(.bottom, -5)
+                        
+                        TextField("account_settings_sip_proxy_url_title", text: $accountLoginViewModel.displayName)
+                            .default_text_style(styleSize: 15)
+                            .frame(height: 25)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 15)
+                            .background(.white)
+                            .cornerRadius(60)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 60)
+                                    .inset(by: 0.5)
+                                    .stroke(isSipProxyUrlFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+                            )
+                            .focused($isSipProxyUrlFocused)
+                    }
+                    .padding(.bottom)
+                }
 			}
 			.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 			.padding(.horizontal, 20)
