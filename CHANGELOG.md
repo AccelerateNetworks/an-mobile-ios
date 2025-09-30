@@ -9,29 +9,66 @@ Group changes to describe their impact on the project, as follows:
 	Removed for deprecated features removed in this release.
 	Fixed for any bug fixes.
 	Security to invite users to upgrade in case of vulnerabilities.
+	
+## [6.0.1] - 2025-09-12
 
-## [5.2.3] - 2024-17-09
-### Fixed
-- Crash when attempting to play audio memo with nil path (multi device sending situation for example)
-- Crash playing recorded call
-- Callkit ignoring incoming call if a registration failure occured earlier (incl. network connection problems)
-- Displaying of <?xml in chat list when last chat message received is a voice memo 
-- Fix audio memo downlowing when opened from the notification
-		
-## [5.2.2] - 2023-28-12
 ### Added
-- Log sending option will now give a link to download the logs, rather than send the whole log file
-- Taping a notification when app is started now properly opens the conversation
-- Open call history when taping a missed call notification
+- Done button toolbar to number pads
+- Help view to login page
 
 ### Changed
-- Update linphone SDK to 5.3.20
+- textToImage updated to generate image on the core queue
+- Send DTMF execution moved to the core queue
+- Use saveImage on core queue
+- Use point_to_point string for encrypted calls in conference
+- Hide VFS setting
 
 ### Fixed
-- Fix replying to images not displaying the image preview in the reply window
-- Various UI fixes in chatrooms
+- Avatar photo refresh
+- onEphemeralMessageTimerStarted callback
+- Crash in updateEncryption by safely handling optional currentCall
+- Sorted list in MagicSearch when friend is nil
+- Friend list refresh triggered by onPresenceReceived
+- Crash when adding or removing SIP addresses and phone numbers in EditContactFragment
+- awaitDataWrite execution on main queue
+- Crash by copying Friend addresses and phone numbers before removal
+- Ensure core is On before stopping it on background entry
+- textToImage crash
 
-## [5.2.1] - 2023-28-12
+
+## [6.0.0] - 2025-09-01
+
+6.0.0 release is a complete rework of Linphone, with a fully redesigned UI, so it is impossible to list everything here.
+
+### Changed
+- Separated threads: Contrary to previous versions, our SDK is now running in it's own thread, meaning it won't freeze the UI anymore in case of heavy work.
+- Asymmetrical video : you no longer need to send your own camera feed to receive the one from the remote end of the call, and vice versa.
+- Improved multi account: you'll only see history, conversations, meetings etc... related to currently selected account, and you can switch the default account in two clicks.
+- User can only send up to 12 files in a single chat message.
+- IMDNs are now only sent to the message sender, preventing huge traffic in large groups, and thus the delivery status icon for received messages is now hidden in groups (as it was in 1-1 conversations).
+- Settings: a lot of them are gone, the one that are still there have been reworked to increase user friendliness.
+- Default screen (between contacts, call history, conversations & meetings list) will change depending on where you were when the app was paused or killed, and you will return to that last visited screen on the next startup.
+- Account creation no longer allows you to use your phone number as username, but it is still required to provide it to receive activation code by SMS.
+- Minimum supported iOS version is now 15.
+- Some settings have changed name and/or section in linphonerc file.
+
+### Added
+- You can now react to a chat message using any emoji.
+- Chat while in call: a shortcut to a conversation screen with the remote.
+- Chat while in a conference: if the conference has a text stream enabled, you can chat with the other participants of the conference while it lasts. At the end, you'll find the messages history in the call history (and not in the list of conversations).
+- Security focus: security & trust is more visible than ever, and unsecure conversations & calls are even more visible than before.
+- OpenID: when used with a SSO compliant SIP server (such as Flexisip), we support single-sign-on login.
+- MWI support: display and allow to call your voicemail when you have new messages (if supported by your VoIP provider and properly configured in your account params).
+- CCMP support: if you configure a CCMP server URL in your accounts params, it will be used when scheduling meetings & to fetch list of meetings you've organized/been invited to.
+- Devices list: check on which device your sip.linphone.org account is connected and the last connection date & time (like on subscribe.linphone.org).
+- Dialer & in-call numpad show letters under the digit.
+
+### Removed
+- Dialer: the previous home screen (dialer) has been removed, you'll find it as an input option in the new start call screen.
+- Peer-to-peer: a SIP account (sip.linphone.org or other) is now required.
+
+
+## [5.2.0] - 2023-28-12
 ### Added
 - Added extra Czech and Japanese translations
 
