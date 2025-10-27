@@ -217,9 +217,9 @@ class CoreContext: ObservableObject {
 						}
 						
 						if account.params?.internationalPrefix == nil {
-							Log.info("Account \(account.displayName()): no international prefix set, adding 33 FRA by default: \(account.params?.internationalPrefix ?? "NIL")")
-							newParams?.internationalPrefix = "33"
-							newParams?.internationalPrefixIsoCountryCode = "FRA"
+							Log.info("Account \(account.displayName()): no international prefix set, adding 1 US by default: \(account.params?.internationalPrefix ?? "NIL")")
+							newParams?.internationalPrefix = "1"
+							newParams?.internationalPrefixIsoCountryCode = "USA"
 							newParams?.useInternationalPrefixForCallsAndChats = true
 						}
 						account.params = newParams
