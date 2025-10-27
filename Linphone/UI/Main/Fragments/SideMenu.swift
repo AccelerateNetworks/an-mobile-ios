@@ -49,9 +49,8 @@ struct SideMenu: View {
 				VStack {
 					HStack {
 						Image("linphone")
-							.renderingMode(.template)
+                            .renderingMode(.original)
 							.resizable()
-							.foregroundStyle(Color.orangeMain500)
 							.frame(width: 32, height: 32)
 							.padding(10)
 						Text(Bundle.main.displayName)

@@ -521,12 +521,12 @@
 "website_terms_and_conditions_url" = "https://www.linphone.org/en/terms-of-use";
 "website_translate_weblate_url" = "https://weblate.linphone.org/";
 "welcome_carousel_skip" = "Skip";
-"welcome_page_1_message" = "A **secured**, **open source** and **French** communication app.";
+"welcome_page_1_message" = "A **secured**, **open source** communication app.";
 "welcome_page_2_message" = "Your communications are safe thanks to our **end-to-end encryption**.";
 "welcome_page_2_title" = "Secured";
 "welcome_page_3_message" = "A **free** and open source application since **2001**.";
 "welcome_page_3_title" = "Open source";
-"welcome_page_subtitle" = "in %@";
+"welcome_page_subtitle" = "";
 "welcome_page_title" = "Welcome";
 "You will change this mode later" = "You will change this mode later";
 "ZRTP" = "ZRTP";
