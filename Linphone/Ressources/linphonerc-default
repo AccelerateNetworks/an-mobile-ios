@@ -4,7 +4,7 @@
 [sip]
 contact="Linphone iPhone" <sip:linphone.iphone@unknown-host>
 use_info=0
-use_ipv6=1
+use_ipv6=0
 keepalive_period=30000
 sip_port=-1
 sip_tcp_port=-1
@@ -38,7 +38,7 @@ port=443
 [misc]
 log_collection_upload_server_url=https://files.linphone.org/http-file-transfer-server/hft.php
 file_transfer_server_url=https://files.linphone.org/http-file-transfer-server/hft.php
-version_check_url_root=https://download.linphone.org/releases
+version_check_url_root=https://acceleratenetworks.sip.callpipe.com/app/linphone
 max_calls=10
 history_max_size=100
 conference_layout=1

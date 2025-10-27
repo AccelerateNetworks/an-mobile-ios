@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config xmlns="http://www.linphone.org/xsds/lpconfig.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.linphone.org/xsds/lpconfig.xsd lpconfig.xsd">
   <section name="proxy_default_values">
-	<entry name="avpf" overwrite="true">1</entry>
+	<entry name="avpf" overwrite="true">0</entry>
 	<entry name="dial_escape_plus" overwrite="true">0</entry>
-	<entry name="publish" overwrite="true">1</entry>
+	<entry name="publish" overwrite="true">0</entry>
 	<entry name="publish_expires" overwrite="true">120</entry>
-	<entry name="quality_reporting_collector" overwrite="true">sip:voip-metrics@sip.linphone.org;transport=tls</entry>
-	<entry name="quality_reporting_enabled" overwrite="true">1</entry>
+	<entry name="quality_reporting_collector" overwrite="true">sip:voipmetrics@acceleratenetworks.sip.callpipe.com;transport=tls</entry>
+	<entry name="quality_reporting_enabled" overwrite="true">0</entry>
 	<entry name="quality_reporting_interval" overwrite="true">180</entry>
 	<entry name="reg_expires" overwrite="true">31536000</entry>
 	<entry name="reg_identity" overwrite="true">sip:?@sip.linphone.org</entry>
@@ -30,7 +30,7 @@
 	<entry name="protocols" overwrite="true">stun,ice</entry>
   </section>
   <section name="sip">
-	<entry name="media_encryption" overwrite="true">srtp</entry>
-	<entry name="media_encryption_mandatory">1</entry>
+	<entry name="media_encryption" overwrite="true">none</entry>
+	<entry name="media_encryption_mandatory">0</entry>
   </section>
 </config>

@@ -36,7 +36,7 @@ struct ProfileModeFragment: View {
 							.scaledToFill()
 							.frame(width: geometry.size.width, height: 100)
 							.clipped()
-						Text("Personnalize your profil mode")
+						Text("Personalize your profile mode")
 							.default_text_style_white_800(styleSize: 20)
 							.padding(.top, -10)
 						Text("You will change this mode later")
