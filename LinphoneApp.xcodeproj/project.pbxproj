@@ -1680,7 +1680,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Linphone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Accelerate Networks";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "b5cb085f-772a-4a4f-8c77-5d1332b1f93f";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Deprecated - Prior to iOS 17 full calendar access is required";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera usage is required for video VOIP calls";
@@ -1740,7 +1740,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Linphone/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Accelerate Networks";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "b5cb085f-772a-4a4f-8c77-5d1332b1f93f";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Deprecated - Prior to iOS 17 full calendar access is required";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera usage is required for video VOIP calls";
