@@ -283,7 +283,7 @@ struct MeetingWaitingRoomFragment: View {
 					.background(Color.gray500)
 					.cornerRadius(40)
 					.padding(.horizontal, 5)
-                    .disabled(true)
+                    .hidden()
 					
 					Button {
 						meetingWaitingRoomViewModel.toggleMuteMicrophone()

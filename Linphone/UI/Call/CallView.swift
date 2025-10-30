@@ -1975,10 +1975,10 @@ struct CallView: View {
 					.frame(width: buttonSize, height: buttonSize)
 					.background(Color.gray500)
 					.cornerRadius(40)
-//					.disabled(callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted)
-                    .disabled(true)
+					.disabled(callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted)
+                    .hidden()
 					
-					if callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted || true {
+					if callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted {
 						Color.gray600.opacity(0.8)
 							.cornerRadius(40)
 							.allowsHitTesting(false)
@@ -2431,7 +2431,7 @@ struct CallView: View {
                         .frame(width: buttonSize, height: buttonSize)
                         .background(Color.gray500)
                         .cornerRadius(40)
-                        .disabled(true)
+                        .hidden()
                         
                         Text("call_action_change_layout")
                             .foregroundStyle(.white)
@@ -2456,7 +2456,7 @@ struct CallView: View {
                             .frame(width: buttonSize, height: buttonSize)
                             .background(Color.gray500)
                             .cornerRadius(40)
-                            .disabled(true)
+                            .hidden()
                             
                             Text("call_action_change_layout")
                                 .foregroundStyle(.white)
