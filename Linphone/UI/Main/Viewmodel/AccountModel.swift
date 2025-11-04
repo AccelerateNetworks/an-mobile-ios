@@ -332,8 +332,8 @@ class AccountDeviceModel: ObservableObject {
 		self.lastDate = date
 		self.lastTime = time
 		
-		self.isMobileDevice = accountDevice.userAgent.contains("LinphoneAndroid") || accountDevice.userAgent.contains(
-			"LinphoneiOS"
-		)
+        self.isMobileDevice = accountDevice.userAgent.contains("LinphoneAndroid") || accountDevice.userAgent.contains("LinphoneiOS") ||
+            accountDevice.userAgent.contains("Accelerate NetworksiOS") ||
+        accountDevice.userAgent.contains("Accelerate NetworksAndroid")
 	}
 }
