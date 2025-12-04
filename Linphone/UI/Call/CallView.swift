@@ -1978,7 +1978,7 @@ struct CallView: View {
 					.disabled(callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted)
                     .hidden()
 					
-					if callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted {
+					if callViewModel.isPaused || telecomManager.isPausedByRemote || telecomManager.outgoingCallStarted || optionsChangeLayout == 3 {
 						Color.gray600.opacity(0.8)
 							.cornerRadius(40)
 							.allowsHitTesting(false)
