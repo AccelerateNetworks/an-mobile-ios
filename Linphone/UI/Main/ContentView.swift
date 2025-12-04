@@ -522,7 +522,7 @@ struct ContentView: View {
 															Button {
 																sharedMainViewModel.displayedFriend = nil
 																isMenuOpen = false
-																magicSearch.allContact = true
+																magicSearch.changeAllContact(allContactBool: true)
 																magicSearch.searchForContacts()
 															} label: {
 																HStack {
@@ -540,7 +540,7 @@ struct ContentView: View {
 															Button {
 																sharedMainViewModel.displayedFriend = nil
 																isMenuOpen = false
-																magicSearch.allContact = false
+																magicSearch.changeAllContact(allContactBool: false)
 																magicSearch.searchForContacts()
 															} label: {
 																HStack {
@@ -1062,17 +1062,22 @@ struct ContentView: View {
 					}
 					
 					if isShowEditContactFragment {
-						EditContactFragment(
-							isShowEditContactFragment: $isShowEditContactFragment,
-							isShowDismissPopup: $isShowDismissPopup,
-							isShowEditContactFragmentAddress: isShowEditContactFragmentAddress
-						)
+						VStack {
+							EditContactFragment(
+								isShowEditContactFragment: $isShowEditContactFragment,
+								isShowDismissPopup: $isShowDismissPopup,
+								isShowEditContactFragmentAddress: isShowEditContactFragmentAddress
+							)
+							.frame(height: geometry.size.height)
+							.onAppear {
+								sharedMainViewModel.displayedFriend = nil
+								isShowEditContactFragmentAddress = ""
+							}
+							
+							Spacer()
+						}
 						.zIndex(3)
 						.transition(.opacity.combined(with: .move(edge: .bottom)))
-						.onAppear {
-							sharedMainViewModel.displayedFriend = nil
-							isShowEditContactFragmentAddress = ""
-						}
 					}
 					
 					if isShowStartCallFragment {

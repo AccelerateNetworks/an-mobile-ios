@@ -256,14 +256,14 @@ class CorePreferences {
 		}
 	}
     
-    static var disableChatFeature: Bool {
-        get {
-            return Config.get().getBool(section: "app", key: "disable_chat_feature", defaultValue: false)
-        }
-        set {
-            Config.get().setBool(section: "app", key: "disable_chat_feature", value: newValue)
-        }
-    }
+	static var disableChatFeature: Bool {
+		get {
+			return Config.get().getBool(section: "ui", key: "disable_chat_feature", defaultValue: false)
+		}
+		set {
+			Config.get().setBool(section: "ui", key: "disable_chat_feature", value: newValue)
+		}
+	}
 	
 	static var disableMeetings: Bool {
 		get {
@@ -291,8 +291,8 @@ class CorePreferences {
 	
 	private static func safeString(_ raw: String?, defaultValue: String = "") -> String {
 		guard let raw = raw else { return defaultValue }
-		if let data = raw.data(using: .utf8), let s = String(data: data, encoding: .utf8) {
-			return s
+		if let data = raw.data(using: .utf8) {
+			return String(decoding: data, as: UTF8.self)
 		}
 		return defaultValue
 	}

@@ -24,27 +24,61 @@ struct ThirdPartySipAccountLoginFragment: View {
 	@ObservedObject private var coreContext = CoreContext.shared
 	@ObservedObject var accountLoginViewModel: AccountLoginViewModel
 	
+	@StateObject private var keyboard = KeyboardResponder()
+	
 	@Environment(\.dismiss) var dismiss
 	
 	@State private var isSecured: Bool = true
-    @State private var advancedSettingsIsOpen: Bool = true
+    @State private var advancedSettingsIsOpen: Bool = false
 	
 	@FocusState var isNameFocused: Bool
 	@FocusState var isPasswordFocused: Bool
 	@FocusState var isDomainFocused: Bool
 	@FocusState var isDisplayNameFocused: Bool
     @FocusState var isSipProxyUrlFocused: Bool
+	@FocusState var isAuthIdFocused: Bool
+	@FocusState var isOutboundProxyFocused: Bool
 	
 	var body: some View {
 		GeometryReader { geometry in
-			if #available(iOS 16.4, *) {
-				ScrollView(.vertical) {
-					innerScrollView(geometry: geometry)
-				}
-				.scrollBounceBehavior(.basedOnSize)
-			} else {
-				ScrollView(.vertical) {
-					innerScrollView(geometry: geometry)
+			ScrollViewReader { proxy in
+				if #available(iOS 16.4, *) {
+					ScrollView(.vertical) {
+						innerScrollView(geometry: geometry)
+					}
+					.scrollBounceBehavior(.basedOnSize)
+					.onChange(of: isAuthIdFocused) { field in
+						if field {
+							DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+								proxy.scrollTo(2, anchor: .top)
+							}
+						}
+					}
+					.onChange(of: isOutboundProxyFocused) { field in
+						if field {
+							DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+								proxy.scrollTo(2, anchor: .top)
+							}
+						}
+					}
+				} else {
+					ScrollView(.vertical) {
+						innerScrollView(geometry: geometry)
+					}
+					.onChange(of: isAuthIdFocused) { field in
+						if field {
+							DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+								proxy.scrollTo(2, anchor: .top)
+							}
+						}
+					}
+					.onChange(of: isOutboundProxyFocused) { field in
+						if field {
+							DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+								proxy.scrollTo(2, anchor: .top)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -240,7 +274,8 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .default_text_style_700(styleSize: 15)
                             .padding(.bottom, -5)
                         
-                        TextField("authentication_id", text: $accountLoginViewModel.displayName)
+						TextField("authentication_id", text: $accountLoginViewModel.authId)
+							.id(1)
                             .default_text_style(styleSize: 15)
                             .frame(height: 25)
                             .padding(.horizontal, 20)
@@ -250,9 +285,9 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: 60)
                                     .inset(by: 0.5)
-                                    .stroke(isSipProxyUrlFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+                                    .stroke(isAuthIdFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
                             )
-                            .focused($isSipProxyUrlFocused)
+                            .focused($isAuthIdFocused)
                     }
                     
                     VStack(alignment: .leading) {
@@ -260,7 +295,8 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .default_text_style_700(styleSize: 15)
                             .padding(.bottom, -5)
                         
-                        TextField("account_settings_sip_proxy_url_title", text: $accountLoginViewModel.displayName)
+                        TextField("account_settings_sip_proxy_url_title", text: $accountLoginViewModel.outboundProxy)
+							.id(2)
                             .default_text_style(styleSize: 15)
                             .frame(height: 25)
                             .padding(.horizontal, 20)
@@ -270,9 +306,9 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .overlay(
                                 RoundedRectangle(cornerRadius: 60)
                                     .inset(by: 0.5)
-                                    .stroke(isSipProxyUrlFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+                                    .stroke(isOutboundProxyFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
                             )
-                            .focused($isSipProxyUrlFocused)
+                            .focused($isOutboundProxyFocused)
                     }
                     .padding(.bottom)
                 }
@@ -309,6 +345,7 @@ struct ThirdPartySipAccountLoginFragment: View {
 				.clipped()
 		}
 		.frame(minHeight: geometry.size.height)
+		.padding(.bottom, keyboard.currentHeight)
 	}
 }
 

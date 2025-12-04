@@ -108,6 +108,7 @@
 		D73449992BC6932A00778C56 /* MeetingWaitingRoomFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73449982BC6932A00778C56 /* MeetingWaitingRoomFragment.swift */; };
 		D734499B2BC694C900778C56 /* MeetingWaitingRoomViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D734499A2BC694C900778C56 /* MeetingWaitingRoomViewModel.swift */; };
 		D737AEEF2DA011F2005C1280 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D737AEED2DA011F2005C1280 /* Localizable.strings */; };
+		D738ACEE2E857BF10039F7D1 /* KeyboardResponder.swift in Sources */ = {isa = PBXBuildFile; fileRef = D738ACED2E857BEF0039F7D1 /* KeyboardResponder.swift */; };
 		D7458F392E0BDCF4000C957A /* linphoneExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D7458F2F2E0BDCF4000C957A /* linphoneExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D748BF2C2ACD82D2004844EB /* ThirdPartySipAccountLoginFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D748BF2B2ACD82D2004844EB /* ThirdPartySipAccountLoginFragment.swift */; };
 		D748BF2E2ACD82E7004844EB /* ThirdPartySipAccountWarningFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D748BF2D2ACD82E7004844EB /* ThirdPartySipAccountWarningFragment.swift */; };
@@ -198,6 +199,7 @@
 		D7F4D9CB2B5FD27200CDCD76 /* CallsListFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F4D9CA2B5FD27200CDCD76 /* CallsListFragment.swift */; };
 		D7F5F6412C359F3B007FCF2F /* SipAddressesPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F5F6402C359F3B007FCF2F /* SipAddressesPopup.swift */; };
 		D7FB55112AD447FD00A5AB15 /* RegisterFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FB55102AD447FD00A5AB15 /* RegisterFragment.swift */; };
+		D7FC8E4A2EBA12F90080C09D /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -334,6 +336,7 @@
 		D734499A2BC694C900778C56 /* MeetingWaitingRoomViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingWaitingRoomViewModel.swift; sourceTree = "<group>"; };
 		D737AEEE2DA011F2005C1280 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Localizable/en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D737AEF02DA01203005C1280 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = Localizable/fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		D738ACED2E857BEF0039F7D1 /* KeyboardResponder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardResponder.swift; sourceTree = "<group>"; };
 		D7458F2F2E0BDCF4000C957A /* linphoneExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = linphoneExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D748BF2B2ACD82D2004844EB /* ThirdPartySipAccountLoginFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartySipAccountLoginFragment.swift; sourceTree = "<group>"; };
 		D748BF2D2ACD82E7004844EB /* ThirdPartySipAccountWarningFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartySipAccountWarningFragment.swift; sourceTree = "<group>"; };
@@ -420,6 +423,7 @@
 		D7F4D9CA2B5FD27200CDCD76 /* CallsListFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallsListFragment.swift; sourceTree = "<group>"; };
 		D7F5F6402C359F3B007FCF2F /* SipAddressesPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipAddressesPopup.swift; sourceTree = "<group>"; };
 		D7FB55102AD447FD00A5AB15 /* RegisterFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterFragment.swift; sourceTree = "<group>"; };
+		D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -583,6 +587,7 @@
 		D717071C2AC591EF0037746F /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				D738ACED2E857BEF0039F7D1 /* KeyboardResponder.swift */,
 				D7DF8BE82E2104E5003A3BC7 /* EmojiPickerView.swift */,
 				D703F7072DC8C5FF005B8F75 /* FilePicker.swift */,
 				D717A10D2CEB770D00849D92 /* ShareSheetController.swift */,
@@ -629,6 +634,7 @@
 		D719ABB52ABC67BF00B41C10 /* Linphone */ = {
 			isa = PBXGroup;
 			children = (
+				D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */,
 				D7A03FC52ACC458A0081A588 /* SplashScreen.swift */,
 				D719ABB62ABC67BF00B41C10 /* LinphoneApp.swift */,
 				D777DBB12AE12C4000565A99 /* Contacts */,
@@ -1192,6 +1198,7 @@
 				D7D24D142AC1B4E800C6F35B /* NotoSans-Regular.ttf in Resources */,
 				D7D24D182AC1B4E800C6F35B /* NotoSans-ExtraBold.ttf in Resources */,
 				D7D24D152AC1B4E800C6F35B /* NotoSans-Light.ttf in Resources */,
+				D7FC8E4A2EBA12F90080C09D /* Launch Screen.storyboard in Resources */,
 				D737AEEF2DA011F2005C1280 /* Localizable.strings in Resources */,
 				D783C77D2B1089B200622CC2 /* assistant_third_party_default_values in Resources */,
 				D7D24D162AC1B4E800C6F35B /* NotoSans-SemiBold.ttf in Resources */,
@@ -1279,6 +1286,7 @@
 				D7DC096F2CFA1D7600A6D47C /* AccountProfileFragment.swift in Sources */,
 				D717A10E2CEB772300849D92 /* ShareSheetController.swift in Sources */,
 				66C491FD2B24D36500CEA16D /* AudioRouteUtils.swift in Sources */,
+				D738ACEE2E857BF10039F7D1 /* KeyboardResponder.swift in Sources */,
 				D70959F12B8DF3EC0014AC0B /* ConversationModel.swift in Sources */,
 				C6DC4E3D2C199C4E009096FD /* BundleExtenion.swift in Sources */,
 				D7343FEF2D3FE16C0059D784 /* HelpViewModel.swift in Sources */,
@@ -1483,7 +1491,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.0.1;
+				MARKETING_VERSION = 6.0.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.msgNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1525,7 +1533,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.0.1;
+				MARKETING_VERSION = 6.0.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.msgNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1683,6 +1691,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "b5cb085f-772a-4a4f-8c77-5d1332b1f93f";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Deprecated - Prior to iOS 17 full calendar access is required";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera usage is required for video VOIP calls";
 				INFOPLIST_KEY_NSContactsUsageDescription = "Make calls with your friends";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "App requires access to the local network to establish VoIP connections";
@@ -1694,8 +1703,9 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = NO;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -1706,7 +1716,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
-				MARKETING_VERSION = 6.0.1;
+				MARKETING_VERSION = 6.0.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1743,6 +1753,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_ITSEncryptionExportComplianceCode = "b5cb085f-772a-4a4f-8c77-5d1332b1f93f";
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Deprecated - Prior to iOS 17 full calendar access is required";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera usage is required for video VOIP calls";
 				INFOPLIST_KEY_NSContactsUsageDescription = "Make calls with your friends";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "App requires access to the local network to establish VoIP connections";
@@ -1754,8 +1765,9 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = NO;
+				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
@@ -1766,7 +1778,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
-				MARKETING_VERSION = 6.0.1;
+				MARKETING_VERSION = 6.0.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1800,7 +1812,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.0.1;
+				MARKETING_VERSION = 6.0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.linphoneExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1834,8 +1846,8 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.linphoneExtension;
+				MARKETING_VERSION = 6.0.2;
+				PRODUCT_BUNDLE_IDENTIFIER = org.linphone.phone.linphoneExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;

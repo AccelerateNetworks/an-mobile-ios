@@ -135,9 +135,6 @@
 		<string>audio</string>
 	</array>
 	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIImageName</key>
-		<string>linphone</string>
-	</dict>
+	<false/>
 </dict>
 </plist>
