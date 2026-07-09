@@ -36,11 +36,11 @@ class StartConversationViewModel: ObservableObject {
 	
 	@Published var participants: [SelectedAddressModel] = []
 	
-	@Published var operationOneToOneInProgress: Bool = false
+	@Published var hideGroupChatButton: Bool = false
 	@Published var operationGroupInProgress: Bool = false
+	@Published var operationOneToOneInProgress: Bool = false
 	@Published var displayedConversation: ConversationModel?
 	
-	@Published var hideGroupChatButton: Bool = false
 	
 	private var chatRoomDelegate: ChatRoomDelegate?
 	
@@ -149,8 +149,7 @@ class StartConversationViewModel: ObservableObject {
 				
 				DispatchQueue.main.async {
 					self.operationGroupInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}
@@ -180,7 +179,7 @@ class StartConversationViewModel: ObservableObject {
 				guard let chatParams = params.chatParams else { return }
 				chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
 				
-				let sameDomain = remote.domain == CorePreferences.defaultDomain && remote.domain == account!.params?.domain
+				let sameDomain = remote.domain == AppServices.corePreferences.defaultDomain && remote.domain == account!.params?.domain
 				if account!.params != nil && (account!.params!.instantMessagingEncryptionMandatory && sameDomain) {
 					Log.info("\(StartConversationViewModel.TAG) Account is in secure mode & domain matches, creating an E2E encrypted conversation")
 					chatParams.backend = ChatRoom.Backend.FlexisipChat
@@ -206,8 +205,7 @@ class StartConversationViewModel: ObservableObject {
 					
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 						self.operationOneToOneInProgress = false
-						ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Failed_to_create_conversation_error")
 					}
 					return
 				}
@@ -252,8 +250,7 @@ class StartConversationViewModel: ObservableObject {
 						
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
 							self.operationOneToOneInProgress = false
-							ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Failed_to_create_conversation_error")
 						}
 					}
 				} else {
@@ -284,8 +281,7 @@ class StartConversationViewModel: ObservableObject {
 				DispatchQueue.main.async {
 					self.operationOneToOneInProgress = false
 					self.operationGroupInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}, onConferenceJoined: { (chatRoom: ChatRoom, _: EventLog) in
@@ -314,8 +310,7 @@ class StartConversationViewModel: ObservableObject {
 				DispatchQueue.main.async {
 					self.operationOneToOneInProgress = false
 					self.operationGroupInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		})

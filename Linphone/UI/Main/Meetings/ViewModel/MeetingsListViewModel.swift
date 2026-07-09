@@ -98,7 +98,7 @@ class MeetingsListViewModel: ObservableObject {
 							}
 					}
 					
-					if matchFilter {
+					if matchFilter && (AppServices.corePreferences.showPastMeetings || !model.isInPast) {
 						meetingsListTmp.append(MeetingsListItemModel(meetingModel: model))
 						currentIdx += 1
 					}
@@ -143,8 +143,7 @@ class MeetingsListViewModel: ObservableObject {
 					// Only remaining meeting is the fake TodayMeeting, remove it too
 					self.meetingsList.removeAll()
 				}
-				ToastViewModel.shared.toastMessage = "Success_toast_meeting_deleted"
-				ToastViewModel.shared.displayToast = true
+				ToastViewModel.shared.show("Success_toast_meeting_deleted")
 			}
 		}
 	}
@@ -158,7 +157,7 @@ class MeetingsListViewModel: ObservableObject {
 				let mSchedulerDelegate = ConferenceSchedulerDelegateStub(onStateChanged: { (_: ConferenceScheduler, state: ConferenceScheduler.State) in
 					Log.info("\(MeetingViewModel.TAG) Conference state changed \(state)")
 					if state == ConferenceScheduler.State.Ready {
-                        if !CorePreferences.disableChatFeature {
+                        if !AppServices.corePreferences.disableChatFeature {
                             self.sendIcsInvitation(core: core, conferenceScheduler: conferenceScheduler)
                         }
                         
@@ -180,8 +179,7 @@ class MeetingsListViewModel: ObservableObject {
 						}
 						Log.warn("\(MeetingViewModel.TAG) \(failedInvitations.count) invitations couldn't have been sent to: \(failInvList)")
 						DispatchQueue.main.async {
-							ToastViewModel.shared.toastMessage = "meeting_failed_to_send_part_of_invites_toast"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("meeting_failed_to_send_part_of_invites_toast")
 						}
 					}
 				})

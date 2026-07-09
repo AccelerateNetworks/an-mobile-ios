@@ -141,50 +141,58 @@ struct ConversationForwardMessageFragment: View {
 						.padding(.vertical)
 						.padding(.horizontal)
 						
-						ScrollView {
-							if !conversationForwardMessageViewModel.conversationsList.isEmpty {
-								HStack(alignment: .center) {
-									Text("bottom_navigation_conversations_label")
-										.default_text_style_800(styleSize: 16)
+						ZStack {
+							ScrollView {
+								if !conversationForwardMessageViewModel.conversationsList.isEmpty {
+									HStack(alignment: .center) {
+										Text("bottom_navigation_conversations_label")
+											.default_text_style_800(styleSize: 16)
+										
+										Spacer()
+									}
+									.padding(.vertical, 10)
+									.padding(.horizontal, 16)
 									
-									Spacer()
+									conversationsList
 								}
-								.padding(.vertical, 10)
+								
+								if !ContactsManager.shared.lastSearch.isEmpty {
+									HStack(alignment: .center) {
+										Text("contacts_list_all_contacts_title")
+											.default_text_style_800(styleSize: 16)
+										
+										Spacer()
+									}
+									.padding(.vertical, 10)
+									.padding(.horizontal, 16)
+								}
+								
+								ContactsListFragment(showingSheet: .constant(false), startCallFunc: { addr in
+									withAnimation {
+										conversationForwardMessageViewModel.createOneToOneChatRoomWith(remote: addr)
+									}
+									
+								})
 								.padding(.horizontal, 16)
 								
-								conversationsList
+								if !contactsManager.lastSearchSuggestions.isEmpty {
+									HStack(alignment: .center) {
+										Text("generic_address_picker_suggestions_list_title")
+											.default_text_style_800(styleSize: 16)
+										
+										Spacer()
+									}
+									.padding(.vertical, 10)
+									.padding(.horizontal, 16)
+									
+									suggestionsList
+								}
 							}
 							
-							if !ContactsManager.shared.lastSearch.isEmpty {
-								HStack(alignment: .center) {
-									Text("contacts_list_all_contacts_title")
-										.default_text_style_800(styleSize: 16)
-									
-									Spacer()
-								}
-								.padding(.vertical, 10)
-								.padding(.horizontal, 16)
-							}
-							
-							ContactsListFragment(showingSheet: .constant(false), startCallFunc: { addr in
-								withAnimation {
-									conversationForwardMessageViewModel.createOneToOneChatRoomWith(remote: addr)
-								}
-								
-							})
-							.padding(.horizontal, 16)
-							
-							if !contactsManager.lastSearchSuggestions.isEmpty {
-								HStack(alignment: .center) {
-									Text("generic_address_picker_suggestions_list_title")
-										.default_text_style_800(styleSize: 16)
-									
-									Spacer()
-								}
-								.padding(.vertical, 10)
-								.padding(.horizontal, 16)
-								
-								suggestionsList
+							if magicSearch.isLoading {
+								ProgressView()
+									.controlSize(.large)
+									.progressViewStyle(CircularProgressViewStyle(tint: .orangeMain500))
 							}
 						}
 					}
@@ -275,6 +283,7 @@ struct ConversationForwardMessageFragment: View {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
 						&& contactsManager.lastSearchSuggestions[index].address != nil {
+						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
 							Image(uiImage: contactsManager.textToImage(
 								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
 								lastName: ""))
@@ -284,9 +293,29 @@ struct ConversationForwardMessageFragment: View {
 							
 							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
 								.default_text_style(styleSize: 16)
-                                .lineLimit(1)
+								.lineLimit(1)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.foregroundStyle(Color.orangeMain500)
+						} else {
+							if let address = contactsManager.lastSearchSuggestions[index].address {
+								let nameTmp = address.displayName
+								?? address.username
+								?? String(address.asStringUriOnly().dropFirst(4))
+								
+								Image(uiImage: contactsManager.textToImage(
+									firstName: nameTmp,
+									lastName: ""))
+								.resizable()
+								.frame(width: 45, height: 45)
+								.clipShape(Circle())
+								
+								Text(nameTmp)
+									.default_text_style(styleSize: 16)
+									.lineLimit(1)
+									.frame(maxWidth: .infinity, alignment: .leading)
+									.foregroundStyle(Color.orangeMain500)
+							}
+						}
 					} else {
 						Image("profil-picture-default")
 							.resizable()

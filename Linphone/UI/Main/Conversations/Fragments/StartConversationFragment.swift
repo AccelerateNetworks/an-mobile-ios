@@ -32,6 +32,9 @@ struct StartConversationFragment: View {
 	
 	@Binding var isShowStartConversationFragment: Bool
 	
+	@State private var contactAvatarModel: ContactAvatarModel? = nil
+	@State private var isShowSipAddressesPopup: Bool = false
+	
 	@FocusState var isSearchFieldFocused: Bool
 	@State private var delayedColor = Color.white
 	
@@ -170,40 +173,159 @@ struct StartConversationFragment: View {
 							)
 						}
 						
-						ScrollView {
-							if !ContactsManager.shared.lastSearch.isEmpty {
-								HStack(alignment: .center) {
-									Text("contacts_list_all_contacts_title")
-										.default_text_style_800(styleSize: 16)
-									
-									Spacer()
+						ZStack {
+							ScrollView {
+								if !ContactsManager.shared.lastSearch.isEmpty {
+									HStack(alignment: .center) {
+										Text("contacts_list_all_contacts_title")
+											.default_text_style_800(styleSize: 16)
+										
+										Spacer()
+									}
+									.padding(.vertical, 10)
+									.padding(.horizontal, 16)
 								}
-								.padding(.vertical, 10)
-								.padding(.horizontal, 16)
-							}
-							
-							ContactsListFragment(showingSheet: .constant(false), startCallFunc: { addr in
-									startConversationViewModel.createOneToOneChatRoomWith(remote: addr)
-							})
-							.padding(.horizontal, 16)
-							
-							if !contactsManager.lastSearchSuggestions.isEmpty {
-								HStack(alignment: .center) {
-									Text("generic_address_picker_suggestions_list_title")
-										.default_text_style_800(styleSize: 16)
-									
-									Spacer()
-								}
-								.padding(.vertical, 10)
+								
+								ContactsListFragment(showingSheet: .constant(false), startCallFunc: { addr in
+									CoreContext.shared.doOnCoreQueue { core in
+										ContactAvatarModel.getAvatarModelFromAddress(address: addr) { contactAvatarModel in
+											self.contactAvatarModel = contactAvatarModel
+											DispatchQueue.main.async {
+												if contactAvatarModel.addresses.count == 1 && contactAvatarModel.phoneNumbersWithLabel.isEmpty {
+													startConversationViewModel.createOneToOneChatRoomWith(remote: addr)
+												} else if contactAvatarModel.addresses.isEmpty && contactAvatarModel.phoneNumbersWithLabel.count == 1 {
+													if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let phoneAddr = core.interpretUrl(url: firstPhoneNumbersWithLabel.phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+														startConversationViewModel.createOneToOneChatRoomWith(remote: phoneAddr)
+													}
+												} else {
+													DispatchQueue.main.async {
+														isShowSipAddressesPopup = true
+													}
+												}
+											}
+										}
+									}
+								})
 								.padding(.horizontal, 16)
 								
-								suggestionsList
+								if !contactsManager.lastSearchSuggestions.isEmpty {
+									HStack(alignment: .center) {
+										Text("generic_address_picker_suggestions_list_title")
+											.default_text_style_800(styleSize: 16)
+										
+										Spacer()
+									}
+									.padding(.vertical, 10)
+									.padding(.horizontal, 16)
+									
+									suggestionsList
+								}
+							}
+							
+							if magicSearch.isLoading {
+								ProgressView()
+									.controlSize(.large)
+									.progressViewStyle(CircularProgressViewStyle(tint: .orangeMain500))
 							}
 						}
 					}
 					.frame(maxWidth: .infinity)
 				}
 				.background(.white)
+				
+				if isShowSipAddressesPopup && contactAvatarModel != nil {
+					VStack(alignment: .leading) {
+						HStack {
+							Text("contact_dialog_pick_phone_number_or_sip_address_title")
+								.default_text_style_800(styleSize: 16)
+								.padding(.bottom, 2)
+							
+							Spacer()
+							
+							Image("x")
+								.renderingMode(.template)
+								.resizable()
+								.foregroundStyle(Color.grayMain2c600)
+								.frame(width: 25, height: 25)
+								.padding(.all, 10)
+						}
+						.frame(maxWidth: .infinity)
+						
+						ForEach(0..<contactAvatarModel!.addresses.count, id: \.self) { index in
+							HStack {
+								HStack {
+									VStack {
+										Text(String(localized: "sip_address") + ":")
+											.default_text_style_700(styleSize: 14)
+											.frame(maxWidth: .infinity, alignment: .leading)
+										Text(contactAvatarModel!.addresses[index].dropFirst(4))
+											.default_text_style(styleSize: 14)
+											.frame(maxWidth: .infinity, alignment: .leading)
+											.lineLimit(1)
+											.fixedSize(horizontal: false, vertical: true)
+									}
+									Spacer()
+								}
+								.padding(.vertical, 15)
+								.padding(.horizontal, 10)
+							}
+							.background(.white)
+							.onTapGesture {
+								do {
+									let addr = try Factory.Instance.createAddress(addr: contactAvatarModel!.addresses[index])
+									startConversationViewModel.createOneToOneChatRoomWith(remote: addr)
+								} catch {
+									Log.error("[StartConversationFragment] unable to create address for a new outgoing call : \(contactAvatarModel!.addresses[index]) \(error) ")
+								}
+							}
+						}
+						
+						ForEach(0..<contactAvatarModel!.phoneNumbersWithLabel.count, id: \.self) { index in
+							HStack {
+								HStack {
+									VStack {
+										Text(String(localized: "phone_number") + ":")
+											.default_text_style_700(styleSize: 14)
+											.frame(maxWidth: .infinity, alignment: .leading)
+										Text(contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber)
+											.default_text_style(styleSize: 14)
+											.frame(maxWidth: .infinity, alignment: .leading)
+											.lineLimit(1)
+											.fixedSize(horizontal: false, vertical: true)
+									}
+									Spacer()
+								}
+								.padding(.vertical, 15)
+								.padding(.horizontal, 10)
+							}
+							.background(.white)
+							.onTapGesture {
+								CoreContext.shared.doOnCoreQueue { core in
+									if let phoneAddr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+										DispatchQueue.main.async {
+											startConversationViewModel.createOneToOneChatRoomWith(remote: phoneAddr)
+										}
+									} else {
+										Log.error("[StartConversationFragment] unable to create address (interpret Url for phone number) for a new outgoing call : \(contactAvatarModel!.addresses[index])")
+									}
+								}
+							}
+						}
+					}
+					.padding(.horizontal, 20)
+					.padding(.vertical, 20)
+					.background(.white)
+					.cornerRadius(20)
+					.frame(maxHeight: .infinity)
+					.shadow(color: Color.orangeMain500, radius: 0, x: 0, y: 2)
+					.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
+					.padding(.horizontal, 20)
+					.background(.black.opacity(0.65))
+					.zIndex(3)
+					.onTapGesture {
+						isShowSipAddressesPopup.toggle()
+					}
+				}
 				
 				if startConversationViewModel.operationOneToOneInProgress {
 					PopupLoadingView()
@@ -257,6 +379,7 @@ struct StartConversationFragment: View {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
 						&& contactsManager.lastSearchSuggestions[index].address != nil {
+						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
 							Image(uiImage: contactsManager.textToImage(
 								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
 								lastName: ""))
@@ -266,9 +389,29 @@ struct StartConversationFragment: View {
 							
 							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
 								.default_text_style(styleSize: 16)
-                                .lineLimit(1)
+								.lineLimit(1)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.foregroundStyle(Color.orangeMain500)
+						} else {
+							if let address = contactsManager.lastSearchSuggestions[index].address {
+								let nameTmp = address.displayName
+								?? address.username
+								?? String(address.asStringUriOnly().dropFirst(4))
+								
+								Image(uiImage: contactsManager.textToImage(
+									firstName: nameTmp,
+									lastName: ""))
+								.resizable()
+								.frame(width: 45, height: 45)
+								.clipShape(Circle())
+								
+								Text(nameTmp)
+									.default_text_style(styleSize: 16)
+									.lineLimit(1)
+									.frame(maxWidth: .infinity, alignment: .leading)
+									.foregroundStyle(Color.orangeMain500)
+							}
+						}
 					} else {
 						Image("profil-picture-default")
 							.resizable()

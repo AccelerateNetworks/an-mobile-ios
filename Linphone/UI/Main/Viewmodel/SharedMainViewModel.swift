@@ -24,28 +24,44 @@ class SharedMainViewModel: ObservableObject {
 	
 	static let shared = SharedMainViewModel()
 	
+	static let appGroupName: String = {
+		Bundle.main.object(forInfoDictionaryKey: "APP_GROUP_NAME") as? String
+		?? {
+			fatalError("APP_GROUP_NAME not defined in Info.plist")
+		}()
+	}()
+	
 	@Published var welcomeViewDisplayed = false
 	@Published var generalTermsAccepted = false
 	@Published var displayProfileMode = false
 	@Published var defaultAvatar: URL?
 	@Published var indexView: Int = 0
+	@Published var increaseTrustLevelPopupAccepted = false
+	@Published var increaseTrustLevelPopupDeviceName = ""
+	@Published var increaseTrustLevelPopupDeviceAddress: Address?
+	@Published var participantAddressToRemove = ""
 	
 	@Published var displayedFriend: ContactAvatarModel?
 	@Published var displayedCall: HistoryModel?
 	@Published var displayedConversation: ConversationModel?
 	@Published var displayedMeeting: MeetingModel?
 	
+	@Published var displayedFriendExistingChatRoom: ConversationModel?
+	
 	@Published var dialPlansList: [DialPlan?] = []
 	@Published var dialPlansLabelList: [String] = []
 	@Published var dialPlansShortLabelList: [String] = []
 	
 	@Published var fileUrlsToShare: [String] = []
+	@Published var waitingMessageCount: Int = 0
 	
 	@Published var operationInProgress = false
     
     @Published var unreadMessages: Int = 0
     @Published var missedCallsCount: Int = 0
+	@Published var cardDavFriendsListsCount: Int = 0
 	
+	@Published var disableVideoCall: Bool = false
 	@Published var disableChatFeature: Bool = false
 	@Published var disableMeetingFeature: Bool = false
 	
@@ -54,6 +70,7 @@ class SharedMainViewModel: ObservableObject {
 	let displayProfileModeKey = "display_profile_mode"
 	let defaultAvatarKey = "default_avatar"
 	let indexViewKey = "index_view"
+	let increaseTrustLevelKey = "increase_trust_level"
 	
 	var maxWidth = 600.0
 	
@@ -91,11 +108,20 @@ class SharedMainViewModel: ObservableObject {
 				defaultAvatar = defaultAvatarTmp
 			}
 		}
+		
+		if preferences.object(forKey: increaseTrustLevelKey) == nil {
+			preferences.set(increaseTrustLevelPopupAccepted, forKey: increaseTrustLevelKey)
+		} else {
+			increaseTrustLevelPopupAccepted = preferences.bool(forKey: increaseTrustLevelKey)
+		}
         
         updateMissedCallsCount()
-        updateUnreadMessagesCount()
+		updateDisableVideoCall()
 		updateDisableChatFeature()
+        updateUnreadMessagesCount()
 		updateDisableMeetingFeature()
+		
+		getCardDavFriendsListsCount()
 	}
 	
 	func changeWelcomeView() {
@@ -131,6 +157,14 @@ class SharedMainViewModel: ObservableObject {
 		
 		defaultAvatar = defaultAvatarURL
 		preferences.set(defaultAvatar, forKey: defaultAvatarKey)
+	}
+	
+	
+	func changeIncreaseTrustLevelPopupAccepted() {
+		let preferences = UserDefaults.standard
+		
+		increaseTrustLevelPopupAccepted = true
+		preferences.set(increaseTrustLevelPopupAccepted, forKey: increaseTrustLevelKey)
 	}
 	
 	func changeIndexView(indexViewInt: Int) {
@@ -221,9 +255,19 @@ class SharedMainViewModel: ObservableObject {
         }
     }
 	
+	func updateDisableVideoCall() {
+		CoreContext.shared.doOnCoreQueue { core in
+			let disableVideoCallFeatureTmp = !core.videoEnabled
+			
+			DispatchQueue.main.async {
+				self.disableVideoCall = disableVideoCallFeatureTmp
+			}
+		}
+	}
+	
 	func updateDisableChatFeature() {
 		CoreContext.shared.doOnCoreQueue { core in
-			let disableChatFeatureTmp = CorePreferences.disableChatFeature
+			let disableChatFeatureTmp = AppServices.corePreferences.disableChatFeature
 			
 			DispatchQueue.main.async {
 				self.disableChatFeature = disableChatFeatureTmp
@@ -233,11 +277,40 @@ class SharedMainViewModel: ObservableObject {
 	
 	func updateDisableMeetingFeature() {
 		CoreContext.shared.doOnCoreQueue { core in
-			let disableMeetingFeatureTmp = CorePreferences.disableMeetings ||
+			let disableMeetingFeatureTmp = AppServices.corePreferences.disableMeetings ||
 			!LinphoneUtils.isRemoteConferencingAvailable(core: core)
 			DispatchQueue.main.async {
 				self.disableMeetingFeature = disableMeetingFeatureTmp
 			}
 		}
+	}
+	
+	func updateConfigChanges() {
+		updateDisableVideoCall()
+		updateDisableChatFeature()
+		updateDisableMeetingFeature()
+	}
+	
+	func getCardDavFriendsListsCount() {
+		CoreContext.shared.doOnCoreQueue { core in
+			var list: [String] = []
+			
+			core.friendsLists.forEach({ friendList in
+				if friendList.type == .CardDAV {
+					let label = friendList.displayName ?? friendList.uri ?? ""
+					if !label.isEmpty {
+						list.append(label)
+					}
+				}
+			})
+
+			DispatchQueue.main.async {
+				self.updateCardDavFriendsListsCount(cardDavFriendsListsCount: list.count)
+			}
+		}
+	}
+	
+	func updateCardDavFriendsListsCount(cardDavFriendsListsCount: Int) {
+		self.cardDavFriendsListsCount = cardDavFriendsListsCount
 	}
 }

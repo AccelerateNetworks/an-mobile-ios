@@ -20,6 +20,7 @@
 import SwiftUI
 import WebKit
 import QuickLook
+import Combine
 
 // swiftlint:disable type_body_length
 // swiftlint:disable cyclomatic_complexity
@@ -52,7 +53,7 @@ struct ChatBubbleView: View {
 		HStack {
 			if eventLogMessage.eventModel.eventLogType == .ConferenceChatMessage {
 				VStack {
-					if !eventLogMessage.message.text.isEmpty || !eventLogMessage.message.attachments.isEmpty || eventLogMessage.message.isIcalendar {
+					if !eventLogMessage.message.text.isEmpty || !eventLogMessage.message.attachments.isEmpty || eventLogMessage.message.isIcalendar || eventLogMessage.message.isRetracted {
 						HStack(alignment: .top, content: {
 							if eventLogMessage.message.isOutgoing {
 								Spacer()
@@ -137,6 +138,12 @@ struct ChatBubbleView: View {
 														.foregroundStyle(Color.grayMain2c700)
 														.default_text_style(styleSize: 14)
 														.lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
+												} else if eventLogMessage.message.replyMessage!.isRetracted {
+													Text(eventLogMessage.message.replyMessage!.isOutgoing ? "conversation_message_content_deleted_by_us_label" : "conversation_message_content_deleted_label")
+														.italic()
+														.foregroundStyle(Color.grayMain2c500)
+														.font(.system(size: 14))
+														.lineLimit(1)
 												}
 											}
 											.padding(.all, 15)
@@ -145,7 +152,8 @@ struct ChatBubbleView: View {
 											.clipShape(RoundedRectangle(cornerRadius: 1))
 											.roundedCorner(
 												16,
-												corners: eventLogMessage.message.isOutgoing ? [.topLeft, .topRight, .bottomLeft] : [.topLeft, .topRight, .bottomRight]
+												corners: eventLogMessage.message.isOutgoing ? [.topLeft, .topRight, .bottomLeft] : [.topLeft, .topRight, .bottomRight],
+												stroke: eventLogMessage.message.id == conversationViewModel.highlightedMessageID
 											)
 										}
 										.onTapGesture {
@@ -173,7 +181,18 @@ struct ChatBubbleView: View {
 												}
 												
 												if !eventLogMessage.message.text.isEmpty {
-													DynamicLinkText(text: eventLogMessage.message.text)
+													DynamicLinkText(
+														text: eventLogMessage.message.text,
+														isMessageId: eventLogMessage.message.id == conversationViewModel.highlightedMessageID,
+														searchText: conversationViewModel.searchText,
+														participantConversationModel: conversationViewModel.participantConversationModel
+													)
+												} else if eventLogMessage.message.isRetracted {
+													Text(eventLogMessage.message.isOutgoing ? "conversation_message_content_deleted_by_us_label" : "conversation_message_content_deleted_label")
+														.italic()
+														.foregroundStyle(Color.grayMain2c500)
+														.font(.system(size: 14))
+														.lineLimit(1)
 												}
 												
 												if eventLogMessage.message.isIcalendar && eventLogMessage.message.messageConferenceInfo != nil {
@@ -325,6 +344,14 @@ struct ChatBubbleView: View {
 															.padding(.top, 1)
 													}
 													
+													if eventLogMessage.message.isEdited && eventLogMessage.message.isOutgoing {
+														Text("conversation_message_edited_label")
+														 .foregroundStyle(Color.grayMain2c500)
+														 .default_text_style_300(styleSize: 12)
+														 .padding(.top, 1)
+														 .padding(.trailing, -4)
+													}
+													
 													Text(conversationViewModel.getMessageTime(startDate: eventLogMessage.message.dateReceived))
 														.foregroundStyle(Color.grayMain2c500)
 														.default_text_style_300(styleSize: 12)
@@ -347,6 +374,14 @@ struct ChatBubbleView: View {
 																.frame(width: 15, height: 15)
 																.padding(.top, 1)
 														}
+													}
+													
+													if eventLogMessage.message.isEdited && !eventLogMessage.message.isOutgoing {
+														Text("conversation_message_edited_label")
+														 .foregroundStyle(Color.grayMain2c500)
+														 .default_text_style_300(styleSize: 12)
+														 .padding(.top, 1)
+														 .padding(.trailing, -4)
 													}
 													
 													if eventLogMessage.message.isEphemeral && !eventLogMessage.message.isOutgoing {
@@ -387,7 +422,9 @@ struct ChatBubbleView: View {
 											.roundedCorner(
 												16,
 												corners: eventLogMessage.message.isOutgoing && eventLogMessage.message.isFirstMessage ? [.topLeft, .topRight, .bottomLeft] :
-													(!eventLogMessage.message.isOutgoing && eventLogMessage.message.isFirstMessage ? [.topRight, .bottomRight, .bottomLeft] : [.allCorners]))
+													(!eventLogMessage.message.isOutgoing && eventLogMessage.message.isFirstMessage ? [.topRight, .bottomRight, .bottomLeft] : [.allCorners]),
+												stroke: eventLogMessage.message.id == conversationViewModel.highlightedMessageID
+											)
 											
 											if !eventLogMessage.message.reactions.isEmpty {
 												HStack {
@@ -849,7 +886,7 @@ struct ChatBubbleView: View {
 					}
 				}
 			}
-			.frame(width: geometryProxy.size.width - 150)
+			.frame(width: max(0, geometryProxy.size.width - 150))
 		}
 	}
 	
@@ -918,39 +955,122 @@ struct ChatBubbleView: View {
 
 struct DynamicLinkText: View {
 	let text: String
+	let isMessageId: Bool
+	let searchText: String
+	let participantConversationModel: [ContactAvatarModel]
 	
 	var body: some View {
-		let components = text.components(separatedBy: " ")
-		
-		Text(makeAttributedString(from: components))
+		Text(makeAttributedString(from: text))
 			.fixedSize(horizontal: false, vertical: true)
 			.multilineTextAlignment(.leading)
 			.lineLimit(nil)
-			.foregroundStyle(Color.grayMain2c700)
 			.default_text_style(styleSize: 14)
 	}
 	
-	// Function to create an AttributedString with clickable links
-	private func makeAttributedString(from components: [String]) -> AttributedString {
-		var result = AttributedString("")
-		for (index, component) in components.enumerated() {
-			if let url = URL(string: component.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""),
-			   url.scheme == "http" || url.scheme == "https" {
-				var attributedText = AttributedString(component)
-				attributedText.link = url
-				attributedText.foregroundColor = .blue
-				attributedText.underlineStyle = .single
-				result.append(attributedText)
+	// MARK: - Builder
+	
+	private func makeAttributedString(from text: String) -> AttributedString {
+		var result = AttributedString()
+		var currentWord = ""
+		
+		for char in text {
+			if char == " " || char == "\n" {
+				appendWord(currentWord, to: &result)
+				result.append(AttributedString(String(char)))
+				currentWord = ""
 			} else {
-				result.append(AttributedString(component))
-			}
-			
-			// Add space between words except for the last one
-			if index < components.count - 1 {
-				result.append(AttributedString(" "))
+				currentWord.append(char)
 			}
 		}
+		
+		appendWord(currentWord, to: &result)
+		
+		highlightSearch(in: &result, originalText: text)
+		
 		return result
+	}
+	
+	// MARK: - Word handling
+	
+	private func appendWord(_ word: String, to result: inout AttributedString) {
+		guard !word.isEmpty else { return }
+		
+		// URL
+		if
+			let encoded = word.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+			let url = URL(string: encoded),
+			["http", "https", "sip", "sips"].contains(url.scheme)
+		{
+			var link = AttributedString(word)
+			link.link = url
+			link.foregroundColor = .blue
+			link.underlineStyle = .single
+			result.append(link)
+			return
+		}
+		
+		// Mention
+		if isMention(word),
+		   let participant = participantConversationModel.first(
+				where: { ($0.address.dropFirst(4).split(separator: "@").first ?? "") == word.dropFirst() }
+		   ),
+		   let mentionURL = URL(string: "linphone-mention://\(participant.address)")
+		{
+			var mention = AttributedString("@" + participant.name)
+			mention.link = mentionURL
+			mention.foregroundColor = Color.orangeMain500
+			mention.font = .system(size: 14)
+			result.append(mention)
+			return
+		}
+		
+		// Text
+		var normal = AttributedString(word)
+		normal.foregroundColor = Color.grayMain2c700
+		result.append(normal)
+	}
+	
+	// MARK: - Highlight global
+	
+	private func highlightSearch(
+		in attributed: inout AttributedString,
+		originalText: String
+	) {
+		guard !searchText.isEmpty && isMessageId else { return }
+		
+		let base = originalText.folding(
+			options: [.caseInsensitive, .diacriticInsensitive],
+			locale: .current
+		)
+		
+		let search = searchText.folding(
+			options: [.caseInsensitive, .diacriticInsensitive],
+			locale: .current
+		)
+		
+		var searchRange = base.startIndex..<base.endIndex
+		
+		while let found = base.range(of: search, range: searchRange) {
+			guard
+				let start = AttributedString.Index(found.lowerBound, within: attributed),
+				let end = AttributedString.Index(found.upperBound, within: attributed)
+			else { break }
+			
+			attributed[start..<end].font = .system(size: 14, weight: .bold)
+			
+			searchRange = found.upperBound..<base.endIndex
+		}
+	}
+	
+	// MARK: - Mention validation
+	
+	private func isMention(_ word: String) -> Bool {
+		guard word.first == "@", word.count > 1 else { return false }
+		
+		let username = word.dropFirst()
+		return username.allSatisfy {
+			$0.isLetter || $0.isNumber || $0 == "." || $0 == "_"
+		}
 	}
 }
 
@@ -1029,8 +1149,12 @@ struct RoundedCorner: Shape {
 }
 
 extension View {
-	func roundedCorner(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+	func roundedCorner(_ radius: CGFloat, corners: UIRectCorner, stroke: Bool? = false) -> some View {
 		clipShape(RoundedCorner(radius: radius, corners: corners) )
+			.overlay(
+				RoundedCorner(radius: radius, corners: corners)
+					.stroke(Color.orangeMain500, lineWidth: (stroke ?? false) ? 1 : 0)
+			)
 	}
 }
 
@@ -1039,12 +1163,14 @@ struct CustomSlider: View {
 	
 	let eventLogMessage: EventLogMessage
 	
+	@State private var timer: Timer?
 	@State private var value: Double = 0.0
 	@State private var isPlaying: Bool = false
-	@State private var timer: Timer?
+	@State private var cancellable: AnyCancellable?
 	
 	var minTrackColor: Color = .white.opacity(0.5)
-	var maxTrackGradient: Gradient = Gradient(colors: [Color.orangeMain300, Color.orangeMain500])
+	var maxTrackGradient: Gradient = Gradient(colors: [Color.orangeMain500.opacity(0.5), Color.orangeMain500])
+	
 	
 	var body: some View {
 		GeometryReader { geometry in
@@ -1100,7 +1226,26 @@ struct CustomSlider: View {
 				.padding(.horizontal, 10)
 			}
 			.clipShape(RoundedRectangle(cornerRadius: radius))
+			.onAppear {
+				if eventLogMessage.message.attachments.first?.type == .voiceRecording {
+					cancellable =
+					NotificationCenter.default
+						.publisher(for: NSNotification.Name("VoiceRecording"))
+						.compactMap { $0.userInfo?["messageId"] as? String }
+						.sink { messageId in
+							if messageId == eventLogMessage.message.id {
+								conversationViewModel.startVoiceRecordPlayer(
+									voiceRecordPath: eventLogMessage.message.attachments.first!.full
+								)
+								playProgress()
+							}
+						}
+				}
+			}
 			.onDisappear {
+				cancellable?.cancel()
+				cancellable = nil
+				
 				resetProgress()
 			}
 		}
@@ -1124,7 +1269,23 @@ struct CustomSlider: View {
 					}
 				}
 			} else {
-				resetProgress()
+				self.resetProgress()
+				
+				DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+					let rows = conversationViewModel.conversationMessagesSection[0].rows
+					
+					if let index = rows.firstIndex(where: { $0.eventModel.eventLogId == eventLogMessage.message.id }),
+					   rows.indices.contains(index - 1) {
+						let nextRow = rows[index - 1]
+						if nextRow.message.attachments.first?.type == .voiceRecording {
+							NotificationCenter.default.post(
+								name: NSNotification.Name("VoiceRecording"),
+								object: nil,
+								userInfo: ["messageId": nextRow.message.id]
+							)
+						}
+					}
+				}
 			}
 		}
 	}

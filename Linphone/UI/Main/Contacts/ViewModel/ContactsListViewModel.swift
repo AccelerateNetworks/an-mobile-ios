@@ -23,6 +23,8 @@ import SwiftUI
 
 // swiftlint:disable line_length
 class ContactsListViewModel: ObservableObject {
+	static let TAG = "[ConversationForwardMessageViewModel]"
+	
 	@Published var selectedEditFriend: ContactAvatarModel?
 	
 	var stringToCopy: String = ""
@@ -31,18 +33,28 @@ class ContactsListViewModel: ObservableObject {
     var selectedFriendToShare: ContactAvatarModel?
 	var selectedFriendToDelete: ContactAvatarModel?
 	
+	@Published var devices: [ContactDeviceModel] = []
+	@Published var trustedDevicesPercentage: Double = 0.0
+	
 	@Published var displayedConversation: ConversationModel?
 	
+	private var coreDelegate: CoreDelegate?
 	private var contactChatRoomDelegate: ChatRoomDelegate?
 	
-	init() {}
+	private let nativeAddressBookFriendList = "Native address-book"
+	let linphoneAddressBookFriendList = "Linphone address-book"
+	let tempRemoteAddressBookFriendList = "TempRemoteDirectoryContacts address-book"
+	
+	init() {
+		addCoreDelegate()
+	}
 	
 	func createOneToOneChatRoomWith(remote: Address) {
 		CoreContext.shared.doOnCoreQueue { core in
 			let account = core.defaultAccount
 			if account == nil {
 				Log.error(
-					"\(ConversationForwardMessageViewModel.TAG) No default account found, can't create conversation with \(remote.asStringUriOnly())"
+					"\(Self.TAG) No default account found, can't create conversation with \(remote.asStringUriOnly())"
 				)
 				return
 			}
@@ -61,7 +73,7 @@ class ContactsListViewModel: ObservableObject {
 				guard let chatParams = params.chatParams else { return }
 				chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
 				
-				let sameDomain = remote.domain == CorePreferences.defaultDomain && remote.domain == account!.params?.domain
+				let sameDomain = remote.domain == AppServices.corePreferences.defaultDomain && remote.domain == account!.params?.domain
 				if account!.params != nil && (account!.params!.instantMessagingEncryptionMandatory && sameDomain) {
 					Log.info("\(ConversationForwardMessageViewModel.TAG) Account is in secure mode & domain matches, creating an E2E encrypted conversation")
 					chatParams.backend = ChatRoom.Backend.FlexisipChat
@@ -87,8 +99,7 @@ class ContactsListViewModel: ObservableObject {
 					
 					DispatchQueue.main.async {
 						SharedMainViewModel.shared.operationInProgress = false
-						ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Failed_to_create_conversation_error")
 					}
 					return
 				}
@@ -133,8 +144,7 @@ class ContactsListViewModel: ObservableObject {
 						
 						DispatchQueue.main.async {
 							SharedMainViewModel.shared.operationInProgress = false
-							ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Failed_to_create_conversation_error")
 						}
 					}
 				} else {
@@ -164,8 +174,7 @@ class ContactsListViewModel: ObservableObject {
 				}
 				DispatchQueue.main.async {
 					SharedMainViewModel.shared.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}, onConferenceJoined: { (chatRoom: ChatRoom, _: EventLog) in
@@ -203,12 +212,35 @@ class ContactsListViewModel: ObservableObject {
 				}
 				DispatchQueue.main.async {
 					SharedMainViewModel.shared.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		})
 		chatRoom.addDelegate(delegate: contactChatRoomDelegate!)
+	}
+	
+	func addCoreDelegate() {
+		CoreContext.shared.doOnCoreQueue { core in
+			if let coreDelegate = self.coreDelegate {
+				core.removeDelegate(delegate: coreDelegate)
+				self.coreDelegate = nil
+			}
+			
+			self.coreDelegate = CoreDelegateStub(
+				onCallStateChanged: { (core: Core, call: Call, state: Call.State, message: String) in
+					if call.state == Call.State.End && SharedMainViewModel.shared.displayedFriend != nil {
+						// Updates trust if need be
+						DispatchQueue.main.async {
+							self.fetchDevicesAndTrust()
+						}
+					}
+				}
+			)
+			
+			if self.coreDelegate != nil {
+				core.addDelegate(delegate: self.coreDelegate!)
+			}
+		}
 	}
 	
 	func deleteSelectedContact() {
@@ -222,11 +254,16 @@ class ContactsListViewModel: ObservableObject {
 					}
 				}
 				self.selectedFriendToDelete!.friend!.remove()
+				
+				DispatchQueue.main.async {
+					ToastViewModel.shared.show("Success_remove_contact")
+				}
 			} else if SharedMainViewModel.shared.displayedFriend != nil {
 				DispatchQueue.main.async {
 					withAnimation {
 						SharedMainViewModel.shared.displayedFriend = nil
 					}
+					ToastViewModel.shared.show("Success_remove_contact")
 				}
 				SharedMainViewModel.shared.displayedFriend!.friend!.remove()
 			}
@@ -262,6 +299,142 @@ class ContactsListViewModel: ObservableObject {
 				
 				DispatchQueue.main.async {
 					displayedFriend.starred = starredTmp
+				}
+			}
+		}
+	}
+	
+	func fetchDevicesAndTrust() {
+		if let friend = SharedMainViewModel.shared.displayedFriend?.friend {
+			var devicesList: [ContactDeviceModel] = []
+			
+			let friendDevices = friend.devices
+			if friendDevices.isEmpty {
+				Log.info("\(Self.TAG) No device found for friend [\(friend.name ?? "")]")
+			} else {
+				let devicesCount = friendDevices.count
+				var trustedDevicesCount = 0
+				
+				for device in friendDevices {
+					let trusted = device.securityLevel == .EndToEndEncryptedAndVerified
+					
+					if let address = device.address {
+						devicesList.append(
+							ContactDeviceModel(
+								name: device.displayName ?? NSLocalizedString("contact_device_without_name", comment: ""),
+								address: address,
+								trusted: trusted
+							)
+						)
+					}
+					
+					if trusted {
+						trustedDevicesCount += 1
+					}
+				}
+				
+				if !devicesList.isEmpty {
+					let percentage = trustedDevicesCount * 100 / devicesCount
+					trustedDevicesPercentage = Double(percentage)
+				}
+			}
+			
+			devices = devicesList
+		}
+	}
+	
+	func getOneToOneChatRoomWith() {
+		CoreContext.shared.doOnCoreQueue { core in
+			if let contactAvatarModel = SharedMainViewModel.shared.displayedFriend {
+				var remote: Address?
+
+				if contactAvatarModel.addresses.count >= 1 {
+					do {
+						remote = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
+					} catch {
+						Log.error("\(Self.TAG) unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error)")
+						return
+					}
+				} else if contactAvatarModel.addresses.isEmpty &&
+						  contactAvatarModel.phoneNumbersWithLabel.count == 1 {
+
+					if let firstPhone = contactAvatarModel.phoneNumbersWithLabel.first,
+					   let address = core.interpretUrl(
+							url: firstPhone.phoneNumber,
+							applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)
+					   ) {
+						remote = address
+					}
+				}
+
+				guard let remote else {
+					Log.error("\(Self.TAG) No valid remote address found")
+					return
+				}
+				
+				let account = core.defaultAccount
+				if account == nil {
+					Log.error(
+						"\(Self.TAG) No default account found, can't create conversation with \(remote.asStringUriOnly())"
+					)
+					return
+				}
+				
+				do {
+					let params = try core.createConferenceParams(conference: nil)
+					params.chatEnabled = true
+					params.groupEnabled = false
+					params.subject = NSLocalizedString("conversation_one_to_one_hidden_subject", comment: "")
+					params.account = account
+					
+					guard let chatParams = params.chatParams else { return }
+					chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
+					
+					let sameDomain = remote.domain == AppServices.corePreferences.defaultDomain && remote.domain == account!.params?.domain
+					if account!.params != nil && (account!.params!.instantMessagingEncryptionMandatory && sameDomain) {
+						Log.info("\(ConversationForwardMessageViewModel.TAG) Account is in secure mode & domain matches, creating an E2E encrypted conversation")
+						chatParams.backend = ChatRoom.Backend.FlexisipChat
+						params.securityLevel = Conference.SecurityLevel.EndToEnd
+					} else if account!.params != nil && (!account!.params!.instantMessagingEncryptionMandatory) {
+						if LinphoneUtils.isEndToEndEncryptedChatAvailable(core: core) {
+							Log.info(
+								"\(ConversationForwardMessageViewModel.TAG) Account is in interop mode but LIME is available, creating an E2E encrypted conversation"
+							)
+							chatParams.backend = ChatRoom.Backend.FlexisipChat
+							params.securityLevel = Conference.SecurityLevel.EndToEnd
+						} else {
+							Log.info(
+								"\(ConversationForwardMessageViewModel.TAG) Account is in interop mode but LIME isn't available, creating a SIP simple conversation"
+							)
+							chatParams.backend = ChatRoom.Backend.Basic
+							params.securityLevel = Conference.SecurityLevel.None
+						}
+					} else {
+						Log.error(
+							"\(ConversationForwardMessageViewModel.TAG) Account is in secure mode, can't chat with SIP address of different domain \(remote.asStringUriOnly())"
+						)
+						
+						DispatchQueue.main.async {
+							SharedMainViewModel.shared.operationInProgress = false
+							ToastViewModel.shared.show("Failed_to_create_conversation_error")
+						}
+						return
+					}
+					
+					let participants = [remote]
+					let localAddress = account?.params?.identityAddress
+					if let existingChatRoomTmp = core.searchChatRoom(params: params, localAddr: localAddress, remoteAddr: nil, participants: participants) {
+						Log.warn(
+							"\(ConversationForwardMessageViewModel.TAG) A 1-1 conversation between local account \(localAddress?.asStringUriOnly() ?? "") and remote \(remote.asStringUriOnly()) for given parameters already exists!"
+						)
+						
+						let conversationModel = ConversationModel(chatRoom: existingChatRoomTmp)
+						
+						DispatchQueue.main.async {
+							SharedMainViewModel.shared.displayedFriendExistingChatRoom = conversationModel
+						}
+					}
+				} catch {
 				}
 			}
 		}

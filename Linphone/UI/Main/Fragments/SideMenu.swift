@@ -32,6 +32,7 @@ struct SideMenu: View {
 	@Binding var isShowLoginFragment: Bool
 	@Binding var isShowAccountProfileFragment: Bool
 	@Binding var isShowSettingsFragment: Bool
+	@Binding var isShowRecordingsListFragment: Bool
 	@Binding var isShowHelpFragment: Bool
 	@State private var showHelp = false
 	
@@ -45,6 +46,7 @@ struct SideMenu: View {
 			.onTapGesture {
 				self.menuClose()
 			}
+			
 			VStack {
 				VStack {
 					HStack {
@@ -136,12 +138,18 @@ struct SideMenu: View {
 							}
 						}
 						
-						/*
-						SideMenuEntry(
-							iconName: "record-fill",
-							title: "recordings_title"
-						)
-						*/
+						
+						if !AppServices.corePreferences.disableCallRecordings {
+							SideMenuEntry(
+								iconName: "record-fill",
+								title: "recordings_title"
+							).onTapGesture {
+								self.menuClose()
+								withAnimation {
+									isShowRecordingsListFragment = true
+								}
+							}
+						}
 						
 						SideMenuEntry(
 							iconName: "question",
@@ -151,7 +159,6 @@ struct SideMenu: View {
 							withAnimation {
 								isShowHelpFragment = true
 							}
-							
 						}
 					}
 					.padding(.bottom, safeAreaInsets.bottom + 13)
@@ -166,7 +173,16 @@ struct SideMenu: View {
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.padding(.leading, safeAreaInsets.leading)
-			.padding(.top, TelecomManager.shared.callInProgress ? 0 : safeAreaInsets.top)
+			.padding(
+				.top,
+				TelecomManager.shared.callInProgress
+				|| accountProfileViewModel.accountError
+				|| accountProfileViewModel.nonDefaultAccountNotificationsCount > 0
+				|| SharedMainViewModel.shared.waitingMessageCount > 0
+				|| !SharedMainViewModel.shared.fileUrlsToShare.isEmpty
+				? 0
+				: safeAreaInsets.top
+			)
 		}
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 	}
@@ -175,15 +191,15 @@ struct SideMenu: View {
 
 #Preview {
 	GeometryReader { geometry in
-		@State var triggerNavigateToLogin: Bool = false
 		SideMenu(
 			width: geometry.size.width / 5 * 4,
 			isOpen: .constant(true),
 			menuClose: {},
 			safeAreaInsets: geometry.safeAreaInsets,
-			isShowLoginFragment: $triggerNavigateToLogin,
+			isShowLoginFragment: .constant(false),
 			isShowAccountProfileFragment: .constant(false),
 			isShowSettingsFragment: .constant(false),
+			isShowRecordingsListFragment: .constant(false),
 			isShowHelpFragment: .constant(false)
 		)
 		.ignoresSafeArea(.all)

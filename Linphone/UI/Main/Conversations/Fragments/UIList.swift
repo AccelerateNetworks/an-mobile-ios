@@ -108,7 +108,8 @@ struct UIList: UIViewRepresentable {
 	
 	let geometryProxy: GeometryProxy
 	let sections: [MessagesSection]
-    
+	
+	@Binding var securitySheet: Bool
     @Binding var isMessageTextFocused: Bool
 	
 	@State private var isScrolledToTop = false
@@ -135,8 +136,10 @@ struct UIList: UIViewRepresentable {
 		tableView.backgroundColor = UIColor(.white)
 		tableView.scrollsToTop = true
 		
-		if SharedMainViewModel.shared.displayedConversation != nil && SharedMainViewModel.shared.displayedConversation!.encryptionEnabled {
-			let footerView = Self.makeFooterView()
+		if let displayedConversation = SharedMainViewModel.shared.displayedConversation, displayedConversation.isEndToEndEncryptionAvailable {
+			let footerView = Self.makeFooterView {
+				securitySheet = true
+			}
 			footerView.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 80)
 			footerView.transform = CGAffineTransformMakeScale(1, -1)
 			tableView.tableFooterView = footerView
@@ -179,26 +182,27 @@ struct UIList: UIViewRepresentable {
 		return containerView
 	}
 	
-	static func makeFooterView() -> UIView {
+	static func makeFooterView(onTap: @escaping () -> Void) -> UIView {
+		let encryptionEnabled = SharedMainViewModel.shared.displayedConversation!.encryptionEnabled
 		let host = UIHostingController(
 			rootView:
 				VStack {
 					HStack {
-						Image("lock-simple-bold")
+						Image(encryptionEnabled ? "lock-simple-bold" : "lock-simple-open")
 							.renderingMode(.template)
 							.resizable()
-							.foregroundStyle(Color.blueInfo500)
+							.foregroundStyle(encryptionEnabled ? Color.blueInfo500 : Color.orangeWarning600)
 							.frame(width: 25, height: 25)
 							.padding(10)
 						
 						VStack(spacing: 5) {
-							Text("conversation_end_to_end_encrypted_event_title")
-								.foregroundStyle(Color.blueInfo500)
+							Text(encryptionEnabled ? "conversation_end_to_end_encrypted_event_title" : "conversation_warning_disabled_because_not_secured_title")
+								.foregroundStyle(encryptionEnabled ? Color.blueInfo500 : Color.orangeWarning600)
 								.default_text_style_700(styleSize: 14)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.multilineTextAlignment(.leading)
 							
-							Text("conversation_end_to_end_encrypted_event_subtitle")
+							Text(encryptionEnabled ? "conversation_end_to_end_encrypted_event_subtitle" : "conversation_warning_disabled_because_not_secured_subtitle")
 								.foregroundStyle(Color.gray400)
 								.default_text_style(styleSize: 12)
 								.frame(maxWidth: .infinity, alignment: .leading)
@@ -210,9 +214,12 @@ struct UIList: UIViewRepresentable {
 					.overlay(
 						RoundedRectangle(cornerRadius: 10)
 							.inset(by: 0.5)
-							.stroke(Color.blueInfo500, lineWidth: 0.5)
+							.stroke(encryptionEnabled ? Color.blueInfo500 : Color.orangeWarning600, lineWidth: 0.5)
 					)
                     .padding(.horizontal, 10)
+				}
+				.onTapGesture {
+					onTap()
 				}
 				.frame(height: 80)
 		)
@@ -551,6 +558,12 @@ struct UIList: UIViewRepresentable {
 		}
 		
 		func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+			let eventLogMessage = parent.conversationViewModel.conversationMessagesSection[0].rows[indexPath.row]
+			
+			guard !eventLogMessage.message.isRetracted && eventLogMessage.eventModel.eventLogType == .ConferenceChatMessage else {
+				return nil
+			}
+			
 			let archiveAction = UIContextualAction(style: .normal, title: "") { _, _, completionHandler in
                 self.parent.conversationViewModel.replyToMessage(index: indexPath.row, isMessageTextFocused: Binding(
                     get: { self.parent.isMessageTextFocused },

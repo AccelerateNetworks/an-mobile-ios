@@ -51,7 +51,7 @@ class StartCallViewModel: ObservableObject {
     }
 	
 	func updateGroupCallButtonVisibility(core: Core) {
-		let hideGroupCall = CorePreferences.disableMeetings ||
+		let hideGroupCall = AppServices.corePreferences.disableMeetings ||
 		!LinphoneUtils.isRemoteConferencingAvailable(core: core) ||
 		core.callsNb > 0
 		DispatchQueue.main.async {
@@ -139,8 +139,7 @@ class StartCallViewModel: ObservableObject {
 			} else if state == .CreationFailed {
 				Log.error("\(StartCallViewModel.TAG) Failed to create group call!")
 				DispatchQueue.main.async {
-					ToastViewModel.shared.toastMessage = "Failed_to_create_group_call_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_group_call_error")
 					self.operationInProgress = false
 				}
 			}
@@ -157,7 +156,7 @@ class StartCallViewModel: ObservableObject {
 	
 	func interpretAndStartCall() {
 		CoreContext.shared.doOnCoreQueue { core in
-			let address = core.interpretUrl(url: self.searchField, applyInternationalPrefix: true)
+			let address = core.interpretUrl(url: self.searchField, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core))
 			if address != nil {
 				TelecomManager.shared.doCallOrJoinConf(address: address!)
 			}

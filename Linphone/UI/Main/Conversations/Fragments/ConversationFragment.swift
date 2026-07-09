@@ -41,6 +41,7 @@ struct ConversationFragment: View {
 	@State var isMenuOpen = false
 	@State private var isMuted: Bool = false
 	
+	@FocusState var isSearchTextFocused: Bool
 	@FocusState var isMessageTextFocused: Bool
 	
 	@State var offset: CGPoint = .zero
@@ -58,12 +59,15 @@ struct ConversationFragment: View {
 	@State private var mediasIsLoading = false
 	@State private var voiceRecordingInProgress = false
 	
-	@State private var isShowConversationForwardMessageFragment = false
 	@State private var isShowEphemeralFragment = false
+	@State private var isShowMediaFilesFragment = false
+	@State private var isShowDocumentsFilesFragment = false
 	@State private var isShowInfoConversationFragment = false
+	@State private var isShowConversationForwardMessageFragment = false
 	
 	@Binding var isShowConversationFragment: Bool
 	@Binding var isShowStartCallGroupPopup: Bool
+	@Binding var isShowDeleteMessagePopup: Bool
 	
 	@State private var selectedCategoryIndex = 0
 	
@@ -80,13 +84,37 @@ struct ConversationFragment: View {
 	@Binding var isShowConversationInfoPopup: Bool
 	@Binding var conversationInfoPopupText: String
 	
+	@Binding var isShowRemoveParticipantPopup: Bool
+	
+	@Binding var showLeaveConversationPopup: Bool
+	@Binding var showDeleteConversationPopup: Bool
+	@Binding var showDeleteConversationHistoryPopup: Bool
+	
+	@Binding var securitySheet: Bool
+	
+	@State var searchText: String = ""
 	@State var messageText: String = ""
 	
 	@State private var chosen: String?
  	@State private var showPicker = false
 	@State private var isSheetVisible = false
+	@State private var isSearchVisible = false
 	
 	@State private var isImdnOrReactionsSheetVisible = false
+	
+	@State var mentionIsOpen: Bool = false
+	@State var mentionQuery: String = ""
+	
+	private let rowHeight: CGFloat = 60
+	private let maxVisibleRows: CGFloat = 3.5
+	
+	private var filteredParticipants: [ContactAvatarModel] {
+		conversationViewModel.participantConversationModel.filter {
+			mentionQuery.isEmpty
+			|| $0.name.localizedCaseInsensitiveContains(mentionQuery)
+			|| String($0.address.dropFirst(4).split(separator: "@").first ?? "").localizedCaseInsensitiveContains(mentionQuery)
+		}
+	}
 	
 	var body: some View {
 		NavigationView {
@@ -112,6 +140,16 @@ struct ConversationFragment: View {
 								.environmentObject(conversationViewModel)
 								.presentationDetents([.medium])
 				 				.presentationDragIndicator(.visible)
+						})
+						.sheet(isPresented: $isShowDeleteMessagePopup, onDismiss: {
+							isShowDeleteMessagePopup = false
+						}, content: {
+							ConversationDeleteMessageBottomSheet(
+								showingSheet: $isShowDeleteMessagePopup
+							)
+							.environmentObject(conversationViewModel)
+							.presentationDetents([.fraction(0.15)])
+							.ignoresSafeArea(.all)
 						})
 						.sheet(isPresented: $isShowPhotoLibrary, onDismiss: {
 							isShowPhotoLibrary = false
@@ -193,6 +231,14 @@ struct ConversationFragment: View {
 						} onDismiss: {
 							conversationViewModel.isShowSelectedMessageToDisplayDetails = false
 						}
+						.halfSheet(showSheet: $isShowDeleteMessagePopup) {
+							ConversationDeleteMessageBottomSheet(
+								showingSheet: $isShowDeleteMessagePopup
+							)
+							.environmentObject(conversationViewModel)
+						} onDismiss: {
+							isShowDeleteMessagePopup = false
+						}
 						.sheet(isPresented: $isShowPhotoLibrary, onDismiss: {
 							isShowPhotoLibrary = false
 						}, content: {
@@ -233,6 +279,8 @@ struct ConversationFragment: View {
 					if SharedMainViewModel.shared.displayedConversation != nil && (navigationManager.peerAddr == nil || navigationManager.peerAddr!.contains(SharedMainViewModel.shared.displayedConversation!.remoteSipUri)) {
 						conversationViewModel.resetDisplayedChatRoom()
 					}
+				} else {
+					conversationViewModel.compose(stop: true, cachedConversation: cachedConversation)
 				}
 			}
 		}
@@ -275,122 +323,122 @@ struct ConversationFragment: View {
 						.edgesIgnoringSafeArea(.top)
 						.frame(height: 0)
 					
-					HStack {
-						if (!(orientation == .landscapeLeft || orientation == .landscapeRight
-							  || UIScreen.main.bounds.size.width > UIScreen.main.bounds.size.height)) || isShowConversationFragment {
-							Image("caret-left")
-								.renderingMode(.template)
-								.resizable()
-								.foregroundStyle(Color.orangeMain500)
-								.frame(width: 25, height: 25, alignment: .leading)
-								.padding(.all, 10)
-								.padding(.top, 4)
-								.padding(.leading, -10)
-								.onTapGesture {
-									withAnimation {
-										if isShowConversationFragment {
-											isShowConversationFragment = false
-										}
-										SharedMainViewModel.shared.displayedConversation = nil
-									}
-								}
-						}
-						
-                        Avatar(contactAvatarModel: SharedMainViewModel.shared.displayedConversation?.avatarModel ?? cachedConversation!.avatarModel, avatarSize: 50)
-							.padding(.top, 4)
-						
-						VStack(spacing: 1) {
-                            Text(SharedMainViewModel.shared.displayedConversation?.subject ?? cachedConversation!.subject)
-								.default_text_style(styleSize: 16)
-								.frame(maxWidth: .infinity, alignment: .leading)
-								.padding(.top, 4)
-								.lineLimit(1)
-							
-							if isMuted || conversationViewModel.ephemeralTime != NSLocalizedString("conversation_ephemeral_messages_duration_disabled", comment: "") {
-								HStack {
-									if isMuted {
-										Image("bell-slash")
-											.renderingMode(.template)
-											.resizable()
-											.foregroundStyle(Color.orangeMain500)
-											.frame(width: 16, height: 16, alignment: .trailing)
-									}
-									
-									if conversationViewModel.ephemeralTime != NSLocalizedString("conversation_ephemeral_messages_duration_disabled", comment: "") {
-										Image("clock-countdown")
-											.renderingMode(.template)
-											.resizable()
-											.foregroundStyle(Color.orangeMain500)
-											.frame(width: 16, height: 16, alignment: .trailing)
-										
-										Text(conversationViewModel.ephemeralTime)
-											.default_text_style(styleSize: 12)
-											.padding(.leading, -2)
-											.frame(maxWidth: .infinity, alignment: .leading)
-											.lineLimit(1)
-									}
-									
-									Spacer()
-								}
-							}
-						}
-						.background(.white)
-						.onTapGesture {
-							withAnimation {
-								isShowInfoConversationFragment = true
-							}
-						}
-						.padding(.vertical, 10)
-						
-						Spacer()
-						
-                        if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) {
-							Button {
-								if SharedMainViewModel.shared.displayedConversation!.isGroup {
-									isShowStartCallGroupPopup.toggle()
-								} else {
-									SharedMainViewModel.shared.displayedConversation!.call()
-								}
-							} label: {
-								Image("phone")
+					if !isSearchVisible {
+						HStack {
+							if (!(orientation == .landscapeLeft || orientation == .landscapeRight
+								  || UIScreen.main.bounds.size.width > UIScreen.main.bounds.size.height)) || isShowConversationFragment {
+								Image("caret-left")
 									.renderingMode(.template)
 									.resizable()
-									.foregroundStyle(Color.grayMain2c500)
+									.foregroundStyle(Color.orangeMain500)
 									.frame(width: 25, height: 25, alignment: .leading)
 									.padding(.all, 10)
 									.padding(.top, 4)
+									.padding(.leading, -10)
+									.onTapGesture {
+										withAnimation {
+											if isShowConversationFragment {
+												isShowConversationFragment = false
+											}
+											SharedMainViewModel.shared.displayedConversation = nil
+										}
+									}
 							}
-						}
-						
-						Menu {
-							Button {
-								isMenuOpen = false
+							
+							Avatar(contactAvatarModel: SharedMainViewModel.shared.displayedConversation?.avatarModel ?? cachedConversation!.avatarModel, avatarSize: 50)
+								.padding(.top, 4)
+							
+							VStack(spacing: 1) {
+								Text(SharedMainViewModel.shared.displayedConversation?.subject ?? cachedConversation!.subject)
+									.default_text_style(styleSize: 16)
+									.frame(maxWidth: .infinity, alignment: .leading)
+									.padding(.top, 4)
+									.lineLimit(1)
+								
+								if isMuted || conversationViewModel.ephemeralTime != NSLocalizedString("conversation_ephemeral_messages_duration_disabled", comment: "") || ((SharedMainViewModel.shared.displayedConversation?.encryptionEnabled ?? cachedConversation!.encryptionEnabled) == false && (SharedMainViewModel.shared.displayedConversation?.isEndToEndEncryptionAvailable ?? cachedConversation!.isEndToEndEncryptionAvailable) == true) {
+									HStack {
+										if isMuted {
+											Image("bell-slash")
+												.renderingMode(.template)
+												.resizable()
+												.foregroundStyle(Color.orangeMain500)
+												.frame(width: 16, height: 16, alignment: .trailing)
+										}
+										
+										if conversationViewModel.ephemeralTime != NSLocalizedString("conversation_ephemeral_messages_duration_disabled", comment: "") {
+											Image("clock-countdown")
+												.renderingMode(.template)
+												.resizable()
+												.foregroundStyle(Color.orangeMain500)
+												.frame(width: 16, height: 16, alignment: .trailing)
+											
+											Text(conversationViewModel.ephemeralTime)
+												.default_text_style(styleSize: 12)
+												.padding(.leading, -2)
+												.frame(maxWidth: .infinity, alignment: .leading)
+												.lineLimit(1)
+										}
+										
+										if (SharedMainViewModel.shared.displayedConversation?.encryptionEnabled ?? cachedConversation!.encryptionEnabled) == false
+											&& (SharedMainViewModel.shared.displayedConversation?.isEndToEndEncryptionAvailable ?? cachedConversation!.isEndToEndEncryptionAvailable) == true {
+											HStack {
+												Image("lock-simple-open")
+													.renderingMode(.template)
+													.resizable()
+													.foregroundStyle(Color.orangeWarning600)
+													.frame(width: 16, height: 16, alignment: .trailing)
+												
+												Text("conversation_warning_disabled_because_not_secured_title")
+													.foregroundStyle(Color.orangeWarning600)
+													.default_text_style(styleSize: 12)
+													.frame(maxWidth: .infinity, alignment: .leading)
+													.lineLimit(1)
+											}
+										}
+										
+										Spacer()
+									}
+								}
+							}
+							.background(.white)
+							.onTapGesture {
 								withAnimation {
 									isShowInfoConversationFragment = true
 								}
-							} label: {
-								HStack {
-									Text("conversation_menu_go_to_info")
-									Spacer()
-									Image("info")
+							}
+							.padding(.vertical, 10)
+							
+							Spacer()
+							
+							if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) {
+								Button {
+									if SharedMainViewModel.shared.displayedConversation!.isGroup {
+										isShowStartCallGroupPopup.toggle()
+									} else {
+										SharedMainViewModel.shared.displayedConversation!.call()
+									}
+								} label: {
+									Image("phone")
 										.renderingMode(.template)
 										.resizable()
 										.foregroundStyle(Color.grayMain2c500)
 										.frame(width: 25, height: 25, alignment: .leading)
 										.padding(.all, 10)
+										.padding(.top, 4)
 								}
 							}
 							
-                            if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) {
+							Menu {
 								Button {
 									isMenuOpen = false
-									SharedMainViewModel.shared.displayedConversation!.toggleMute()
-									isMuted = !isMuted
+									withAnimation {
+										isShowInfoConversationFragment = true
+									}
 								} label: {
 									HStack {
-										Text(isMuted ? "conversation_action_unmute" : "conversation_action_mute")
+										Text("conversation_menu_go_to_info")
 										Spacer()
-										Image(isMuted ? "bell-simple" : "bell-simple-slash")
+										Image("info")
 											.renderingMode(.template)
 											.resizable()
 											.foregroundStyle(Color.grayMain2c500)
@@ -402,13 +450,14 @@ struct ConversationFragment: View {
 								Button {
 									isMenuOpen = false
 									withAnimation {
-										isShowEphemeralFragment = true
+										isSearchVisible = true
 									}
+									isSearchTextFocused = true
 								} label: {
 									HStack {
-										Text("conversation_menu_configure_ephemeral_messages")
+										Text("conversation_menu_search_in_messages")
 										Spacer()
-										Image("clock-countdown")
+										Image("magnifying-glass")
 											.renderingMode(.template)
 											.resizable()
 											.foregroundStyle(Color.grayMain2c500)
@@ -416,40 +465,176 @@ struct ConversationFragment: View {
 											.padding(.all, 10)
 									}
 								}
+								
+								if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) {
+									Button {
+										isMenuOpen = false
+										SharedMainViewModel.shared.displayedConversation!.toggleMute()
+										isMuted = !isMuted
+									} label: {
+										HStack {
+											Text(isMuted ? "conversation_action_unmute" : "conversation_action_mute")
+											Spacer()
+											Image(isMuted ? "bell-simple" : "bell-simple-slash")
+												.renderingMode(.template)
+												.resizable()
+												.foregroundStyle(Color.grayMain2c500)
+												.frame(width: 25, height: 25, alignment: .leading)
+												.padding(.all, 10)
+										}
+									}
+									
+									Button {
+										isMenuOpen = false
+										withAnimation {
+											isShowEphemeralFragment = true
+										}
+									} label: {
+										HStack {
+											Text("conversation_menu_configure_ephemeral_messages")
+											Spacer()
+											Image("clock-countdown")
+												.renderingMode(.template)
+												.resizable()
+												.foregroundStyle(Color.grayMain2c500)
+												.frame(width: 25, height: 25, alignment: .leading)
+												.padding(.all, 10)
+										}
+									}
+								}
+								
+								Button {
+									isMenuOpen = false
+									withAnimation {
+										isShowMediaFilesFragment = true
+									}
+								} label: {
+									HStack {
+										Text("conversation_menu_media_files")
+										Spacer()
+										Image("image")
+											.renderingMode(.template)
+											.resizable()
+											.foregroundStyle(Color.grayMain2c500)
+											.frame(width: 25, height: 25, alignment: .leading)
+											.padding(.all, 10)
+									}
+								}
+								
+								Button {
+									isMenuOpen = false
+									withAnimation {
+										isShowDocumentsFilesFragment = true
+									}
+								} label: {
+									HStack {
+										Text("conversation_menu_documents_files")
+										Spacer()
+										Image("file-pdf")
+											.renderingMode(.template)
+											.resizable()
+											.foregroundStyle(Color.grayMain2c500)
+											.frame(width: 25, height: 25, alignment: .leading)
+											.padding(.all, 10)
+									}
+								}
+							} label: {
+								Image("dots-three-vertical")
+									.renderingMode(.template)
+									.resizable()
+									.foregroundStyle(Color.grayMain2c500)
+									.frame(width: 25, height: 25, alignment: .leading)
+									.padding(.all, 10)
+									.padding(.top, 4)
+									.onChange(of: isMuted) { _ in }
+									.onAppear {
+										isMuted = SharedMainViewModel.shared.displayedConversation!.isMuted
+									}
 							}
-						} label: {
-							Image("dots-three-vertical")
+							.onTapGesture {
+								isMenuOpen = true
+							}
+						}
+						.frame(maxWidth: .infinity)
+						.frame(height: 50)
+						.padding(.horizontal)
+						.padding(.bottom, 4)
+						.background(.white)
+					} else {
+						HStack {
+							Image("caret-left")
 								.renderingMode(.template)
 								.resizable()
 								.foregroundStyle(Color.grayMain2c500)
 								.frame(width: 25, height: 25, alignment: .leading)
 								.padding(.all, 10)
 								.padding(.top, 4)
-								.onChange(of: isMuted) { _ in }
-								.onAppear {
-									isMuted = SharedMainViewModel.shared.displayedConversation!.isMuted
+								.padding(.leading, -10)
+								.onTapGesture {
+									searchText = ""
+									conversationViewModel.searchText = ""
+									conversationViewModel.latestMatch = nil
+									conversationViewModel.canSearchDown = false
+									conversationViewModel.highlightedMessageID = nil
+									withAnimation {
+										isSearchVisible = false
+									}
 								}
+							
+							TextField("conversation_menu_search_in_messages", text: $searchText)
+								.default_text_style(styleSize: 15)
+								.focused($isSearchTextFocused)
+								.padding(.vertical, 5)
+								.submitLabel(.search)
+								.onSubmit {
+									conversationViewModel.searchChatMessage(direction: .Up, textToSearch: searchText)
+								}
+							
+							Button {
+								conversationViewModel.searchChatMessage(direction: .Up, textToSearch: searchText)
+							} label: {
+								Image("caret-up")
+									.renderingMode(.template)
+									.resizable()
+									.foregroundStyle(searchText.isEmpty ? Color.grayMain2c300 : Color.grayMain2c500)
+									.frame(width: 25, height: 25, alignment: .leading)
+									.padding(.all, 10)
+									.padding(.top, 4)
+							}
+							.disabled(searchText.isEmpty)
+							
+							Button {
+								conversationViewModel.searchChatMessage(direction: .Down, textToSearch: searchText)
+							} label: {
+								Image("caret-down")
+									.renderingMode(.template)
+									.resizable()
+									.foregroundStyle((searchText.isEmpty || !conversationViewModel.canSearchDown) ? Color.grayMain2c300 : Color.grayMain2c500)
+									.frame(width: 25, height: 25, alignment: .leading)
+									.padding(.all, 10)
+									.padding(.top, 4)
+							}
+							.disabled(searchText.isEmpty || !conversationViewModel.canSearchDown)
+							
 						}
-						.onTapGesture {
-							isMenuOpen = true
-						}
+						.frame(maxWidth: .infinity)
+						.frame(height: 50)
+						.padding(.horizontal)
+						.padding(.bottom, 4)
+						.background(.white)
 					}
-					.frame(maxWidth: .infinity)
-					.frame(height: 50)
-					.padding(.horizontal)
-					.padding(.bottom, 4)
-					.background(.white)
 					
 					if #available(iOS 16.0, *) {
 						ZStack(alignment: .bottomTrailing) {
 							UIList(
 								geometryProxy: geometry,
                                 sections: conversationViewModel.conversationMessagesSection,
+								securitySheet: $securitySheet,
                                 isMessageTextFocused: Binding(get: {
                                     isMessageTextFocused
                                 }, set: { newValue in
                                     isMessageTextFocused = newValue
-                                })
+								})
                             )
 							.environmentObject(conversationViewModel)
 							.environmentObject(conversationsListViewModel)
@@ -460,6 +645,7 @@ struct ConversationFragment: View {
 							}
 					  	}
 						.onDisappear {
+							conversationViewModel.compose(stop: true, cachedConversation: cachedConversation)
 							conversationViewModel.resetMessage()
 						}
 					} else {
@@ -555,6 +741,7 @@ struct ConversationFragment: View {
 								conversationViewModel.getMessages()
 							}
 							.onDisappear {
+								conversationViewModel.compose(stop: true, cachedConversation: cachedConversation)
 								conversationViewModel.resetMessage()
 							}
 						}
@@ -574,7 +761,7 @@ struct ConversationFragment: View {
 						.transition(.move(edge: .bottom))
 					}
 					
-                    if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) {
+                    if !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) && !isSearchVisible {
 						if conversationViewModel.messageToReply != nil {
 							ZStack(alignment: .top) {
 								HStack {
@@ -610,6 +797,43 @@ struct ConversationFragment: View {
 									Button(action: {
 										withAnimation {
 											conversationViewModel.messageToReply = nil
+										}
+									}, label: {
+										Image("x")
+											.resizable()
+											.frame(width: 30, height: 30, alignment: .leading)
+											.padding(.all, 10)
+									})
+								}
+							}
+							.transition(.move(edge: .bottom))
+						} else if conversationViewModel.messageToEdit != nil {
+							ZStack(alignment: .top) {
+								HStack {
+									VStack {
+										Text("conversation_editing_message_title")
+											.default_text_style_300(styleSize: 15)
+											.frame(maxWidth: .infinity, alignment: .leading)
+											.padding(.bottom, 1)
+											.lineLimit(1)
+										
+										Text("\(conversationViewModel.messageToEdit!.message.text)")
+											.default_text_style_300(styleSize: 15)
+											.frame(maxWidth: .infinity, alignment: .leading)
+											.lineLimit(1)
+									}
+								}
+								.frame(maxWidth: .infinity)
+								.padding(.all, 20)
+								.background(Color.gray100)
+								
+								HStack {
+									Spacer()
+									
+									Button(action: {
+										messageText = ""
+										withAnimation {
+											conversationViewModel.messageToEdit = nil
 										}
 									}, label: {
 										Image("x")
@@ -821,6 +1045,72 @@ struct ConversationFragment: View {
 							.transition(.move(edge: .bottom))
 						}
 						
+						if mentionIsOpen && SharedMainViewModel.shared.displayedConversation!.isGroup {
+							ZStack(alignment: .top) {
+								ScrollView {
+									LazyVStack(alignment: .leading, spacing: 0) {
+										Text("conversation_participants_list_header")
+											.default_text_style_300(styleSize: 12)
+											.lineLimit(1)
+											.frame(height: 14)
+											.padding(.vertical, 8)
+											.padding(.horizontal, 10)
+										
+											if filteredParticipants.isEmpty {
+												VStack {
+													Text("conversation_participants_list_empty")
+														.default_text_style_800(styleSize: 16)
+														.frame(maxWidth: .infinity, alignment: .center)
+												}
+												.frame(height: rowHeight)
+											}
+										ForEach(filteredParticipants, id: \.id) { participant in
+											Button {
+												messageText = String(messageText.dropLast(mentionQuery.count))
+												messageText.append((participant.address.dropFirst(4).split(separator: "@").first ?? "") + " ")
+											} label: {
+												HStack {
+													Avatar(contactAvatarModel: participant, avatarSize: 40)
+
+													Text(participant.name)
+														.default_text_style(styleSize: 16)
+														.lineLimit(1)
+
+													Spacer()
+												}
+												.frame(maxWidth: .infinity)
+												.background(Color.gray100)
+												.padding(.horizontal)
+											}
+											.frame(height: rowHeight)
+											.buttonStyle(.plain)
+										}
+									}
+								}
+								.frame(
+									height: filteredParticipants.isEmpty ? rowHeight + 30 : min(
+										(CGFloat(filteredParticipants.count) * rowHeight) + 30,
+										(rowHeight * maxVisibleRows) + 30
+									)
+								)
+								.clipped()
+								.background(Color.gray100)
+
+								HStack {
+									Spacer()
+									Button {
+										withAnimation { mentionIsOpen = false }
+									} label: {
+										Image("x")
+											.resizable()
+											.frame(width: 24, height: 24)
+											.padding(10)
+									}
+								}
+							}
+							.transition(.move(edge: .bottom))
+						}
+						
 						HStack(spacing: 0) {
 							if !voiceRecordingInProgress {
 								Button {
@@ -847,9 +1137,8 @@ struct ConversationFragment: View {
 											.focused($isMessageTextFocused)
 											.padding(.vertical, 5)
 											.onChange(of: messageText) { text in
-												if !text.isEmpty {
-													conversationViewModel.compose()
-												}
+												self.updateMentionState(from: text)
+												conversationViewModel.compose(stop: text.isEmpty)
 											}
 									} else {
 										ZStack(alignment: .leading) {
@@ -860,9 +1149,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: 15)
 												.focused($isMessageTextFocused)
 												.onChange(of: messageText) { text in
-													if !text.isEmpty {
-														conversationViewModel.compose()
-													}
+													conversationViewModel.compose(stop: text.isEmpty)
 												}
 											
 											if messageText.isEmpty {
@@ -879,43 +1166,66 @@ struct ConversationFragment: View {
 										}
 									}
 									
-									if messageText.isEmpty && conversationViewModel.mediasToSend.isEmpty {
-										Button {
-											voiceRecordingInProgress = true
-										} label: {
-											Image("microphone")
-												.renderingMode(.template)
-												.resizable()
-												.foregroundStyle(Color.grayMain2c500)
-												.frame(width: 28, height: 28, alignment: .leading)
-												.padding(.all, 6)
-												.padding(.top, 4)
+									if conversationViewModel.messageToEdit == nil {
+										if messageText.isEmpty && conversationViewModel.mediasToSend.isEmpty {
+											Button {
+												voiceRecordingInProgress = true
+											} label: {
+												Image("microphone")
+													.renderingMode(.template)
+													.resizable()
+													.foregroundStyle(Color.grayMain2c500)
+													.frame(width: 28, height: 28, alignment: .leading)
+													.padding(.all, 6)
+													.padding(.top, 4)
+											}
+										} else {
+											Button {
+												if conversationViewModel.displayedConversationHistorySize > 1 {
+													NotificationCenter.default.post(name: .onScrollToBottom, object: nil)
+												}
+												
+												let messageTextTmp = self.messageText
+												messageText = " "
+												DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+													messageText = ""
+													isMessageTextFocused = true
+													
+													conversationViewModel.sendMessage(messageText: messageTextTmp)
+												}
+											} label: {
+												Image("paper-plane-tilt")
+													.renderingMode(.template)
+													.resizable()
+													.foregroundStyle(Color.orangeMain500)
+													.frame(width: 28, height: 28, alignment: .leading)
+													.padding(.all, 6)
+													.padding(.top, 4)
+													.rotationEffect(.degrees(45))
+											}
+											.padding(.trailing, 4)
 										}
 									} else {
 										Button {
-											if conversationViewModel.displayedConversationHistorySize > 1 {
-												NotificationCenter.default.post(name: .onScrollToBottom, object: nil)
-											}
-											
 											let messageTextTmp = self.messageText
-                                            messageText = " "
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                                                messageText = ""
-                                                isMessageTextFocused = true
-                                                
-                                                conversationViewModel.sendMessage(messageText: messageTextTmp)
-                                            }
+											messageText = " "
+											DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+												messageText = ""
+												isMessageTextFocused = true
+												
+												conversationViewModel.sendMessage(messageText: messageTextTmp)
+											}
 										} label: {
-											Image("paper-plane-tilt")
+											Image("pencil-simple")
 												.renderingMode(.template)
 												.resizable()
-												.foregroundStyle(Color.orangeMain500)
+												.foregroundStyle(messageText.isEmpty ? Color.gray300 : Color.orangeMain500)
 												.frame(width: 28, height: 28, alignment: .leading)
 												.padding(.all, 6)
 												.padding(.top, 4)
-												.rotationEffect(.degrees(45))
 										}
 										.padding(.trailing, 4)
+										.disabled(messageText.isEmpty)
 									}
 								}
 								.padding(.leading, 15)
@@ -1096,28 +1406,67 @@ struct ConversationFragment: View {
 											
 											Divider()
 										}
-									
-										Button {
-											let indexMessage = conversationViewModel.conversationMessagesSection[0].rows.firstIndex(where: {$0.message.id == conversationViewModel.selectedMessage!.message.id})
-											conversationViewModel.selectedMessage = nil
-											conversationViewModel.replyToMessage(index: indexMessage ?? 0, isMessageTextFocused: Binding(
-                                                get: { isMessageTextFocused },
-                                                set: { isMessageTextFocused = $0 }
-                                            ))
-										} label: {
-											HStack {
-												Text("menu_reply_to_chat_message")
-													.default_text_style(styleSize: 15)
-												Spacer()
-												Image("reply")
-													.resizable()
-													.frame(width: 20, height: 20, alignment: .leading)
-											}
-											.padding(.vertical, 5)
-											.padding(.horizontal, 20)
-										}
 										
-										Divider()
+										if conversationViewModel.selectedMessage!.message.isOutgoing
+											&& !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly)
+											&& conversationViewModel.selectedMessage!.message.isEditable {
+											Button {
+												if let chatMessage = conversationViewModel.selectedMessage {
+													if voiceRecordingInProgress {
+														voiceRecordingInProgress = false
+													}
+													
+													messageText = chatMessage.message.text
+													conversationViewModel.selectedMessage = nil
+													conversationViewModel.editMessage(
+														chatMessage: chatMessage,
+														isMessageTextFocused: Binding(
+															get: { isMessageTextFocused },
+															set: { isMessageTextFocused = $0 }
+														)
+													)
+												}
+											} label: {
+												HStack {
+													Text("menu_edit_chat_message")
+														.default_text_style(styleSize: 15)
+													Spacer()
+													Image("pencil-simple")
+														.renderingMode(.template)
+													 	.resizable()
+														.foregroundStyle(Color.grayMain2c600)
+														.frame(width: 20, height: 20, alignment: .leading)
+												}
+												.padding(.vertical, 5)
+												.padding(.horizontal, 20)
+											}
+											
+											Divider()
+										}
+									
+										if !conversationViewModel.selectedMessage!.message.isRetracted {
+											Button {
+												let indexMessage = conversationViewModel.conversationMessagesSection[0].rows.firstIndex(where: {$0.message.id == conversationViewModel.selectedMessage!.message.id})
+												conversationViewModel.selectedMessage = nil
+												conversationViewModel.replyToMessage(index: indexMessage ?? 0, isMessageTextFocused: Binding(
+													get: { isMessageTextFocused },
+													set: { isMessageTextFocused = $0 }
+												))
+											} label: {
+												HStack {
+													Text("menu_reply_to_chat_message")
+														.default_text_style(styleSize: 15)
+													Spacer()
+													Image("reply")
+														.resizable()
+														.frame(width: 20, height: 20, alignment: .leading)
+												}
+												.padding(.vertical, 5)
+												.padding(.horizontal, 20)
+											}
+											
+											Divider()
+										}
 										
 										if !conversationViewModel.selectedMessage!.message.text.isEmpty {
 											Button {
@@ -1126,8 +1475,7 @@ struct ConversationFragment: View {
 													forPasteboardType: UTType.plainText.identifier
 												)
 												
-												ToastViewModel.shared.toastMessage = "Success_message_copied_into_clipboard"
-												ToastViewModel.shared.displayToast = true
+												ToastViewModel.shared.show("Success_message_copied_into_clipboard")
 												
 												conversationViewModel.selectedMessage = nil
 											} label: {
@@ -1146,27 +1494,34 @@ struct ConversationFragment: View {
 											Divider()
 										}
 										
-										Button {
-											withAnimation {
-												isShowConversationForwardMessageFragment = true
+										if !conversationViewModel.selectedMessage!.message.isRetracted {
+											Button {
+												withAnimation {
+													isShowConversationForwardMessageFragment = true
+												}
+											} label: {
+												HStack {
+													Text("menu_forward_chat_message")
+														.default_text_style(styleSize: 15)
+													Spacer()
+													Image("forward")
+														.resizable()
+														.frame(width: 20, height: 20, alignment: .leading)
+												}
+												.padding(.vertical, 5)
+												.padding(.horizontal, 20)
 											}
-										} label: {
-											HStack {
-												Text("menu_forward_chat_message")
-													.default_text_style(styleSize: 15)
-												Spacer()
-												Image("forward")
-													.resizable()
-													.frame(width: 20, height: 20, alignment: .leading)
-											}
-											.padding(.vertical, 5)
-											.padding(.horizontal, 20)
+											
+											Divider()
 										}
 										
-										Divider()
-										
 										Button {
-											conversationViewModel.deleteMessage()
+											if conversationViewModel.selectedMessage!.message.isOutgoing
+												&& !(SharedMainViewModel.shared.displayedConversation?.isReadOnly ?? cachedConversation!.isReadOnly) && !conversationViewModel.selectedMessage!.message.isRetracted {
+												isShowDeleteMessagePopup = true
+											} else {
+												conversationViewModel.deleteMessage()
+											}
 										} label: {
 											HStack {
 												Text("menu_delete_selected_item")
@@ -1211,11 +1566,18 @@ struct ConversationFragment: View {
 				}
 				.onAppear {
 					touchFeedback()
+					if isMessageTextFocused {
+						isMessageTextFocused = false
+					}
 				}
 				.onDisappear {
 					if conversationViewModel.selectedMessage != nil {
 						conversationViewModel.selectedMessage = nil
 					}
+				}.onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DeleteMessageForMe"))) { _ in
+					conversationViewModel.deleteMessage()
+				}.onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DeleteMessageForEveryone"))) { _ in
+					conversationViewModel.deleteMessageForEveryone()
 				}
 			}
 			
@@ -1238,15 +1600,21 @@ struct ConversationFragment: View {
 				ConversationInfoFragment(
 					isMuted: $isMuted,
 					isShowEphemeralFragment: $isShowEphemeralFragment,
+					isShowMediaFilesFragment: $isShowMediaFilesFragment,
+					isShowDocumentsFilesFragment: $isShowDocumentsFilesFragment,
 					isShowStartCallGroupPopup: $isShowStartCallGroupPopup,
 					isShowInfoConversationFragment: $isShowInfoConversationFragment,
 					isShowEditContactFragment: $isShowEditContactFragment,
 					isShowEditContactFragmentAddress: $isShowEditContactFragmentAddress,
+					isShowRemoveParticipantPopup: $isShowRemoveParticipantPopup,
 					isShowScheduleMeetingFragment: $isShowScheduleMeetingFragment,
 					isShowScheduleMeetingFragmentSubject: $isShowScheduleMeetingFragmentSubject,
 					isShowScheduleMeetingFragmentParticipants: $isShowScheduleMeetingFragmentParticipants,
 					isShowConversationInfoPopup: $isShowConversationInfoPopup,
-					conversationInfoPopupText: $conversationInfoPopupText
+					conversationInfoPopupText: $conversationInfoPopupText,
+					showLeaveConversationPopup: $showLeaveConversationPopup,
+					showDeleteConversationPopup: $showDeleteConversationPopup,
+					showDeleteConversationHistoryPopup: $showDeleteConversationHistoryPopup
 				)
 				.environmentObject(conversationViewModel)
 				.zIndex(5)
@@ -1261,8 +1629,75 @@ struct ConversationFragment: View {
 				.zIndex(5)
 				.transition(.move(edge: .trailing))
 			}
+			
+			if isShowMediaFilesFragment {
+				ConversationMediaListFragment(
+					isShowMediaFilesFragment: $isShowMediaFilesFragment
+				)
+				.zIndex(5)
+				.transition(.move(edge: .trailing))
+			}
+			
+			if isShowDocumentsFilesFragment {
+				ConversationDocumentsListFragment(
+					isShowDocumentsFilesFragment: $isShowDocumentsFilesFragment
+				)
+				.zIndex(5)
+				.transition(.move(edge: .trailing))
+			}
+			
+			if conversationViewModel.searchInProgress {
+				PopupLoadingView()
+					.background(.black.opacity(0.65))
+					.onDisappear {
+						if conversationViewModel.targetIndex >= 0 {
+							NotificationCenter.default.post(
+								name: NSNotification.Name("onScrollToIndex"),
+								object: nil,
+								userInfo: ["index": conversationViewModel.targetIndex, "animated": true]
+							)
+							
+							conversationViewModel.targetIndex = -1
+						}
+					}
+			}
 		}
 	}
+	
+	func updateMentionState(from text: String) {
+		guard let atIndex = text.lastIndex(of: "@") else {
+			closeMention()
+			return
+		}
+		
+		if atIndex > text.startIndex {
+			let before = text[text.index(before: atIndex)]
+			if before != " " && before != "\n" {
+				closeMention()
+				return
+			}
+		}
+		
+		let query = String(text[text.index(after: atIndex)...])
+		
+		if query.contains(" ") || query.contains("\n") {
+			closeMention()
+			return
+		}
+		
+		withAnimation {
+			mentionQuery = query
+			mentionIsOpen = true
+		}
+	}
+
+	func closeMention() {
+		withAnimation {
+			mentionIsOpen = false
+			mentionQuery = ""
+		}
+	}
+	
 	// swiftlint:enable cyclomatic_complexity
 	// swiftlint:enable function_body_length
 }
@@ -1438,7 +1873,7 @@ struct VoiceRecorderPlayer: View {
 	@State private var timer: Timer?
 	
 	var minTrackColor: Color = .white.opacity(0.5)
-	var maxTrackGradient: Gradient = Gradient(colors: [Color.orangeMain300, Color.orangeMain500])
+	var maxTrackGradient: Gradient = Gradient(colors: [Color.orangeMain500.opacity(0.5), Color.orangeMain500])
 	
 	var body: some View {
 		GeometryReader { geometry in
@@ -1552,7 +1987,11 @@ struct VoiceRecorderPlayer: View {
 			.padding(.horizontal, 4)
 			.padding(.vertical, 5)
 			.onAppear {
-				self.audioRecorder.startRecording()
+				conversationViewModel.isRecording = isRecording
+				audioRecorder.startRecording()
+			}
+			.onChange(of: isRecording) { newValue in
+				conversationViewModel.isRecording = newValue
 			}
 			.onDisappear {
 				self.audioRecorder.stopVoiceRecorder()

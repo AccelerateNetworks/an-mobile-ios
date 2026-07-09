@@ -25,16 +25,25 @@ struct ConversationsFragment: View {
 	
 	private var idiom: UIUserInterfaceIdiom { UIDevice.current.userInterfaceIdiom }
 	
-	@State var showingSheet: Bool = false
 	@Binding var text: String
+	
+	@State var showingSheet: Bool = false
+	
+	@Binding var showLeaveConversationPopup: Bool
+	@Binding var showDeleteConversationPopup: Bool
+	@Binding var showDeleteConversationHistoryPopup: Bool
+	@Binding var isShowRemoveParticipantPopup: Bool
 	
 	var body: some View {
 		ZStack {
 			if #available(iOS 16.0, *), idiom != .pad {
-				ConversationsListFragment(showingSheet: $showingSheet, text: $text)
+				ConversationsListFragment(text: $text, showingSheet: $showingSheet)
 					.sheet(isPresented: $showingSheet) {
 						ConversationsListBottomSheet(
-							showingSheet: $showingSheet
+							showingSheet: $showingSheet,
+							showLeaveConversationPopup: $showLeaveConversationPopup,
+							showDeleteConversationPopup: $showDeleteConversationPopup,
+							showDeleteConversationHistoryPopup: $showDeleteConversationHistoryPopup
 						)
 						.presentationDetents(
 							conversationsListViewModel.selectedConversation != nil && !conversationsListViewModel.selectedConversation!.isReadOnly
@@ -43,18 +52,17 @@ struct ConversationsFragment: View {
 						)
 					}
 			} else {
-				ConversationsListFragment(showingSheet: $showingSheet, text: $text)
+				ConversationsListFragment(text: $text, showingSheet: $showingSheet)
 					.halfSheet(showSheet: $showingSheet) {
 						ConversationsListBottomSheet(
-							showingSheet: $showingSheet
+							showingSheet: $showingSheet,
+							showLeaveConversationPopup: $showLeaveConversationPopup,
+							showDeleteConversationPopup: $showDeleteConversationPopup,
+							showDeleteConversationHistoryPopup: $showDeleteConversationHistoryPopup
 						)
                         .environmentObject(conversationsListViewModel)
 					} onDismiss: {}
 			}
 		}
 	}
-}
-
-#Preview {
-	ConversationsFragment(text: .constant(""))
 }

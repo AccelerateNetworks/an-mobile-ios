@@ -70,7 +70,11 @@ struct HistoryContactFragment: View {
 					Spacer()
 					
 					Menu {
-						if !historyModel.isConf {
+						let disableAddContact = AppServices.corePreferences.disableAddContact
+						let hideContactEdition = AppServices.corePreferences.hideContactEdition
+						let isFriend = historyModel.isFriend == true
+
+						if !historyModel.isConf && (!disableAddContact || (disableAddContact && isFriend)) && !hideContactEdition {
 							Button {
 								isMenuOpen = false
 								
@@ -117,8 +121,7 @@ struct HistoryContactFragment: View {
 								)
 							}
 							
-							ToastViewModel.shared.toastMessage = "Success_address_copied_into_clipboard"
-							ToastViewModel.shared.displayToast.toggle()
+							ToastViewModel.shared.show("Success_address_copied_into_clipboard")
 							
 						} label: {
 							HStack {
@@ -187,12 +190,14 @@ struct HistoryContactFragment: View {
 										.frame(maxWidth: .infinity)
 										.padding(.top, 10)
 									
-									Text(historyModel.address)
-										.foregroundStyle(Color.grayMain2c700)
-										.multilineTextAlignment(.center)
-										.default_text_style(styleSize: 14)
-										.frame(maxWidth: .infinity)
-										.padding(.top, 5)
+									if !AppServices.corePreferences.hideSipAddresses {
+										Text(historyModel.address)
+											.foregroundStyle(Color.grayMain2c700)
+											.multilineTextAlignment(.center)
+											.default_text_style(styleSize: 14)
+											.frame(maxWidth: .infinity)
+											.padding(.top, 5)
+									}
 									
 									if let avatar = historyModel.avatarModel {
 										AvatarPresenceView(avatarModel: avatar)
@@ -227,6 +232,7 @@ struct HistoryContactFragment: View {
 							.frame(maxWidth: .infinity)
 							.padding(.top, 10)
 							.padding(.bottom, 2)
+							.padding(.horizontal, 10)
 							.background(Color.gray100)
 							
 							HStack {
@@ -254,7 +260,7 @@ struct HistoryContactFragment: View {
 										}
 									})
                                     
-                                    if !CorePreferences.disableChatFeature {
+                                    if !AppServices.corePreferences.disableChatFeature {
                                         Spacer()
                                         
                                         Button(action: {
@@ -278,29 +284,31 @@ struct HistoryContactFragment: View {
                                             }
                                         })
                                     }
-                                    
-									Spacer()
 									
-									Button(action: {
-										telecomManager.doCallOrJoinConf(address: historyModel.addressLinphone, isVideo: true)
-									}, label: {
-										VStack {
-											HStack(alignment: .center) {
-												Image("video-camera")
-													.renderingMode(.template)
-													.resizable()
-													.foregroundStyle(Color.grayMain2c600)
-													.frame(width: 25, height: 25)
+									if !SharedMainViewModel.shared.disableVideoCall {
+										Spacer()
+										
+										Button(action: {
+											telecomManager.doCallOrJoinConf(address: historyModel.addressLinphone, isVideo: true)
+										}, label: {
+											VStack {
+												HStack(alignment: .center) {
+													Image("video-camera")
+														.renderingMode(.template)
+														.resizable()
+														.foregroundStyle(Color.grayMain2c600)
+														.frame(width: 25, height: 25)
+												}
+												.padding(16)
+												.background(Color.grayMain2c200)
+												.cornerRadius(40)
+												
+												Text("contact_video_call_action")
+													.default_text_style(styleSize: 14)
+													.frame(minWidth: 80)
 											}
-											.padding(16)
-											.background(Color.grayMain2c200)
-											.cornerRadius(40)
-											
-											Text("contact_video_call_action")
-												.default_text_style(styleSize: 14)
-												.frame(minWidth: 80)
-										}
-									})
+										})
+									}
 								} else {
 									Button(action: {
 										withAnimation {

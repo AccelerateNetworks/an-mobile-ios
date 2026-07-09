@@ -30,7 +30,7 @@ class ConversationModel: ObservableObject, Identifiable {
 	var chatRoom: ChatRoom
 	var lastMessage: ChatMessage?
 	
-	let isDisabledBecauseNotSecured: Bool = false
+	var isDisabledBecauseNotSecured: Bool = false
 	
 	static let TAG = "[Conversation Model]"
 	
@@ -45,10 +45,14 @@ class ConversationModel: ObservableObject, Identifiable {
 	@Published var lastUpdateTime: time_t
 	@Published var isMuted: Bool
 	@Published var isEphemeral: Bool
+	@Published var isEndToEndEncryptionAvailable: Bool
 	@Published var encryptionEnabled: Bool
+	@Published var lastMessagePrefixText: String
 	@Published var lastMessageText: String
+	@Published var lastMessageIcon: String
 	@Published var lastMessageIsOutgoing: Bool
 	@Published var lastMessageState: Int
+	@Published var lastMessageInItalic: Bool
 	@Published var unreadMessagesCount: Int
 	@Published var avatarModel: ContactAvatarModel
 	
@@ -65,8 +69,19 @@ class ConversationModel: ObservableObject, Identifiable {
 		self.remoteSipUri = chatRoom.peerAddress?.asStringUriOnly() ?? ""
 		
 		self.isGroup = !chatRoom.hasCapability(mask: ChatRoom.Capabilities.OneToOne.rawValue) && chatRoom.hasCapability(mask: ChatRoom.Capabilities.Conference.rawValue)
+		
+		if (!chatRoom.hasCapability(mask: ChatRoom.Capabilities.Encrypted.rawValue)) {
+			if let localAddress = chatRoom.localAddress , LinphoneUtils.getAccountForAddress(address: localAddress)?.params?.instantMessagingEncryptionMandatory == true {
+				Log.warn("\(ConversationModel.TAG) Conversation with subject \(chatRoom.subjectUtf8 ?? "No subject") is considered as read-only because it isn't encrypted and default account is in secure mode")
+				self.isDisabledBecauseNotSecured = true
+			} else {
+				self.isDisabledBecauseNotSecured = false
+			}
+		} else {
+			self.isDisabledBecauseNotSecured = false
+		}
 
-		self.isReadOnly = chatRoom.isReadOnly
+		self.isReadOnly = chatRoom.isReadOnly || self.isDisabledBecauseNotSecured
 		
 		let chatRoomParticipants = chatRoom.participants
 		let addressFriend = (chatRoomParticipants.first != nil && chatRoomParticipants.first!.address != nil)
@@ -134,17 +149,34 @@ class ConversationModel: ObservableObject, Identifiable {
 
 		self.isEphemeral = chatRoom.ephemeralEnabled
 		
+		self.isEndToEndEncryptionAvailable = true
+		
 		self.encryptionEnabled = chatRoom.currentParams != nil && chatRoom.currentParams!.encryptionEnabled
 		
 		self.lastMessage = nil
 		
+		self.lastMessagePrefixText = ""
+		
 		self.lastMessageText = ""
+		
+		self.lastMessageIcon = ""
 		
 		self.lastMessageIsOutgoing = false
 		
 		self.lastMessageState = 0
+		
+		self.lastMessageInItalic = false
 
 		self.unreadMessagesCount = chatRoom.unreadMessagesCount
+		
+		
+		coreContext.doOnCoreQueue { core in
+			let isEndToEndEncryptionAvailableTmp = LinphoneUtils.isEndToEndEncryptedChatAvailable(core: core)
+			
+			DispatchQueue.main.async {
+				self.isEndToEndEncryptionAvailable = isEndToEndEncryptionAvailableTmp
+			}
+		}
 		
 		getContentTextMessage(chatRoom: chatRoom)
 	}
@@ -231,8 +263,7 @@ class ConversationModel: ObservableObject, Identifiable {
 			} else if state == .CreationFailed {
 				Log.error("\(ConversationModel.TAG) Failed to create group call!")
 				DispatchQueue.main.async {
-					ToastViewModel.shared.toastMessage = "Failed_to_create_group_call_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_group_call_error")
 				}
 			}
 		})
@@ -294,8 +325,10 @@ class ConversationModel: ObservableObject, Identifiable {
 				fromAddressFriend = nil
 			}
 			
-			var lastMessageTextTmp = (fromAddressFriend ?? "")
-			+ (lastMessage!.contents.first(where: {$0.isText == true})?.utf8Text ?? (lastMessage!.contents.first(where: {$0.isFile == true || $0.isFileTransfer == true})?.name ?? ""))
+			let lastMessagePrefixTextTmp = (fromAddressFriend ?? "")
+			var lastMessageTextTmp = (lastMessage!.contents.first(where: {$0.isText == true})?.utf8Text ?? (lastMessage!.contents.first(where: {$0.isFile == true || $0.isFileTransfer == true})?.name ?? ""))
+			var lastMessageIconTmp = ""
+			var lastMessageInItalicTmp = false
 			
 			if lastMessage!.contents.first != nil && lastMessage!.contents.first!.isIcalendar == true {
 				if let conferenceInfo = try? Factory.Instance.createConferenceInfoFromIcalendarContent(content: lastMessage!.contents.first!) {
@@ -308,8 +341,28 @@ class ConversationModel: ObservableObject, Identifiable {
 						} else if conferenceInfo.state == .Cancelled {
 							lastMessageTextTmp = String(localized: "message_meeting_invitation_cancelled_notification")
 						}
+						
+						lastMessageIconTmp = "calendar"
+						
+						lastMessageInItalicTmp = true
 					}
 				}
+			}
+			
+			if (lastMessage!.contents.first(where: {$0.isFile == true || $0.isFileTransfer == true})?.name != nil) {
+				lastMessageIconTmp = "file"
+			} else if lastMessage!.isReply {
+				lastMessageIconTmp = "reply"
+			} else if lastMessage!.isForward {
+				lastMessageIconTmp = "forward"
+			}
+			
+			if lastMessage!.isRetracted {
+				lastMessageTextTmp += lastMessage!.isOutgoing ? String(localized: "conversation_message_content_deleted_by_us_label") : String(localized: "conversation_message_content_deleted_label")
+				
+				lastMessageIconTmp = "trash"
+				
+				lastMessageInItalicTmp = true
 			}
 			
 			let lastMessageIsOutgoingTmp = lastMessage?.isOutgoing ?? false
@@ -319,13 +372,19 @@ class ConversationModel: ObservableObject, Identifiable {
 			let lastMessageStateTmp = lastMessage?.state.rawValue ?? 0
 			
             DispatchQueue.main.async {
+				self.lastMessagePrefixText = lastMessagePrefixTextTmp
+				
                 self.lastMessageText = lastMessageTextTmp
+				
+				self.lastMessageIcon = lastMessageIconTmp
                 
                 self.lastMessageIsOutgoing = lastMessageIsOutgoingTmp
                 
                 self.lastUpdateTime = lastUpdateTimeTmp
                 
                 self.lastMessageState = lastMessageStateTmp
+				
+				self.lastMessageInItalic = lastMessageInItalicTmp
             }
             
             getUnreadMessagesCount()
@@ -367,8 +426,43 @@ class ConversationModel: ObservableObject, Identifiable {
 	
 	func deleteChatRoom() {
 		CoreContext.shared.doOnCoreQueue { core in
+			Log.info("\(ConversationModel.TAG) Deleting conversation \(LinphoneUtils.getConversationId(chatRoom: self.chatRoom))")
 			core.deleteChatRoom(chatRoom: self.chatRoom)
-	   }
+			
+			DispatchQueue.main.async {
+				ToastViewModel.shared.show("Success_chatroom_deleted")
+			}
+		}
+	}
+
+	func deleteHistory() {
+		CoreContext.shared.doOnCoreQueue { _ in
+			Log.info("\(ConversationModel.TAG) Deleting history for conversation \(LinphoneUtils.getConversationId(chatRoom: self.chatRoom))")
+			self.chatRoom.deleteHistory()
+			
+			DispatchQueue.main.async {
+				self.lastMessage = nil
+				self.lastMessagePrefixText = ""
+				self.lastMessageText = ""
+				self.lastMessageIcon = ""
+				self.lastMessageIsOutgoing = false
+				self.lastMessageState = 0
+				self.lastMessageInItalic = false
+				ToastViewModel.shared.show("Success_remove_conversation_history")
+			}
+		}
+	}
+
+	func leaveChatRoom() {
+		CoreContext.shared.doOnCoreQueue { _ in
+			Log.info("\(ConversationModel.TAG) Leaving conversation \(LinphoneUtils.getConversationId(chatRoom: self.chatRoom))")
+			self.chatRoom.leave()
+			
+			DispatchQueue.main.async {
+				self.isReadOnly = true
+				ToastViewModel.shared.show("Success_left_chatroom")
+			}
+		}
 	}
 }
 // swiftlint:enable line_length

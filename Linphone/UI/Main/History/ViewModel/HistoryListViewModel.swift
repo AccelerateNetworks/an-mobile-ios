@@ -31,6 +31,8 @@ class HistoryListViewModel: ObservableObject {
 	var callLogsAddressToDelete = ""
 	var callLogCoreDelegate: CoreDelegate?
 	
+	@Published var callLogsFilter = ""
+	
 	@Published var selectedCall: HistoryModel?
 	
 	@Published var displayedConversation: ConversationModel?
@@ -171,6 +173,7 @@ class HistoryListViewModel: ObservableObject {
 	}
 	
 	func filterCallLogs(filter: String) {
+		callLogsFilter = filter
 		callLogs.removeAll()
 		callLogsTmp.forEach { callLog in
 			if callLog.addressName.lowercased().contains(filter.lowercased()) {
@@ -180,6 +183,7 @@ class HistoryListViewModel: ObservableObject {
 	}
 	
 	func resetFilterCallLogs() {
+		callLogsFilter = ""
 		callLogs = callLogsTmp
 	}
 	
@@ -254,7 +258,7 @@ class HistoryListViewModel: ObservableObject {
 				guard let chatParams = params.chatParams else { return }
 				chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
 				
-				let sameDomain = remote.domain == CorePreferences.defaultDomain && remote.domain == account!.params?.domain
+				let sameDomain = remote.domain == AppServices.corePreferences.defaultDomain && remote.domain == account!.params?.domain
 				if account!.params != nil && (account!.params!.instantMessagingEncryptionMandatory && sameDomain) {
 					Log.info("\(ConversationForwardMessageViewModel.TAG) Account is in secure mode & domain matches, creating an E2E encrypted conversation")
 					chatParams.backend = ChatRoom.Backend.FlexisipChat
@@ -280,8 +284,7 @@ class HistoryListViewModel: ObservableObject {
 					
 					DispatchQueue.main.async {
 						SharedMainViewModel.shared.operationInProgress = false
-						ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Failed_to_create_conversation_error")
 					}
 					return
 				}
@@ -326,8 +329,7 @@ class HistoryListViewModel: ObservableObject {
 						
 						DispatchQueue.main.async {
 							SharedMainViewModel.shared.operationInProgress = false
-							ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Failed_to_create_conversation_error")
 						}
 					}
 				} else {
@@ -357,8 +359,7 @@ class HistoryListViewModel: ObservableObject {
 				}
 				DispatchQueue.main.async {
 					SharedMainViewModel.shared.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}, onConferenceJoined: { (chatRoom: ChatRoom, _: EventLog) in
@@ -396,8 +397,7 @@ class HistoryListViewModel: ObservableObject {
 				}
 				DispatchQueue.main.async {
 					SharedMainViewModel.shared.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		})

@@ -90,37 +90,77 @@ struct SideMenuAccountRow: View {
 			Spacer()
 			
 			HStack {
-				if model.notificationsCount > 0 && !CorePreferences.disableChatFeature {
-					Text(String(model.notificationsCount))
-						.foregroundStyle(.white)
-						.default_text_style(styleSize: 12)
-						.lineLimit(1)
-						.frame(width: 20, height: 20)
-						.background(Color.redDanger500)
-						.cornerRadius(50)
-						.frame(maxWidth: .infinity, alignment: .leading)
+				if model.voicemailCount > 0 {
+					Button {
+						model.callVoicemailUri()
+					} label: {
+						ZStack(alignment: .top) {
+							VStack {
+								Spacer()
+								
+								Image("voicemail")
+									.renderingMode(.template)
+									.resizable()
+									.foregroundStyle(Color.grayMain2c500)
+									.frame(width: 22, height: 22)
+								
+								Spacer()
+							}
+							
+							Text(String(model.voicemailCount))
+								.foregroundStyle(Color.redDanger500)
+								.default_text_style_600(styleSize: 12)
+								.lineLimit(1)
+								.frame(maxWidth: .infinity, alignment: .trailing)
+								.padding(.top, 1)
+						}
+						.frame(width: 30, height: 30)
+					}
+					.highPriorityGesture(
+						TapGesture().onEnded {
+							model.callVoicemailUri()
+						}
+					)
 				}
 				
-				Menu {
-					Button {
-                        accountProfileViewModel.accountModelIndex = CoreContext.shared.accounts.firstIndex(where: {$0.displayName == model.displayName})
-                        withAnimation {
-                            isOpen = false
-                            isShowAccountProfileFragment = true
-                        }
-					} label: {
-						Label("drawer_menu_manage_account", systemImage: "arrow.right.circle")
+				if model.notificationsCount > 0 && !AppServices.corePreferences.disableChatFeature {
+					VStack {
+						Text(String(model.notificationsCount))
+							.foregroundStyle(.white)
+							.default_text_style(styleSize: 12)
+							.lineLimit(1)
+							.frame(width: 20, height: 20)
+							.background(Color.redDanger500)
+							.cornerRadius(50)
+					}
+					.frame(width: 30, height: 30)
+					.padding(.trailing, -8)
+				}
+				
+				Button {
+					accountProfileViewModel.accountModelIndex = CoreContext.shared.accounts.firstIndex(where: {$0.displayName == model.displayName})
+					withAnimation {
+						isOpen = false
+						isShowAccountProfileFragment = true
 					}
 				} label: {
-					Image("dots-three-vertical")
+					Image("user-circle-gear")
 						.renderingMode(.template)
 						.resizable()
-						.foregroundColor(Color.gray)
+						.foregroundColor(Color.grayMain2c600)
 						.scaledToFit()
-						.frame(height: 30)
+						.frame(height: 25)
+				}
+				.frame(width: 30, height: 30)
+				.onTapGesture {
+					accountProfileViewModel.accountModelIndex = CoreContext.shared.accounts.firstIndex(where: {$0.displayName == model.displayName})
+					withAnimation {
+						isOpen = false
+						isShowAccountProfileFragment = true
+					}
 				}
 			}
-			.frame(width: 64, alignment: .trailing)
+			.frame(alignment: .trailing)
 			.padding(.top, 12)
 			.padding(.bottom, 12)
 		}

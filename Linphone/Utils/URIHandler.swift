@@ -20,6 +20,7 @@
 import Foundation
 import linphonesw
 import Combine
+import SwiftUI
 
 class URIHandler {
 	
@@ -28,6 +29,7 @@ class URIHandler {
 	private static let secureCallSchemes = ["sips", "sips-linphone", "linphone-sips"]
 	private static let configurationSchemes = ["linphone-config"]
 	private static let sharedExtensionSchemes = ["linphone-message"]
+	private static let mentionSchemes = ["linphone-mention"]
 
 	private static var uriHandlerCoreDelegate: CoreDelegateStub?
 	
@@ -48,7 +50,7 @@ class URIHandler {
 					CoreContext.shared.removeCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
 				}
 				if state == .Successful {
-					toast("uri_handler_config_success")
+					toast("Success_uri_handler_config_success")
 					CoreContext.shared.removeCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
 				}
 			})
@@ -66,6 +68,8 @@ class URIHandler {
 				initiateConfiguration(url: url)
 			} else if sharedExtensionSchemes.contains(scheme) {
 				processReceivedFiles(url: url)
+			} else if mentionSchemes.contains(scheme) {
+				openContact(url: url)
 			} else if scheme == SingleSignOnManager.shared.ssoRedirectUri.scheme {
 				continueSSO(url: url)
 			} else {
@@ -77,7 +81,7 @@ class URIHandler {
 	}
 	
 	private static func initiateCall(url: URL, withScheme newScheme: String) {
-		CoreContext.shared.performActionOnCoreQueueWhenCoreIsStarted { core in
+		CoreContext.shared.doOnCoreQueue { core in
 			if let newSchemeUrl = url.withNewScheme(newScheme),
 			   let address = core.interpretUrl(url: newSchemeUrl.absoluteString,
 											   applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
@@ -100,6 +104,10 @@ class URIHandler {
 					var urlString = url.resourceSpecifier
 					if urlString.starts(with: "//") {
 						urlString = String(urlString.dropFirst(2))
+					}
+					
+					if !urlString.starts(with: "https://") {
+						urlString = "https://" + urlString
 					}
 					
 					core.config?.setString(section: "misc", key: "config-uri", value: urlString)
@@ -131,6 +139,28 @@ class URIHandler {
 		SharedMainViewModel.shared.changeIndexView(indexViewInt: 2)
 	}
 	
+	private static func openContact(url: URL) {
+		Log.info("[URIHandler] open contact from URL: \(url.resourceSpecifier)")
+		
+		var urlString = url.resourceSpecifier
+		if urlString.starts(with: "//") {
+			urlString = String(urlString.dropFirst(2))
+		}
+		
+		print("[URIHandler] urlStringurlString : \(urlString)")
+		
+		let friendIndex = ContactsManager.shared.avatarListModel.first(
+			where: {$0.addresses.contains(where: {$0 == urlString})})
+		
+		if friendIndex != nil {
+			SharedMainViewModel.shared.displayedConversation = nil
+			SharedMainViewModel.shared.changeIndexView(indexViewInt: 0)
+			withAnimation {
+				SharedMainViewModel.shared.displayedFriend = friendIndex
+			}
+		}
+	}
+	
 	private static func continueSSO(url: URL) {
 		if let authorizationFlow = SingleSignOnManager.shared.currentAuthorizationFlow,
 		   authorizationFlow.resumeExternalUserAgentFlow(with: url) {
@@ -139,13 +169,12 @@ class URIHandler {
 	}
 	
 	private static func autoRemoteProvisioningOnConfigUriHandler() -> Bool {
-		return Config.get().getBool(section: "app", key: "auto_apply_provisioning_config_uri_handler", defaultValue: true)
+		return AppServices.config.getBool(section: "app", key: "auto_apply_provisioning_config_uri_handler", defaultValue: true)
 	}
 	
 	private static func toast(_ message: String) {
 		DispatchQueue.main.async {
-			ToastViewModel.shared.toastMessage = message
-			ToastViewModel.shared.displayToast = true
+			ToastViewModel.shared.show(message)
 		}
 	}
 }

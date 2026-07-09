@@ -38,13 +38,20 @@ class HelpViewModel: ObservableObject {
 	private var coreDelegate: CoreDelegate?
 
 	init() {
-		let appName = Bundle.main.infoDictionary?["CFBundleName"] as? String
-		let versionTmp = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-		let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
+		let appGitVersion = AppGitInfo.commit
+		let appGitBranch = AppGitInfo.branch
+		let appGitTag = AppGitInfo.tag
+		let sdkGitVersion = linphonesw.LinphoneSdkInfos.version
+		var sdkGitBranch = linphonesw.LinphoneSdkInfos.branch
 		
-		self.version = (versionTmp ?? "6.0.0")
+		if sdkGitBranch.hasPrefix("remotes/origin/") {
+			sdkGitBranch = String(sdkGitBranch.dropFirst("remotes/origin/".count))
+		}
 		
-		self.sdkVersion = Core.getVersion
+		self.appVersion = appGitTag
+		self.version = appGitTag + "-" + appGitVersion + "\n(\(appGitBranch))"
+		
+		self.sdkVersion = sdkGitVersion + "\n(\(sdkGitBranch))"
 		
 		if let path = Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist"),
 		   let plist = NSDictionary(contentsOfFile: path) as? [String: Any],
@@ -85,14 +92,12 @@ class HelpViewModel: ObservableObject {
 					case .UpToDate:
 						Log.info("\(self.TAG): This version is up-to-date")
 						DispatchQueue.main.async {
-							ToastViewModel.shared.toastMessage = "Success_version_up_to_date"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Success_version_up_to_date")
 						}
 					default:
 						Log.info("\(self.TAG): Can't check for update, an error happened [\(result)]")
 						DispatchQueue.main.async {
-							ToastViewModel.shared.toastMessage = "Error"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Error")
 						}
 					}
 				}
@@ -113,7 +118,7 @@ class HelpViewModel: ObservableObject {
 	func toggleLogcat() {
 		let newValue = !self.logcat
 		CoreContext.shared.doOnCoreQueue { core in
-			CorePreferences.printLogsInLogcat = newValue
+			AppServices.corePreferences.printLogsInLogcat = newValue
 			Factory.Instance.enableLogcatLogs(newValue)
 			self.logcat = newValue
 		}
@@ -135,8 +140,7 @@ class HelpViewModel: ObservableObject {
 			Core.resetLogCollection()
 			Log.info("\(self.TAG) Debug logs have been cleaned")
 			DispatchQueue.main.async {
-				ToastViewModel.shared.toastMessage = "Success_clear_logs"
-				ToastViewModel.shared.displayToast = true
+				ToastViewModel.shared.show("Success_clear_logs")
 			}
 		}
 	}
@@ -165,20 +169,6 @@ class HelpViewModel: ObservableObject {
 				} else {
 					Log.e("\(self.TAG) Failed to save .linphonerc string as file in cache folder")
 				}
-			}
-		}
-	}
-
-	func clearNativeFriendsDatabase() {
-		CoreContext.shared.doOnCoreQueue { core in
-			if let list = core.getFriendListByName(NATIVE_ADDRESS_BOOK_FRIEND_LIST) {
-				let friends = list.friends
-				Log.i("\(self.TAG) Friend list to remove found with [\(friends.count)] friends")
-				for friend in friends {
-					list.removeFriend(friend)
-				}
-				core.removeFriendList(list)
-				Log.i("\(self.TAG) Friend list [\(NATIVE_ADDRESS_BOOK_FRIEND_LIST)] removed")
 			}
 		}
 	}

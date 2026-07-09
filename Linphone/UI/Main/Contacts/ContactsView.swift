@@ -32,22 +32,24 @@ struct ContactsView: View {
 			ZStack(alignment: .bottomTrailing) {
 				ContactsFragment(isShowDeletePopup: $isShowDeletePopup, text: $text)
 				
-				Button {
-					withAnimation {
-						contactsListViewModel.selectedEditFriend = nil
-						isShowEditContactFragment.toggle()
+				if !AppServices.corePreferences.disableAddContact && !AppServices.corePreferences.hideContactEdition {
+					Button {
+						withAnimation {
+							contactsListViewModel.selectedEditFriend = nil
+							isShowEditContactFragment.toggle()
+						}
+					} label: {
+						Image("user-plus")
+							.renderingMode(.template)
+							.foregroundStyle(.white)
+							.padding()
+							.background(Color.orangeMain500)
+							.clipShape(Circle())
+							.shadow(color: .black.opacity(0.2), radius: 4)
+						
 					}
-				} label: {
-					Image("user-plus")
-						.renderingMode(.template)
-						.foregroundStyle(.white)
-						.padding()
-						.background(Color.orangeMain500)
-						.clipShape(Circle())
-						.shadow(color: .black.opacity(0.2), radius: 4)
-					
+					.padding()
 				}
-				.padding()
 				
 				// For testing crashlytics
 				/*Button(action: CoreContext.shared.crashForCrashlytics, label: {
