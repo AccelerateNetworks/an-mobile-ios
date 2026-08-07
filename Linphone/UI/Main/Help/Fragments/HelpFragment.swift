@@ -32,12 +32,7 @@ struct HelpFragment: View {
 		|| (CoreContext.shared.coreIsStarted && CoreContext.shared.accounts.isEmpty)
 		|| SharedMainViewModel.shared.displayProfileMode
 	}
-	
-	var showAssistant: Bool {
-		(CoreContext.shared.coreIsStarted && CoreContext.shared.accounts.isEmpty)
-		|| SharedMainViewModel.shared.displayProfileMode
-	}
-	
+
 	var body: some View {
 		NavigationView {
 			ZStack {

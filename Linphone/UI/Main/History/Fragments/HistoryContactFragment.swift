@@ -191,7 +191,7 @@ struct HistoryContactFragment: View {
 										.padding(.top, 10)
 									
 									if !AppServices.corePreferences.hideSipAddresses {
-										Text(historyModel.address)
+										Text(historyModel.addressDisplay)
 											.foregroundStyle(Color.grayMain2c700)
 											.multilineTextAlignment(.center)
 											.default_text_style(styleSize: 14)

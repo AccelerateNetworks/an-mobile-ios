@@ -48,7 +48,7 @@ struct ContactInnerActionsFragment: View {
 	var actionEditButton: () -> Void
 	
 	var body: some View {
-		if !AppServices.corePreferences.hideSipAddresses || (AppServices.corePreferences.hideSipAddresses && !contactAvatarModel.phoneNumbersWithLabel.isEmpty) {
+		if !AppServices.corePreferences.suppressSipAddresses || !contactAvatarModel.phoneNumbersWithLabel.isEmpty {
 			HStack(alignment: .center) {
 				Text("contact_details_numbers_and_addresses_title")
 					.default_text_style_800(styleSize: 15)
@@ -75,7 +75,7 @@ struct ContactInnerActionsFragment: View {
 			
 			if informationIsOpen {
 				VStack(spacing: 0) {
-					if !AppServices.corePreferences.hideSipAddresses {
+					if !AppServices.corePreferences.suppressSipAddresses {
 						ForEach(0..<contactAvatarModel.addresses.count, id: \.self) { index in
 							HStack {
 								HStack {
@@ -83,7 +83,7 @@ struct ContactInnerActionsFragment: View {
 										Text(String(localized: "sip_address") + ":")
 											.default_text_style_700(styleSize: 14)
 											.frame(maxWidth: .infinity, alignment: .leading)
-										Text(contactAvatarModel.addresses[index].dropFirst(4))
+										Text(contactAvatarModel.addressesDisplay[index])
 											.default_text_style(styleSize: 14)
 											.frame(maxWidth: .infinity, alignment: .leading)
 											.lineLimit(1)

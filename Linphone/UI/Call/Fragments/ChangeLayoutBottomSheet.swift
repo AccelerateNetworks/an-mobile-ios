@@ -32,6 +32,7 @@ struct ChangeLayoutBottomSheet: View {
 	
 	var body: some View {
 		VStack(spacing: 0) {
+			if !SharedMainViewModel.shared.disableVideoCall { // AccelerateNetworks: no video — only audio-only layout offered
 			Button(action: {
 				optionsChangeLayout = 1
 				callViewModel.toggleVideoMode(isAudioOnlyMode: false)
@@ -91,7 +92,8 @@ struct ChangeLayoutBottomSheet: View {
 				}
 			})
 			.frame(maxHeight: .infinity)
-			
+			} // AccelerateNetworks: end video-only layouts (hidden, no video)
+
 			Button(action: {
 				optionsChangeLayout = 3
 				if callViewModel.videoDisplayed {

@@ -297,7 +297,7 @@ class CallViewModel: ObservableObject {
 				
 				remoteAddressTmp!.clean()
 				
-				let remoteAddressCleanedStringTmp = remoteAddressTmp != nil ? String(remoteAddressTmp!.asStringUriOnly().dropFirst(4)) : ""
+				let remoteAddressCleanedStringTmp = remoteAddressTmp != nil ? LinphoneUtils.getDisplayAddress(address: remoteAddressTmp!) : ""
 				
 				if self.currentCall?.conference != nil {
 					displayNameTmp = self.currentCall?.conference?.subject ?? ""

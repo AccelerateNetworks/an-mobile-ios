@@ -130,7 +130,7 @@ struct ConversationInfoFragment: View {
 													ToastViewModel.shared.show("Success_address_copied_into_clipboard")
 												} label: {
 													HStack {
-														Text(conversationViewModel.participantConversationModel.first?.address ?? "")
+														Text(conversationViewModel.participantConversationModel.first?.addressDisplay ?? "")
 															.foregroundStyle(Color.grayMain2c700)
 															.default_text_style(styleSize: 14)
 															.padding(.top, 5)

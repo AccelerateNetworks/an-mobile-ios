@@ -411,14 +411,14 @@ struct StartCallFragment: View {
 					}
 					.frame(maxWidth: .infinity)
 					
-					ForEach(0..<contactAvatarModel!.addresses.count, id: \.self) { index in
+					ForEach(0..<(AppServices.corePreferences.suppressSipAddresses ? 0 : contactAvatarModel!.addresses.count), id: \.self) { index in
 						HStack {
 							HStack {
 								VStack {
 									Text(String(localized: "sip_address") + ":")
 										.default_text_style_700(styleSize: 14)
 										.frame(maxWidth: .infinity, alignment: .leading)
-									Text(contactAvatarModel!.addresses[index].dropFirst(4))
+									Text(contactAvatarModel!.addressesDisplay[index])
 										.default_text_style(styleSize: 14)
 										.frame(maxWidth: .infinity, alignment: .leading)
 										.lineLimit(1)

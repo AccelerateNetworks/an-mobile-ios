@@ -28,7 +28,9 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 	
 	@Published var name: String = ""
 	@Published var address: String = ""
+	@Published var addressDisplay: String = ""
 	@Published var addresses: [String] = []
+	@Published var addressesDisplay: [String] = []
 	@Published var phoneNumbersWithLabel: [(label: String, phoneNumber: String)] = []
 	
 	var nativeUri: String = ""
@@ -61,10 +63,16 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 			self.friend = friend
 			let nameTmp = name
 			let addressTmp = address
+			var addressDisplayTmp = address
+			if let parsed = try? Factory.Instance.createAddress(addr: address) {
+				addressDisplayTmp = LinphoneUtils.getDisplayAddress(address: parsed)
+			}
 			var addressesTmp: [String] = []
+			var addressesDisplayTmp: [String] = []
 			if let friend = friend {
 				friend.addresses.forEach { address in
 					addressesTmp.append(address.asStringUriOnly())
+					addressesDisplayTmp.append(LinphoneUtils.getDisplayAddress(address: address))
 				}
 			}
 			var phoneNumbersWithLabelTmp: [(label: String, phoneNumber: String)] = []
@@ -120,7 +128,9 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 			DispatchQueue.main.async {
 				self.name = nameTmp
 				self.address = addressTmp
+				self.addressDisplay = addressDisplayTmp
 				self.addresses = addressesTmp
+				self.addressesDisplay = addressesDisplayTmp
 				self.phoneNumbersWithLabel = phoneNumbersWithLabelTmp
 				self.nativeUri = nativeUriTmp
 				self.editable = editableTmp

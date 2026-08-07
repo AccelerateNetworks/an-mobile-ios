@@ -142,7 +142,27 @@ class LinphoneUtils: NSObject {
 	public class func getDefaultAccount() -> Account? {
 		return CoreContext.shared.mCore.defaultAccount ?? (CoreContext.shared.mCore.accountList.first ?? nil)
 	}
-	
+
+	public class func getAddressAsCleanStringUriOnly(address: Address) -> String {
+		guard let cleaned = address.clone() else {
+			return address.asStringUriOnly()
+		}
+		cleaned.clean()
+		return cleaned.asStringUriOnly()
+	}
+
+	public class func getDisplayAddress(address: Address) -> String {
+		let username = address.username ?? ""
+		if !AppServices.corePreferences.onlyDisplaySipUriUsername || username.isEmpty {
+			return getAddressAsCleanStringUriOnly(address: address)
+		}
+		let homeDomain = getDefaultAccount()?.params?.domain
+		if address.domain == homeDomain || address.domain == AppServices.corePreferences.defaultDomain {
+			return username
+		}
+		return getAddressAsCleanStringUriOnly(address: address)
+	}
+
 	public class func getAccountForAddress(address: Address) -> Account? {
 		return CoreContext.shared.mCore.accountList.first { $0.params?.identityAddress?.weakEqual(address2: address) == true }
 	}

@@ -242,13 +242,31 @@ class CorePreferences: ObservableObject {
 	
 	var hideSipAddresses: Bool {
 		get {
-			config.getBool(section: "ui", key: "hide_sip_addresses", defaultValue: false)
+			suppressSipAddresses || config.getBool(section: "ui", key: "hide_sip_addresses", defaultValue: true)
 		}
 		set {
 			config.setBool(section: "ui", key: "hide_sip_addresses", value: newValue)
 		}
 	}
-	
+
+	var suppressSipAddresses: Bool {
+		get {
+			config.getBool(section: "ui", key: "suppress_sip_addresses", defaultValue: false)
+		}
+		set {
+			config.setBool(section: "ui", key: "suppress_sip_addresses", value: newValue)
+		}
+	}
+
+	var onlyDisplaySipUriUsername: Bool {
+		get {
+			config.getBool(section: "ui", key: "only_display_sip_uri_username", defaultValue: true)
+		}
+		set {
+			config.setBool(section: "ui", key: "only_display_sip_uri_username", value: newValue)
+		}
+	}
+
 	var keepServiceAlive: Bool {
 		get {
 			config.getBool(section: "app", key: "keep_service_alive", defaultValue: false)
