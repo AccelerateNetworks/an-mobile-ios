@@ -528,6 +528,9 @@ final class ContactsManager: ObservableObject {
 				onSyncStatusChanged: { (friendList: FriendList, status: FriendList.SyncStatus?, message: String?) in
 					Log.info("\(ContactsManager.TAG) FriendListDelegateStub onSyncStatusChanged \(friendList.displayName ?? "No Display Name") -- Status: \(status != nil ? String(describing: status!) : "No Status")")
 					if status == .Successful {
+						if friendList.type == .VCard4 {
+							self.enableDirectoryPresenceSubscriptions(friendList: friendList)
+						}
                         if friendList.displayName != self.nativeAddressBookFriendList && friendList.displayName != self.linphoneAddressBookFriendList {
                             if let tempRemoteFriendList = self.tempRemoteFriendList {
 								tempRemoteFriendList.friends.forEach { friend in
@@ -704,9 +707,17 @@ final class ContactsManager: ObservableObject {
 			CoreContext.shared.mCore.friendsLists.forEach { friendList in
 				friendList.addDelegate(delegate: friendListDelegateTmp)
 			}
+
+			// VCard4 directory list can sync before this delegate attaches (its
+			// onSyncStatusChanged is then missed), so enable presence here too
+			CoreContext.shared.mCore.friendsLists.forEach { friendList in
+				if friendList.type == .VCard4 && !friendList.friends.isEmpty {
+					self.enableDirectoryPresenceSubscriptions(friendList: friendList)
+				}
+			}
 		}
 	}
-	
+
 	func addCoreDelegate(core: Core) {
 		self.coreContext.doOnCoreQueue { _ in
 			if let coreDelegate = self.coreDelegate {
@@ -748,6 +759,24 @@ final class ContactsManager: ObservableObject {
 		}
 	}
 	
+	func enableDirectoryPresenceSubscriptions(friendList: FriendList) {
+		guard let homeDomain = LinphoneUtils.getDefaultAccount()?.params?.domain else { return }
+		var changed = false
+		friendList.friends.forEach { friend in
+			if !friend.subscribesEnabled && friend.addresses.contains(where: { $0.domain == homeDomain }) {
+				friend.edit()
+				try? friend.setSubscribesenabled(newValue: true)
+				friend.done()
+				changed = true
+			}
+		}
+		if changed {
+			friendList.subscriptionsEnabled = true
+			friendList.updateSubscriptions()
+			Log.info("\(ContactsManager.TAG) Enabled presence subscriptions for directory extensions on [\(homeDomain)]")
+		}
+	}
+
 	func updateSubscriptionsLinphoneList() {
 		self.coreContext.doOnCoreQueue { _ in
 			if let linphoneFL = self.linphoneFriendList {
