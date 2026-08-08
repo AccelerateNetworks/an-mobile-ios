@@ -60,7 +60,7 @@ final class MagicSearchSingleton: ObservableObject {
 		
 		coreContext.doOnCoreQueue { core in
 			self.linphoneDomain = AppServices.corePreferences.defaultDomain == core.defaultAccount?.params?.domain
-			self.domainDefaultAccount = AppServices.corePreferences.contactsFilter
+			self.domainDefaultAccount = self.allContact ? "" : (core.defaultAccount?.params?.domain ?? "*")
 			
 			self.magicSearch = try? core.createMagicSearch()
 			
@@ -86,7 +86,7 @@ final class MagicSearchSingleton: ObservableObject {
 								  !lastSearchFriend.contains(where: { $0.phoneNumber == phoneNumber }) {
 							lastSearchFriend.append(searchResult)
 						}
-					} else if searchResult.friend != nil && (searchResult.hasSourceFlag(source: .RemoteCardDAV) || searchResult.friend?.friendList?.type == .CardDAV || searchResult.hasSourceFlag(source: .LdapServers)) {
+					} else if searchResult.friend != nil && (searchResult.hasSourceFlag(source: .RemoteCardDAV) || searchResult.friend?.friendList?.type == .CardDAV || searchResult.friend?.friendList?.type == .VCard4 || searchResult.hasSourceFlag(source: .LdapServers)) {
 						lastSearchFriend.append(searchResult)
 					} else {
 						lastSearchSuggestions.append(searchResult)
@@ -123,7 +123,7 @@ final class MagicSearchSingleton: ObservableObject {
                                     withPresence: true
                                 )
                             )
-						} else if searchResult.hasSourceFlag(source: .RemoteCardDAV) || searchResult.friend?.friendList?.type == .CardDAV {
+						} else if searchResult.hasSourceFlag(source: .RemoteCardDAV) || searchResult.friend?.friendList?.type == .CardDAV || searchResult.friend?.friendList?.type == .VCard4 {
 							addedAvatarListModel.append(
 								ContactAvatarModel(
 									friend: searchResult.friend!,
@@ -158,7 +158,7 @@ final class MagicSearchSingleton: ObservableObject {
 	
 	func changeAllContact(allContactBool: Bool) {
 		allContact = allContactBool
-		domainDefaultAccount = allContactBool ? "" : (linphoneDomain ? AppServices.corePreferences.defaultDomain : "*")
+		domainDefaultAccount = allContactBool ? "" : (CoreContext.shared.mCore.defaultAccount?.params?.domain ?? "*")
 		AppServices.corePreferences.contactsFilter = domainDefaultAccount
 	}
     
@@ -218,7 +218,7 @@ final class MagicSearchSingleton: ObservableObject {
 			if needResetCache {
 				magicSearch.resetSearchCache()
 			}
-			
+
 			magicSearch.getContactsListAsync(
 				filter: self.currentFilter,
 				domain: self.allContact ? "" : self.domainDefaultAccount,

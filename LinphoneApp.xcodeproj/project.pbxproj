@@ -2586,7 +2586,7 @@
 			repositoryURL = "https://github.com/BelledonneCommunications/linphone-sdk-swift-ios.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.5.5;
+				minimumVersion = 5.5.15;
 			};
 		};
 		D7D5AD7B2DD34E4D00016721 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */ = {
