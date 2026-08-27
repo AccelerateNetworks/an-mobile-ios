@@ -136,12 +136,16 @@ struct EditContactFragment: View {
 					Image("check")
 						.renderingMode(.template)
 						.resizable()
-						.foregroundStyle(editContactViewModel.firstName.isEmpty ? Color.orangeMain100 : Color.orangeMain500)
+						.foregroundStyle(
+							editContactViewModel.firstName.isEmpty
+							? Color.orangeMain100
+							: Color.orangeMain500
+						)
 						.frame(width: 25, height: 25, alignment: .leading)
 						.padding(.all, 10)
 						.padding(.top, 2)
-						.disabled(editContactViewModel.firstName.isEmpty)
 						.onTapGesture {
+							guard !editContactViewModel.firstName.isEmpty else { return }
 							addOrEditFriend()
 						}
 				}
@@ -545,7 +549,7 @@ struct EditContactFragment: View {
 					prefix: prefix,
 					contact: newContact,
 					existingFriend: existingFriend,
-					linphoneFriend: "Linphone address-book"
+					linphoneFriend: AppServices.corePreferences.friendListInWhichStoreNewlyCreatedFriends
 				)
 			}
 		}
@@ -558,7 +562,8 @@ struct EditContactFragment: View {
 			prefix: prefix,
 			contact: contact,
 			linphoneFriend: linphoneFriend,
-			existingFriend: existingFriend
+			existingFriend: existingFriend,
+			editingFriend: true
 		) {
 			if let existingFriend = existingFriend {
 				self.updateAvatar(for: existingFriend)

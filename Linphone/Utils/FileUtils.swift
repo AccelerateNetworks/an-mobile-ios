@@ -23,6 +23,13 @@ import UniformTypeIdentifiers
 
 class FileUtil: NSObject {
 	
+	static let appGroupName: String = {
+		Bundle.main.object(forInfoDictionaryKey: "APP_GROUP_NAME") as? String
+		?? {
+			fatalError("APP_GROUP_NAME not defined in Info.plist")
+		}()
+	}()
+	
 	public enum MimeType {
 		case plainText
 		case pdf
@@ -77,7 +84,11 @@ class FileUtil: NSObject {
 	}
 	
 	public class func sharedContainerUrl() -> URL {
-		return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Config.appGroupName)!
+		let appGroupName = Bundle.main.object(forInfoDictionaryKey: "APP_GROUP_NAME") as? String
+		?? {
+			fatalError("APP_GROUP_NAME not defined in Info.plist")
+		}()
+		return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)!
 	}
 	
 	public class func ensureDirectoryExists(path: String) {

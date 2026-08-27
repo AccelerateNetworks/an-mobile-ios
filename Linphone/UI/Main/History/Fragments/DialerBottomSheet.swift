@@ -42,6 +42,9 @@ struct DialerBottomSheet: View {
 	@Binding var isShowStartCallFragment: Bool
 	@Binding var showingDialer: Bool
 	
+	@Binding var transferAddress: Address?
+	@Binding var isShowTransferPopup: Bool
+	
 	let currentCall: Call?
 	
 	var body: some View {
@@ -86,7 +89,7 @@ struct DialerBottomSheet: View {
 								.frame(width: 32, height: 32)
 							
 						}
-						.frame(width: 60, height: 60)
+						.frame(width: 100, height: 60)
 					}
 					.padding(.horizontal, 20)
 					.padding(.top, 10)
@@ -107,24 +110,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "1"
 						}
 					} label: {
-						VStack {
-							Text("1")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("1")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -139,24 +131,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "2"
 						}
 					} label: {
-						VStack {
-							Text("2")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("ABC")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("2")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -171,28 +152,17 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "3"
 						}
 					} label: {
-						VStack {
-							Text("3")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("DEF")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("3")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 				}
-				.padding(.horizontal, 64)
+				.padding(.horizontal, 60)
 				.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 				
 				HStack {
@@ -205,24 +175,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "4"
 						}
 					} label: {
-						VStack {
-							Text("4")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("GHI")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("4")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -237,24 +196,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "5"
 						}
 					} label: {
-						VStack {
-							Text("5")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("JKL")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("5")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -269,28 +217,17 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "6"
 						}
 					} label: {
-						VStack {
-							Text("6")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("MNO")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("6")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 				}
-				.padding(.horizontal, 64)
+				.padding(.horizontal, 60)
 				.padding(.top, 10)
 				.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 				
@@ -304,24 +241,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "7"
 						}
 					} label: {
-						VStack {
-							Text("7")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("PQRS")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("7")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -336,24 +262,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "8"
 						}
 					} label: {
-						VStack {
-							Text("8")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("TUV")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("8")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -368,28 +283,17 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "9"
 						}
 					} label: {
-						VStack {
-							Text("9")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-								.padding(.bottom, -6)
-							Text("WXYZ")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 12)
-								.multilineTextAlignment(.center)
-								.padding(.top, -6)
-								.padding(.bottom, 6)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("9")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 				}
-				.padding(.horizontal, 64)
+				.padding(.horizontal, 60)
 				.padding(.top, 10)
 				.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 				
@@ -403,17 +307,13 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "*"
 						}
 					} label: {
-						VStack {
-							Text("*")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("*")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 					
@@ -422,25 +322,25 @@ struct DialerBottomSheet: View {
 					if currentCall == nil {
 						Button {
 						} label: {
-							VStack {
+							ZStack {
 								Text("0")
 									.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
 									.default_text_style(styleSize: 32)
 									.multilineTextAlignment(.center)
-									.padding(.bottom, -6)
+									.frame(width: 100, height: 75)
+									.padding(.top, -15)
+									.background(currentCall != nil ? Color.gray500 : .white)
+									.cornerRadius(40)
+									.shadow(color: .black.opacity(0.2), radius: 4)
 								Text("+")
 									.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-									.default_text_style(styleSize: 12)
+									.default_text_style(styleSize: 20)
 									.multilineTextAlignment(.center)
-									.padding(.top, -6)
-									.padding(.bottom, 6)
-								
-							}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.multilineTextAlignment(.center)
-								.frame(width: 64, height: 64)
-								.background(currentCall != nil ? Color.gray500 : .white)
-								.clipShape(Circle())
-								.shadow(color: .black.opacity(0.2), radius: 4)
+									.frame(width: 100, height: 85)
+									.padding(.bottom, -25)
+									.background(.clear)
+									.cornerRadius(40)
+							}
 						}
 						.simultaneousGesture(
 							LongPressGesture()
@@ -460,24 +360,13 @@ struct DialerBottomSheet: View {
 							self.sendDtmf(dtmf: digit)
 							dialerField += "0"
 						} label: {
-							VStack {
-								Text("0")
-									.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-									.default_text_style(styleSize: 32)
-									.multilineTextAlignment(.center)
-									.padding(.bottom, -6)
-								Text("")
-									.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-									.default_text_style(styleSize: 12)
-									.multilineTextAlignment(.center)
-									.padding(.top, -6)
-									.padding(.bottom, 6)
-								
-							}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							Text("0")
+								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+								.default_text_style(styleSize: 32)
 								.multilineTextAlignment(.center)
-								.frame(width: 64, height: 64)
+								.frame(width: 100, height: 60)
 								.background(currentCall != nil ? Color.gray500 : .white)
-								.clipShape(Circle())
+								.cornerRadius(40)
 								.shadow(color: .black.opacity(0.2), radius: 4)
 						}
 					}
@@ -493,21 +382,17 @@ struct DialerBottomSheet: View {
 							startCallViewModel.searchField += "#"
 						}
 					} label: {
-						VStack {
-							Text("#")
-								.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
-								.default_text_style(styleSize: 32)
-								.multilineTextAlignment(.center)
-							
-						}.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+						Text("#")
+							.foregroundStyle(currentCall != nil ? .white : Color.grayMain2c600)
+							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
-							.frame(width: 64, height: 64)
+							.frame(width: 100, height: 60)
 							.background(currentCall != nil ? Color.gray500 : .white)
-							.clipShape(Circle())
+							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
 				}
-				.padding(.horizontal, 64)
+				.padding(.horizontal, 60)
 				.padding(.top, 10)
 				.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 				
@@ -516,31 +401,22 @@ struct DialerBottomSheet: View {
 						HStack {
 							
 						}
-						.frame(width: 60, height: 60)
+						.frame(width: 100, height: 60)
 						
 						Spacer()
 						
 						Button {
 							if !startCallViewModel.searchField.isEmpty {
 								if callViewModel.isTransferInsteadCall {
-									showingDialer = false
-									
-									magicSearch.currentFilter = ""
-									
-									magicSearch.searchForContacts()
-									
-									if callViewModel.isTransferInsteadCall == true {
-										callViewModel.isTransferInsteadCall = false
+									CoreContext.shared.doOnCoreQueue { core in
+										if let transferAddressTmp = core.interpretUrl(url: startCallViewModel.searchField, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+											DispatchQueue.main.async {
+												showingDialer = false
+												self.transferAddress = transferAddressTmp
+												self.isShowTransferPopup = true
+											}
+										}
 									}
-									
-									callViewModel.resetCallView()
-									
-									withAnimation {
-										isShowStartCallFragment.toggle()
-										startCallViewModel.interpretAndStartCall()
-									}
-									
-									startCallViewModel.searchField = ""
 								} else {
 									showingDialer = false
 									
@@ -552,7 +428,7 @@ struct DialerBottomSheet: View {
 										callViewModel.isTransferInsteadCall = false
 									}
 									
-									callViewModel.resetCallView()
+										callViewModel.resetCallView()
 									
 									withAnimation {
 										isShowStartCallFragment.toggle()
@@ -570,7 +446,7 @@ struct DialerBottomSheet: View {
 								.frame(width: 32, height: 32)
 							
 						}
-						.frame(width: 90, height: 60)
+						.frame(width: 100, height: 60)
 						.background(Color.greenSuccess500)
 						.cornerRadius(40)
 						.shadow(color: .black.opacity(0.2), radius: 4)
@@ -585,7 +461,7 @@ struct DialerBottomSheet: View {
 								.frame(width: 32, height: 32)
 							
 						}
-						.frame(width: 60, height: 60)
+						.frame(width: 100, height: 60)
 					}
 					.padding(.horizontal, 60)
 					.padding(.top, 20)
@@ -597,7 +473,7 @@ struct DialerBottomSheet: View {
 			.frame(maxWidth: .infinity)
 			.frame(maxHeight: .infinity)
 		}
-		.background(currentCall != nil ? Color.gray600 : Color.gray100)
+		.background(currentCall != nil ? Color.gray600.opacity(0.9) : Color.gray100.opacity(0.5))
 		.frame(maxWidth: .infinity)
 		.frame(maxHeight: .infinity)
 		.onRotate { newOrientation in
@@ -614,20 +490,12 @@ struct DialerBottomSheet: View {
 			
 			do {
 				try call.sendDtmf(dtmf: dtmf)
+				core.playDtmf(dtmf: dtmf, durationMs: 200)
 			} catch {
 				Log.error("Cannot send DTMF \(dtmf) to call \(call.callLog?.callId ?? ""): \(error)")
 			}
 		}
 	}
-}
-
-#Preview {
-	DialerBottomSheet(
-		startCallViewModel: StartCallViewModel()
-		, callViewModel: CallViewModel()
-		, isShowStartCallFragment: .constant(false)
-		, showingDialer: .constant(false)
-		, currentCall: nil)
 }
 
 // swiftlint:enable type_body_length

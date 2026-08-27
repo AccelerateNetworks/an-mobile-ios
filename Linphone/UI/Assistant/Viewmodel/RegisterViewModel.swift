@@ -56,6 +56,8 @@ class RegisterViewModel: ObservableObject {
 	
 	@Published var isLinkActive: Bool = false
 	@Published var createInProgress: Bool = false
+	@Published var isRecoveringPhoneNumberAccount: Bool = false
+	
 	
 	@Published var otpField = "" {
 		didSet {
@@ -104,6 +106,7 @@ class RegisterViewModel: ObservableObject {
 				if let token = notification.userInfo?["token"] as? String {
 					if !token.isEmpty {
 						self.accountCreationToken = token
+						
 						Log.info(
 							"\(RegisterViewModel.TAG) Extracted token \(self.accountCreationToken ?? "Error token") from push payload, creating account"
 						)
@@ -111,6 +114,30 @@ class RegisterViewModel: ObservableObject {
 					} else {
 						Log.error("\(RegisterViewModel.TAG) Push payload JSON object has an empty 'token'!")
 						self.onFlexiApiTokenRequestError()
+					}
+				}
+			} else if self.isRecoveringPhoneNumberAccount {
+				if let token = notification.userInfo?["token"] as? String {
+					if !token.isEmpty {
+						let rootURL = String(localized: "web_platform_forgotten_password_url")
+						let urlString = "\(rootURL)recovery/phone/\(token)"
+						
+						guard let url = URL(string: urlString) else {
+							Log.error("[AccountRecovery] Invalid URL: \(urlString)")
+							return
+						}
+						
+						Log.info("[AccountRecovery] Trying to open [\(urlString)] URL")
+						
+						DispatchQueue.main.async {
+							self.isRecoveringPhoneNumberAccount = false
+							
+							UIApplication.shared.open(url, options: [:]) { success in
+								if !success {
+									Log.error("[AccountRecovery] Can't open URL: \(urlString)")
+								}
+							}
+						}
 					}
 				}
 			}
@@ -153,8 +180,8 @@ class RegisterViewModel: ObservableObject {
 						do {
 							try core.addAccount(account: account!)
 							core.defaultAccount = account
-							request.removeDelegate(delegate: self.requestDelegate!)
-							self.requestDelegate = nil
+							// request.removeDelegate(delegate: self.requestDelegate!)
+							// self.requestDelegate = nil
 						} catch {
 						}
 					}
@@ -168,8 +195,7 @@ class RegisterViewModel: ObservableObject {
 				
 				if !errorMessage.isEmpty {
 					DispatchQueue.main.async {
-						ToastViewModel.shared.toastMessage = "Error: \(errorMessage)"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Error: \(errorMessage)")
 					}
 				}
 				
@@ -312,7 +338,11 @@ class RegisterViewModel: ObservableObject {
 				formatedRemoteToken = String(coreRemoteToken!.prefix(64))
 				pushConfig!.prid = formatedRemoteToken.uppercased()
 				do {
-					let request = try self.accountManagerServices!.createSendAccountCreationTokenByPushRequest(
+					let request = try isRecoveringPhoneNumberAccount ? self.accountManagerServices!.createSendAccountRecoveryTokenByPushRequest(
+						pnProvider: pushConfig?.provider ?? "",
+						pnParam: pushConfig?.param ?? "",
+						pnPrid: pushConfig?.prid ?? ""
+					) : try self.accountManagerServices!.createSendAccountCreationTokenByPushRequest(
 						pnProvider: pushConfig?.provider ?? "",
 						pnParam: pushConfig?.param ?? "",
 						pnPrid: pushConfig?.prid ?? ""
@@ -341,8 +371,7 @@ class RegisterViewModel: ObservableObject {
 		DispatchQueue.main.async {
 			self.createInProgress = false
 			
-			ToastViewModel.shared.toastMessage = "Failed_push_notification_not_received_error"
-			ToastViewModel.shared.displayToast = true
+			ToastViewModel.shared.show("Failed_push_notification_not_received_error")
 		}
 	}
 	
@@ -430,8 +459,7 @@ class RegisterViewModel: ObservableObject {
 				Log.error("\(RegisterViewModel.TAG) Account manager services hasn't been initialized!")
 				
 				DispatchQueue.main.async {
-					ToastViewModel.shared.toastMessage = "Failed_account_register_unexpected_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_account_register_unexpected_error")
 				}
 			}
 		}
@@ -459,6 +487,29 @@ class RegisterViewModel: ObservableObject {
 				}
 			}
 		}
+	}
+	
+	func recoverEmailAccount() {
+		let rootURL = String(localized: "web_platform_forgotten_password_url")
+		let urlString = "\(rootURL)recovery/email"
+
+		guard let url = URL(string: urlString) else {
+			Log.error("[AccountRecovery] Invalid URL: \(urlString)")
+			return
+		}
+
+		Log.info("[AccountRecovery] Trying to open [\(urlString)] URL")
+
+		UIApplication.shared.open(url, options: [:]) { success in
+			if !success {
+				Log.error("[AccountRecovery] Can't open URL: \(urlString)")
+			}
+		}
+	}
+
+	func recoverPhoneNumberAccount() {
+		self.isRecoveringPhoneNumberAccount = true
+		self.startAccountCreation()
 	}
 }
 

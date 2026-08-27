@@ -25,15 +25,14 @@ struct HelpFragment: View {
 	
 	@Binding var isShowHelpFragment: Bool
 	
-	@State var advancedSettingsIsOpen: Bool = false
-	
-	@FocusState var isVoicemailUriFocused: Bool
+	@State var clickCounter: Int = 0
 	
 	var showAssistant: Bool {
-		(CoreContext.shared.coreIsStarted && CoreContext.shared.accounts.isEmpty)
+		(CoreContext.shared.codeScannerIsOpen && CoreContext.shared.accounts.isEmpty)
+		|| (CoreContext.shared.coreIsStarted && CoreContext.shared.accounts.isEmpty)
 		|| SharedMainViewModel.shared.displayProfileMode
 	}
-	
+
 	var body: some View {
 		NavigationView {
 			ZStack {
@@ -77,11 +76,31 @@ struct HelpFragment: View {
 					ScrollView {
 						VStack(spacing: 0) {
 							VStack(spacing: 20) {
+								if let urlString = AppServices.corePreferences.themeAboutPictureUrl,
+								   let url = URL(string: urlString) {
+									AsyncImage(url: url) { phase in
+										switch phase {
+										case .empty:
+											ProgressView()
+												.frame(maxWidth: .infinity, minHeight: 100, maxHeight: 100)
+										case .success(let image):
+											image
+												.resizable()
+												.scaledToFit()
+												.frame(maxWidth: .infinity, maxHeight: 100, alignment: .center)
+										case .failure:
+											EmptyView()
+										@unknown default:
+											EmptyView()
+										}
+									}
+								} else {
+									EmptyView()
+								}
 								Text("help_about_title")
 									.default_text_style_800(styleSize: 16)
 									.frame(maxWidth: .infinity, alignment: .leading)
 									.padding(.bottom, 5)
-								
 								Button {
 									if let url = URL(string: NSLocalizedString("website_user_guide_url", comment: "")) {
 										UIApplication.shared.open(url)
@@ -161,7 +180,7 @@ struct HelpFragment: View {
 											.frame(maxWidth: .infinity, alignment: .leading)
 											.multilineTextAlignment(.leading)
 										
-										Text(helpViewModel.version)
+										Text(helpViewModel.appVersion)
 											.default_text_style(styleSize: 14)
 											.frame(maxWidth: .infinity, alignment: .leading)
 											.multilineTextAlignment(.leading)
@@ -181,6 +200,29 @@ struct HelpFragment: View {
 									.padding(.vertical, 10)
 									.background(Color.orangeMain100)
 									.cornerRadius(60)
+								}
+								.background(Color.gray100)
+								.onTapGesture {
+									if !AppServices.corePreferences.showDeveloperSettings {
+										clickCounter += 1
+										
+										switch clickCounter {
+										case 1:
+											ToastViewModel.shared.show("Success_two_more_clicks_toast")
+											
+										case 2:
+											ToastViewModel.shared.show("Success_one_more_click_toast")
+											
+										case 3:
+											AppServices.corePreferences.showDeveloperSettings = true
+											ToastViewModel.shared.show("Success_developer_enabled_toast")
+											
+										default:
+											ToastViewModel.shared.show("Success_developer_already_enabled_toast")
+										}
+									} else {
+										ToastViewModel.shared.show("Success_developer_already_enabled_toast")
+									}
 								}
 								
 								Button {
@@ -286,17 +328,17 @@ struct HelpFragment: View {
 						isShowPopup: $helpViewModel.checkUpdateAvailable,
 						title: Text("help_dialog_update_available_title"),
 						content: Text(String(format: String(localized: "help_dialog_update_available_message"), helpViewModel.versionAvailable)),
-						titleFirstButton: Text("dialog_cancel"),
-						actionFirstButton: {
-							helpViewModel.checkUpdateAvailable = false
-						},
+						titleFirstButton: nil,
+						actionFirstButton: {},
 						titleSecondButton: Text("dialog_install"),
 						actionSecondButton: {
 							helpViewModel.checkUpdateAvailable = false
 							if let url = URL(string: helpViewModel.urlVersionAvailable) {
 								UIApplication.shared.open(url)
 							}
-						}
+						},
+						titleThirdButton: Text("dialog_cancel"),
+						actionThirdButton: { helpViewModel.checkUpdateAvailable = false }
 					)
 					.background(.black.opacity(0.65))
 					.zIndex(3)

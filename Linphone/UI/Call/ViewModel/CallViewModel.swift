@@ -22,6 +22,7 @@ import linphonesw
 import AVFAudio
 import Combine
 import SwiftUI
+import UserNotifications
 
 // swiftlint:disable line_length
 // swiftlint:disable type_body_length
@@ -48,6 +49,7 @@ class CallViewModel: ObservableObject {
 	@Published var zrtpPopupDisplayed: Bool = false
 	@Published var upperCaseAuthTokenToRead = ""
 	@Published var upperCaseAuthTokenToListen = ""
+	@Published var isEndToEndEncrypted: Bool = false
 	@Published var isMediaEncrypted: Bool = false
 	@Published var isNotEncrypted: Bool = false
 	@Published var isZrtp: Bool = false
@@ -89,22 +91,145 @@ class CallViewModel: ObservableObject {
 	@Published var letters4: String = "DD"
 	
 	@Published var operationInProgress: Bool = false
-	
+	@Published var hasAudioRouteRestriction: Bool = false
+	@Published var audioMutedByEarpieceEnforcement: Bool = false
+
 	private var mCoreDelegate: CoreDelegate?
 	private var chatRoomDelegate: ChatRoomDelegate?
-	
+
+	private static let earpieceNotificationIdentifier = "linphone-earpiece-enforcement"
+	private var isEnforcingEarpiece: Bool = false
+	private var routeChangeObserver: Any?
+
 	init() {
-		do {
-			try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .voiceChat, options: .allowBluetooth)
-		} catch _ {
-			
-		}
+		hasAudioRouteRestriction = AppServices.corePreferences.onlyAllowEarpieceDuringCall
+
 		NotificationCenter.default.addObserver(forName: Notification.Name("CallViewModelReset"), object: nil, queue: nil) { notification in
 			self.resetCallView()
 		}
+
+		if hasAudioRouteRestriction {
+			routeChangeObserver = NotificationCenter.default.addObserver(
+				forName: AVAudioSession.routeChangeNotification,
+				object: nil,
+				queue: .main
+			) { [weak self] _ in
+				self?.enforceEarpieceIfNeeded()
+			}
+		}
+	}
+
+	deinit {
+		if let observer = routeChangeObserver {
+			NotificationCenter.default.removeObserver(observer)
+		}
+	}
+
+	func isRouteAllowed() -> Bool {
+		guard AppServices.corePreferences.onlyAllowEarpieceDuringCall else { return true }
+		guard let portType = AVAudioSession.sharedInstance().currentRoute.outputs.first?.portType else { return false }
+		return portType == .builtInReceiver
+			|| portType == .headphones
+			|| portType == .usbAudio
+			|| portType == .lineOut
+	}
+
+	func enforceEarpieceIfNeeded() {
+		guard hasAudioRouteRestriction else { return }
+
+		if isRouteAllowed() {
+			if audioMutedByEarpieceEnforcement {
+				coreContext.doOnCoreQueue { core in
+					if let call = self.currentCall {
+						call.microphoneMuted = false
+						core.micEnabled = true
+						let micMuttedTmp = call.microphoneMuted || !core.micEnabled
+						DispatchQueue.main.async {
+							self.micMutted = micMuttedTmp
+							self.audioMutedByEarpieceEnforcement = false
+						}
+						Log.info("\(CallViewModel.TAG) Earpiece restored, unmuting audio")
+					}
+				}
+				cancelEarpieceNotification()
+			}
+		} else {
+			guard !isEnforcingEarpiece else { return }
+			isEnforcingEarpiece = true
+
+			Log.info("\(CallViewModel.TAG) Disallowed audio route detected, muting and forcing earpiece")
+
+			DispatchQueue.main.async {
+				self.micMutted = true
+				self.audioMutedByEarpieceEnforcement = true
+			}
+
+			self.forceEarpiece()
+			self.postEarpieceEnforcementNotification()
+
+			DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+				if !self.isRouteAllowed() {
+					self.forceEarpiece()
+				}
+			}
+
+			DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+				self.isEnforcingEarpiece = false
+			}
+		}
+	}
+
+	private func forceEarpiece() {
+		coreContext.doOnCoreQueue { core in
+			if let call = self.currentCall {
+				call.microphoneMuted = true
+				AudioRouteUtils.routeAudioToEarpiece(core: core, call: call)
+			}
+		}
+
+		do {
+			let session = AVAudioSession.sharedInstance()
+			try session.overrideOutputAudioPort(.none)
+			let receiver = session.availableInputs?.first(where: { $0.portType.rawValue.contains("Receiver") })
+				?? session.availableInputs?.first
+			try session.setPreferredInput(receiver)
+		} catch {
+			Log.error("\(CallViewModel.TAG) Failed to override audio port to earpiece: \(error)")
+		}
+	}
+
+	private func postEarpieceEnforcementNotification() {
+		let content = UNMutableNotificationContent()
+		content.title = "Linphone"
+		content.body = String(localized: "notification_earpiece_enforcement_message")
+		content.sound = .default
+
+		let request = UNNotificationRequest(
+			identifier: CallViewModel.earpieceNotificationIdentifier,
+			content: content,
+			trigger: nil
+		)
+
+		UNUserNotificationCenter.current().add(request) { error in
+			if let error = error {
+				Log.error("\(CallViewModel.TAG) Failed to post earpiece notification: \(error)")
+			}
+		}
+	}
+
+	private func cancelEarpieceNotification() {
+		UNUserNotificationCenter.current().removeDeliveredNotifications(
+			withIdentifiers: [CallViewModel.earpieceNotificationIdentifier]
+		)
+		UNUserNotificationCenter.current().removePendingNotificationRequests(
+			withIdentifiers: [CallViewModel.earpieceNotificationIdentifier]
+		)
 	}
 	
 	func resetCallView() {
+		cancelEarpieceNotification()
+		audioMutedByEarpieceEnforcement = false
+
 		DispatchQueue.main.async {
 			self.displayName = ""
 			self.avatarModel = nil
@@ -138,6 +263,7 @@ class CallViewModel: ObservableObject {
 				}
 				
 				var displayNameTmp = ""
+				var isEndToEndEncryptedTmp = false
 				
 				var isOneOneCallTmp = false
 				if self.currentCall?.remoteAddress != nil {
@@ -147,6 +273,7 @@ class CallViewModel: ObservableObject {
 						isOneOneCallTmp = true
 					} else {
 						displayNameTmp = confInfo?.subject ?? "Conference-focus"
+						isEndToEndEncryptedTmp = confInfo?.securityLevel == .EndToEnd || conf?.currentParams?.securityLevel == .EndToEnd
 					}
 				}
 				
@@ -170,7 +297,7 @@ class CallViewModel: ObservableObject {
 				
 				remoteAddressTmp!.clean()
 				
-				let remoteAddressCleanedStringTmp = remoteAddressTmp != nil ? String(remoteAddressTmp!.asStringUriOnly().dropFirst(4)) : ""
+				let remoteAddressCleanedStringTmp = remoteAddressTmp != nil ? LinphoneUtils.getDisplayAddress(address: remoteAddressTmp!) : ""
 				
 				if self.currentCall?.conference != nil {
 					displayNameTmp = self.currentCall?.conference?.subject ?? ""
@@ -178,7 +305,9 @@ class CallViewModel: ObservableObject {
 					let friend = ContactsManager.shared.getFriendWithAddress(address: self.currentCall!.remoteAddress)
 					if friend != nil && friend!.address != nil && friend!.address!.displayName != nil {
 						displayNameTmp = friend!.address!.displayName!
-					} else {
+					}  else if friend != nil && friend?.name != nil {
+						displayNameTmp = friend?.name ?? "No name"
+					}  else {
 						if self.currentCall!.remoteAddress!.displayName != nil {
 							displayNameTmp = self.currentCall!.remoteAddress!.displayName!
 						} else if self.currentCall!.remoteAddress!.username != nil && displayNameTmp.isEmpty {
@@ -253,6 +382,7 @@ class CallViewModel: ObservableObject {
 					
 					self.videoDisplayed = videoDisplayedTmp
 					self.isOneOneCall = isOneOneCallTmp
+					self.isEndToEndEncrypted = isEndToEndEncryptedTmp
 					self.isMediaEncrypted = isMediaEncryptedTmp
 					self.isNotEncrypted = false
 					self.isZrtp = isZrtpTmp
@@ -270,7 +400,7 @@ class CallViewModel: ObservableObject {
 					}
 				}
 				
-				self.callDelegate = CallDelegateStub(onEncryptionChanged: { (_: Call, _: Bool, _: String)in
+				self.callDelegate = CallDelegateStub(onEncryptionChanged: { (_: Call, _: Bool, _: String) in
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         self.updateEncryption(withToast: false)
                     }
@@ -291,10 +421,6 @@ class CallViewModel: ObservableObject {
                             self.isNotVerified = true
                             self.zrtpPopupDisplayed = true
                         }
-					}
-				}, onStateChanged: { (_: Call, state: Call.State, message: String) in
-					if let currentParamsTmp = self.currentCall?.currentParams, state == .StreamsRunning, currentParamsTmp.mediaEncryption == .None || currentParamsTmp.mediaEncryption == .SRTP {
-						self.updateEncryption(withToast: false)
 					}
 				}, onStatsUpdated: { (_: Call, stats: CallStats) in
 					DispatchQueue.main.async {
@@ -335,9 +461,9 @@ class CallViewModel: ObservableObject {
 				
 				var myParticipantModelTmp: ParticipantModel?
 				if conf.me?.address != nil {
-					myParticipantModelTmp = ParticipantModel(address: conf.me!.address!, isJoining: false, onPause: false, isMuted: false, isAdmin: conf.me!.isAdmin)
+					myParticipantModelTmp = ParticipantModel(address: conf.me!.address!, isJoining: false, onPause: false, isMuted: false, isAdmin: conf.me!.isAdmin, isScreenSharing: false)
 				} else if self.currentCall?.callLog?.localAddress != nil {
-					myParticipantModelTmp = ParticipantModel(address: self.currentCall!.callLog!.localAddress!, isJoining: false, onPause: false, isMuted: false, isAdmin: conf.me!.isAdmin)
+					myParticipantModelTmp = ParticipantModel(address: self.currentCall!.callLog!.localAddress!, isJoining: false, onPause: false, isMuted: false, isAdmin: conf.me!.isAdmin, isScreenSharing: false)
 				}
 				
 				var activeSpeakerParticipantTmp: ParticipantModel?
@@ -346,21 +472,24 @@ class CallViewModel: ObservableObject {
 						address: conf.activeSpeakerParticipantDevice!.address!,
 						isJoining: conf.activeSpeakerParticipantDevice!.state == .Joining || conf.activeSpeakerParticipantDevice!.state == .Alerting,
 						onPause: conf.activeSpeakerParticipantDevice!.state == .OnHold,
-						isMuted: conf.activeSpeakerParticipantDevice!.isMuted
+						isMuted: conf.activeSpeakerParticipantDevice!.isMuted,
+						isScreenSharing: conf.activeSpeakerParticipantDevice!.screenSharingEnabled
 					)
 				} else if conf.participantList.first?.address != nil && conf.participantList.first!.address!.clone()!.equal(address2: (conf.me?.address)!) {
 					activeSpeakerParticipantTmp = ParticipantModel(
 						address: conf.participantDeviceList.first!.address!,
 						isJoining: conf.participantDeviceList.first!.state == .Joining || conf.participantDeviceList.first!.state == .Alerting,
 						onPause: conf.participantDeviceList.first!.state == .OnHold,
-						isMuted: conf.participantDeviceList.first!.isMuted
+						isMuted: conf.participantDeviceList.first!.isMuted,
+						isScreenSharing: conf.participantDeviceList.first!.screenSharingEnabled
 					)
 				} else if conf.participantList.last?.address != nil {
 					activeSpeakerParticipantTmp = ParticipantModel(
 						address: conf.participantDeviceList.last!.address!,
 						isJoining: conf.participantDeviceList.last!.state == .Joining || conf.participantDeviceList.last!.state == .Alerting,
 						onPause: conf.participantDeviceList.last!.state == .OnHold,
-						isMuted: conf.participantDeviceList.last!.isMuted
+						isMuted: conf.participantDeviceList.last!.isMuted,
+						isScreenSharing: conf.participantDeviceList.last!.screenSharingEnabled
 					)
 				}
 				
@@ -382,8 +511,8 @@ class CallViewModel: ObservableObject {
 				
 				var participantListTmp: [ParticipantModel] = []
 				conf.participantDeviceList.forEach({ participantDevice in
-					if participantDevice.address != nil && !conf.isMe(uri: participantDevice.address!.clone()!) {
-						if !conf.isMe(uri: participantDevice.address!.clone()!) {
+                    if participantDevice.address != nil && !conf.isMe(URI: participantDevice.address!.clone()!) {
+                        if !conf.isMe(URI: participantDevice.address!.clone()!) {
 							let isAdmin = conf.participantList.first(where: {$0.address!.equal(address2: participantDevice.address!.clone()!)})?.isAdmin
 							participantListTmp.append(
 								ParticipantModel(
@@ -391,7 +520,8 @@ class CallViewModel: ObservableObject {
 									isJoining: participantDevice.state == .Joining || participantDevice.state == .Alerting,
 									onPause: participantDevice.state == .OnHold,
 									isMuted: participantDevice.isMuted,
-									isAdmin: isAdmin ?? false
+									isAdmin: isAdmin ?? false,
+									isScreenSharing: participantDevice.screenSharingEnabled
 								)
 							)
 						}
@@ -440,8 +570,8 @@ class CallViewModel: ObservableObject {
 				if participantDevice.address != nil {
 					var participantListTmp: [ParticipantModel] = []
 					conference.participantDeviceList.forEach({ pDevice in
-						if pDevice.address != nil && !conference.isMe(uri: pDevice.address!.clone()!) {
-							if !conference.isMe(uri: pDevice.address!.clone()!) {
+                        if pDevice.address != nil && !conference.isMe(URI: pDevice.address!.clone()!) {
+                            if !conference.isMe(URI: pDevice.address!.clone()!) {
 								let isAdmin = conference.participantList.first(where: {$0.address!.equal(address2: pDevice.address!.clone()!)})?.isAdmin
 								participantListTmp.append(
 									ParticipantModel(
@@ -449,7 +579,8 @@ class CallViewModel: ObservableObject {
 										isJoining: pDevice.state == .Joining || pDevice.state == .Alerting,
 										onPause: pDevice.state == .OnHold,
 										isMuted: pDevice.isMuted,
-										isAdmin: isAdmin ?? false
+										isAdmin: isAdmin ?? false,
+										isScreenSharing: pDevice.screenSharingEnabled
 									)
 								)
 							}
@@ -465,21 +596,24 @@ class CallViewModel: ObservableObject {
 								address: conference.activeSpeakerParticipantDevice!.address!,
 								isJoining: conference.activeSpeakerParticipantDevice!.state == .Joining || conference.activeSpeakerParticipantDevice!.state == .Alerting,
 								onPause: conference.activeSpeakerParticipantDevice!.state == .OnHold,
-								isMuted: conference.activeSpeakerParticipantDevice!.isMuted
+								isMuted: conference.activeSpeakerParticipantDevice!.isMuted,
+								isScreenSharing: conference.activeSpeakerParticipantDevice!.screenSharingEnabled
 							)
 						} else if conference.participantList.first?.address != nil && conference.participantList.first!.address!.clone()!.equal(address2: (conference.me?.address)!) {
 							activeSpeakerParticipantTmp = ParticipantModel(
 								address: conference.participantDeviceList.first!.address!,
 								isJoining: conference.participantDeviceList.first!.state == .Joining || conference.participantDeviceList.first!.state == .Alerting,
 								onPause: conference.participantDeviceList.first!.state == .OnHold,
-								isMuted: conference.participantDeviceList.first!.isMuted
+								isMuted: conference.participantDeviceList.first!.isMuted,
+								isScreenSharing: conference.participantDeviceList.first!.screenSharingEnabled
 							)
 						} else if conference.participantList.last?.address != nil {
 							activeSpeakerParticipantTmp = ParticipantModel(
 								address: conference.participantDeviceList.last!.address!,
 								isJoining: conference.participantDeviceList.last!.state == .Joining || conference.participantDeviceList.last!.state == .Alerting,
 								onPause: conference.participantDeviceList.last!.state == .OnHold,
-								isMuted: conference.participantDeviceList.last!.isMuted
+								isMuted: conference.participantDeviceList.last!.isMuted,
+								isScreenSharing: conference.participantDeviceList.last!.screenSharingEnabled
 							)
 						}
 						
@@ -516,8 +650,8 @@ class CallViewModel: ObservableObject {
 				if participantDevice.address != nil {
 					var participantListTmp: [ParticipantModel] = []
 					conference.participantDeviceList.forEach({ pDevice in
-						if pDevice.address != nil && !conference.isMe(uri: pDevice.address!.clone()!) {
-							if !conference.isMe(uri: pDevice.address!.clone()!) {
+                        if pDevice.address != nil && !conference.isMe(URI: pDevice.address!.clone()!) {
+                            if !conference.isMe(URI: pDevice.address!.clone()!) {
 								let isAdmin = conference.participantList.first(where: {$0.address!.equal(address2: pDevice.address!.clone()!)})?.isAdmin
 								participantListTmp.append(
 									ParticipantModel(
@@ -525,7 +659,8 @@ class CallViewModel: ObservableObject {
 										isJoining: pDevice.state == .Joining || pDevice.state == .Alerting,
 										onPause: pDevice.state == .OnHold,
 										isMuted: pDevice.isMuted,
-										isAdmin: isAdmin ?? false
+										isAdmin: isAdmin ?? false,
+										isScreenSharing: pDevice.screenSharingEnabled
 									)
 								)
 							}
@@ -574,7 +709,57 @@ class CallViewModel: ObservableObject {
 						}
 					}
 				})
-			}, onParticipantDeviceIsSpeakingChanged: { (_: Conference, device: ParticipantDevice, isSpeaking: Bool) in
+			}, onParticipantDeviceScreenSharingChanged: { (_: Conference, device: ParticipantDevice, enabled: Bool) in
+				self.toggleVideoMode(isAudioOnlyMode: false)
+				
+                let activeSpeakerParticipantTmp = ParticipantModel(
+                    address: device.address!,
+                    isJoining: device.state == .Joining || device.state == .Alerting,
+                    onPause: device.state == .OnHold,
+                    isMuted: device.isMuted,
+                    isScreenSharing: device.screenSharingEnabled
+                )
+                
+                var activeSpeakerNameTmp = ""
+                let friend = ContactsManager.shared.getFriendWithAddress(address: activeSpeakerParticipantTmp.address)
+                if friend != nil && friend!.address != nil && friend!.address!.displayName != nil {
+                    activeSpeakerNameTmp = friend!.address!.displayName!
+                } else {
+                    if activeSpeakerParticipantTmp.address.displayName != nil {
+                        activeSpeakerNameTmp = activeSpeakerParticipantTmp.address.displayName!
+                    } else if activeSpeakerParticipantTmp.address.username != nil {
+                        activeSpeakerNameTmp = activeSpeakerParticipantTmp.address.username!
+                    } else {
+                        activeSpeakerNameTmp = String(activeSpeakerParticipantTmp.address.asStringUriOnly().dropFirst(4))
+                    }
+                }
+                
+                var participantListTmp: [ParticipantModel] = []
+                conference.participantDeviceList.forEach({ pDevice in
+                    if pDevice.address != nil && !conference.isMe(URI: pDevice.address!.clone()!) {
+                        if !conference.isMe(URI: pDevice.address!.clone()!) {
+                            let isAdmin = conference.participantList.first(where: {$0.address!.equal(address2: pDevice.address!.clone()!)})?.isAdmin
+                            
+                            participantListTmp.append(
+                                ParticipantModel(
+                                    address: pDevice.address!,
+                                    isJoining: pDevice.state == .Joining || pDevice.state == .Alerting,
+                                    onPause: pDevice.state == .OnHold,
+                                    isMuted: pDevice.isMuted,
+                                    isAdmin: isAdmin ?? false,
+                                    isScreenSharing: pDevice.screenSharingEnabled
+                                )
+                            )
+                        }
+                    }
+                })
+                
+                DispatchQueue.main.async {
+                    self.activeSpeakerParticipant = activeSpeakerParticipantTmp
+                    self.activeSpeakerName = activeSpeakerNameTmp
+                    self.participantList = participantListTmp
+                }
+			} , onParticipantDeviceIsSpeakingChanged: { (_: Conference, device: ParticipantDevice, isSpeaking: Bool) in
 				let isSpeaking = device.isSpeaking
 				if self.myParticipantModel != nil && self.myParticipantModel!.address.clone()!.equal(address2: device.address!) {
 					DispatchQueue.main.async {
@@ -609,7 +794,8 @@ class CallViewModel: ObservableObject {
 						address: participantDevice!.address!,
 						isJoining: participantDevice!.state == .Joining || participantDevice!.state == .Alerting,
 						onPause: participantDevice!.state == .OnHold,
-						isMuted: participantDevice!.isMuted
+						isMuted: participantDevice!.isMuted,
+						isScreenSharing: participantDevice!.screenSharingEnabled
 					)
 					
 					var activeSpeakerNameTmp = ""
@@ -631,8 +817,8 @@ class CallViewModel: ObservableObject {
 						|| ( activeSpeakerParticipantBis == nil) {
 						
 						conference.participantDeviceList.forEach({ pDevice in
-							if pDevice.address != nil && !conference.isMe(uri: pDevice.address!.clone()!) {
-								if !conference.isMe(uri: pDevice.address!.clone()!) {
+                            if pDevice.address != nil && !conference.isMe(URI: pDevice.address!.clone()!) {
+                                if !conference.isMe(URI: pDevice.address!.clone()!) {
 									let isAdmin = conference.participantList.first(where: {$0.address!.equal(address2: pDevice.address!.clone()!)})?.isAdmin
 									participantListTmp.append(
 										ParticipantModel(
@@ -640,7 +826,8 @@ class CallViewModel: ObservableObject {
 											isJoining: pDevice.state == .Joining || pDevice.state == .Alerting,
 											onPause: pDevice.state == .OnHold,
 											isMuted: pDevice.isMuted,
-											isAdmin: isAdmin ?? false
+											isAdmin: isAdmin ?? false,
+											isScreenSharing: pDevice.screenSharingEnabled
 										)
 									)
 								}
@@ -805,6 +992,12 @@ class CallViewModel: ObservableObject {
 				let isRecordingTmp = self.currentCall!.params!.isRecording
 				DispatchQueue.main.async {
 					self.isRecording = isRecordingTmp
+					
+					if isRecordingTmp {
+						ToastViewModel.shared.show("Success_call_is_being_recorded")
+					} else {
+						ToastViewModel.shared.show("Success_call_has_been_recorded")
+					}
 				}
 			}
 		}
@@ -974,8 +1167,7 @@ class CallViewModel: ObservableObject {
 						self.isNotEncrypted = false
 						
 						if isDeviceTrusted && withToast {
-							ToastViewModel.shared.toastMessage = "Info_call_securised"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Info_call_securised")
 						}
 					}
 					
@@ -990,9 +1182,11 @@ class CallViewModel: ObservableObject {
 						self.isNotEncrypted = false
 					}
 				case MediaEncryption.None:
-					let isNotEncryptedTmp = self.currentCall?.state == .StreamsRunning && !self.telecomManager.outgoingCallStarted
+					let isMediaEncryptedTmp = self.currentCall?.params?.mediaEncryption != .None && self.currentCall?.params?.mediaEncryption != .ZRTP
+					let isNotEncryptedTmp = self.currentCall?.params?.mediaEncryption == .None
+					
 					DispatchQueue.main.async {
-						self.isMediaEncrypted = false
+						self.isMediaEncrypted = isMediaEncryptedTmp
 						self.isZrtp = false
 						self.isNotEncrypted = isNotEncryptedTmp
 					}
@@ -1058,8 +1252,9 @@ class CallViewModel: ObservableObject {
 						try callToTransferTo!.transferToAnother(dest: self.currentCall!)
 						Log.info("[CallViewModel] Attended transfer is successful")
 					} catch _ {
-						ToastViewModel.shared.toastMessage = "Failed_toast_call_transfer_failed"
-						ToastViewModel.shared.displayToast = true
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show("Failed_toast_call_transfer_failed")
+						}
 						
 						Log.error("[CallViewModel] Failed to make attended transfer!")
 					}
@@ -1078,9 +1273,27 @@ class CallViewModel: ObservableObject {
 				try self.currentCall!.transferTo(referTo: toAddress)
 				Log.info("[CallViewModel] Blind call transfer is successful")
 			} catch _ {
-				ToastViewModel.shared.toastMessage = "Failed_toast_call_transfer_failed"
-				ToastViewModel.shared.displayToast = true
-				
+				DispatchQueue.main.async {
+					ToastViewModel.shared.show("Failed_toast_call_transfer_failed")
+				}
+				Log.error("[CallViewModel] Failed to make blind call transfer!")
+			}
+		}
+	}
+	
+	func attendedTransferCallTo(to: Call) {
+		if self.currentCall != nil && self.currentCall!.remoteAddress != nil {
+			Log.info(
+				"[CallViewModel] Call \(self.currentCall!.remoteAddress!.asStringUriOnly()) is being transferred to \(to.remoteAddress?.asStringUriOnly() ?? "")"
+			)
+			
+			do {
+				try self.currentCall!.transferToAnother(dest: to)
+				Log.info("[CallViewModel] Blind call transfer is successful")
+			} catch _ {
+				DispatchQueue.main.async {
+					ToastViewModel.shared.show("Failed_toast_call_transfer_failed")
+				}
 				Log.error("[CallViewModel] Failed to make blind call transfer!")
 			}
 		}
@@ -1185,22 +1398,21 @@ class CallViewModel: ObservableObject {
 	}
 	
 	func createConversation() {
-		if currentCall != nil {
-			self.operationInProgress = true
-			CoreContext.shared.doOnCoreQueue { _ in
-				let existingConversation = self.lookupCurrentCallConversation(call: self.currentCall!)
-				if existingConversation != nil {
-					Log.info("\(CallViewModel.TAG) Found existing conversation \(LinphoneUtils.getConversationId(chatRoom: existingConversation!)), going to it")
-					
-					let model = ConversationModel(chatRoom: existingConversation!)
-					DispatchQueue.main.async {
-						SharedMainViewModel.shared.displayedConversation = model
-						self.operationInProgress = false
-					}
-				} else {
-					Log.info("\(CallViewModel.TAG) No existing conversation was found, let's create it")
-					self.createCurrentCallConversation(call: self.currentCall!)
+		guard let call = currentCall else { return }
+		
+		self.operationInProgress = true
+		CoreContext.shared.doOnCoreQueue { _ in
+			if let existingConversation = self.lookupCurrentCallConversation(call: call) {
+				Log.info("\(CallViewModel.TAG) Found existing conversation \(LinphoneUtils.getConversationId(chatRoom: existingConversation)), going to it")
+				
+				let model = ConversationModel(chatRoom: existingConversation)
+				DispatchQueue.main.async {
+					SharedMainViewModel.shared.displayedConversation = model
+					self.operationInProgress = false
 				}
+			} else {
+				Log.info("\(CallViewModel.TAG) No existing conversation was found, let's create it")
+				self.createCurrentCallConversation(call: call)
 			}
 		}
 	}
@@ -1275,8 +1487,7 @@ class CallViewModel: ObservableObject {
 					)
 					DispatchQueue.main.async {
 						self.operationInProgress = false
-						ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Failed_to_create_conversation_error")
 					}
 				}
 			}
@@ -1298,7 +1509,7 @@ class CallViewModel: ObservableObject {
 				if let chatParams = params.chatParams {
 					chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
 					
-					let sameDomain = remoteAddress?.domain == CorePreferences.defaultDomain && remoteAddress?.domain == account.params?.domain
+					let sameDomain = remoteAddress?.domain == AppServices.corePreferences.defaultDomain && remoteAddress?.domain == account.params?.domain
 					if account.params != nil && (account.params!.instantMessagingEncryptionMandatory && sameDomain) {
 						Log.info(
 							"\(CallViewModel.TAG) Account is in secure mode & domain matches, requesting E2E encryption"
@@ -1366,8 +1577,7 @@ class CallViewModel: ObservableObject {
 				self.chatRoomDelegate = nil
 				DispatchQueue.main.async {
 					self.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}, onConferenceJoined: { (chatRoom: ChatRoom, _: EventLog) in
@@ -1401,8 +1611,7 @@ class CallViewModel: ObservableObject {
 				self.chatRoomDelegate = nil
 				DispatchQueue.main.async {
 					self.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		})

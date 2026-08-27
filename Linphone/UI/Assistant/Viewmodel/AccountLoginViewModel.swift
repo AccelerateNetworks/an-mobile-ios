@@ -30,6 +30,7 @@ class AccountLoginViewModel: ObservableObject {
 	@Published var displayName: String = ""
 	@Published var transportType: String = "TLS"
 	@Published var authId: String = ""
+	@Published var sipProxyUrl: String = ""
 	@Published var outboundProxy: String = ""
 	
 	private var mCoreDelegate: CoreDelegate!
@@ -41,8 +42,7 @@ class AccountLoginViewModel: ObservableObject {
 			guard self.coreContext.networkStatusIsConnected else {
 				DispatchQueue.main.async {
 					self.coreContext.loggingInProgress = false
-					ToastViewModel.shared.toastMessage = "Unavailable_network"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Unavailable_network")
 				}
 				return
 			}
@@ -103,18 +103,27 @@ class AccountLoginViewModel: ObservableObject {
 				
 				// We also need to configure where the proxy server is located
 				var serverAddress: Address
-				if (!self.outboundProxy.isEmpty) {
-					let server = self.outboundProxy.starts(with: "sip:") ? self.outboundProxy : String("sip:" + self.outboundProxy)
+				if (!self.sipProxyUrl.isEmpty) {
+					let server = self.sipProxyUrl.starts(with: "sip:") ? self.sipProxyUrl : String("sip:" + self.sipProxyUrl)
 					serverAddress = try Factory.Instance.createAddress(addr: server)
 				} else {
 					serverAddress = try Factory.Instance.createAddress(addr: String("sip:" + self.domain))
 				}
 				
-				let address = serverAddress
-				
 				// We use the Address object to easily set the transport protocol
-				try address.setTransport(newValue: transport)
-				try accountParams.setServeraddress(newValue: address)
+				try serverAddress.setTransport(newValue: transport)
+				try accountParams.setServeraddress(newValue: serverAddress)
+				
+				var routeAddress: Address
+				if (!self.outboundProxy.isEmpty) {
+					let server = self.outboundProxy.starts(with: "sip:") ? self.outboundProxy : String("sip:" + self.outboundProxy)
+					routeAddress = try Factory.Instance.createAddress(addr: server)
+					try routeAddress.setTransport(newValue: transport)
+					try accountParams.setRoutesaddresses(newValue: [routeAddress])
+				} else {
+					try accountParams.setRoutesaddresses(newValue: [])
+				}
+				
 				// And we ensure the account will start the registration process
 				accountParams.registerEnabled = true
 				
@@ -128,11 +137,11 @@ class AccountLoginViewModel: ObservableObject {
 				let pushEnvironment = ""
 #endif
 				accountParams.pushNotificationConfig?.provider = "apns" + pushEnvironment
-				
+
 				accountParams.internationalPrefix = "1"
 				accountParams.internationalPrefixIsoCountryCode = "USA"
 				accountParams.useInternationalPrefixForCallsAndChats = true
-				
+
 				self.mCoreDelegate = CoreDelegateStub(onAccountRegistrationStateChanged: { (core: Core, account: Account, state: RegistrationState, message: String) in
 					
 					Log.info("New registration state is \(state) for user id " +
@@ -145,7 +154,7 @@ class AccountLoginViewModel: ObservableObject {
 						}
 						
 						Log.warn("Registration failed for account \(account.displayName()), deleting it from core")
-						core.removeAccount(account: account)
+						core.removeAccountWithData(account: account)
 					default:
 						break
 					}
@@ -196,7 +205,7 @@ class AccountLoginViewModel: ObservableObject {
 		coreContext.doOnCoreQueue { core in
 			// To completely remove an Account
 			if let account = core.defaultAccount {
-				core.removeAccount(account: account)
+				core.removeAccountWithData(account: account)
 				
 				// To remove all accounts use
 				core.clearAccounts()

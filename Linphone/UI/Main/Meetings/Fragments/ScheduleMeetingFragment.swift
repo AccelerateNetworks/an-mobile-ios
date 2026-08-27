@@ -301,7 +301,7 @@ struct ScheduleMeetingFragment: View {
 							}
 						}
 						
-						if !CorePreferences.disableChatFeature {
+						if !AppServices.corePreferences.disableChatFeature {
 							Rectangle()
 								.foregroundStyle(.clear)
 								.frame(height: 1)
@@ -311,7 +311,7 @@ struct ScheduleMeetingFragment: View {
 								Toggle("", isOn: $meetingViewModel.sendInvitations)
 									.padding(.leading, 16)
 									.labelsHidden()
-									.tint(Color.orangeMain300)
+									.tint(Color.orangeMain500)
 								Text("meeting_schedule_send_invitations_title")
 									.default_text_style_500(styleSize: 14)
 								Spacer()
@@ -468,7 +468,7 @@ struct ScheduleMeetingFragment: View {
 								showDatePicker.toggle()
 							}
 						}
-					Text("dialog_ok")
+					Text("dialog_confirm")
 						.default_text_style_orange_500(styleSize: 16)
 						.onTapGesture {
 							pickDate()

@@ -93,17 +93,28 @@ class ConversationViewModel: ObservableObject {
 	@Published var selectedMessageToPlayVoiceRecording: EventLogMessage?
 	@Published var selectedMessage: EventLogMessage?
 	@Published var messageToReply: EventLogMessage?
+	@Published var messageToEdit: EventLogMessage?
 	
 	@Published var sheetCategories: [SheetCategory] = []
 	
 	var vrpManager: VoiceRecordPlayerManager?
 	@Published var isPlaying = false
-	@Published var progress: Double = 0.0
+	@Published var isRecording = false
 	
 	@Published var attachments: [Attachment] = []
 	@Published var attachmentTransferInProgress: Attachment?
 	
 	@Published var isSwiping = false
+	
+	@Published var searchText = ""
+	@Published var targetIndex: Int = -1
+	@Published var canSearchDown = false
+	@Published var searchInProgress = false
+	@Published var highlightedMessageID: String?
+	
+	@Published var peerAddress = ""
+	
+	var latestMatch: EventLogMessage?
 	
 	struct SheetCategory: Identifiable {
 		let id = UUID()
@@ -119,10 +130,10 @@ class ConversationViewModel: ObservableObject {
 	}
 	
 	init() {
-        if let chatroom = self.sharedMainViewModel.displayedConversation?.chatRoom {
-            self.addConversationDelegate(chatRoom: chatroom)
-            self.getMessages()
-        }
+		if let chatroom = self.sharedMainViewModel.displayedConversation?.chatRoom {
+			self.addConversationDelegate(chatRoom: chatroom)
+			self.getMessages()
+		}
 	}
 	
 	func addConversationDelegate(chatRoom: ChatRoom) {
@@ -152,7 +163,7 @@ class ConversationViewModel: ObservableObject {
 				if displayedConversation.isGroup {
 					self.getEventMessage(eventLog: eventLog)
 				}
-				let isReadOnly = chatRoom.isReadOnly
+				let isReadOnly = chatRoom.isReadOnly || displayedConversation.isDisabledBecauseNotSecured
 				DispatchQueue.main.async {
 					displayedConversation.isReadOnly = isReadOnly
 				}
@@ -162,7 +173,7 @@ class ConversationViewModel: ObservableObject {
 				if displayedConversation.isGroup {
 					self.getEventMessage(eventLog: eventLog)
 				}
-				let isReadOnly = chatRoom.isReadOnly
+				let isReadOnly = chatRoom.isReadOnly  || displayedConversation.isDisabledBecauseNotSecured
 				DispatchQueue.main.async {
 					displayedConversation.isReadOnly = isReadOnly
 				}
@@ -171,7 +182,153 @@ class ConversationViewModel: ObservableObject {
 			self.getEventMessage(eventLog: eventLog)
 		}, onEphemeralMessageDeleted: {(_: ChatRoom, eventLog: EventLog) in
 			self.removeMessage(eventLog)
+		}, onMessageContentEdited: {(chatRoom: ChatRoom, message: ChatMessage) in
+			let indexMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId == message.messageId})
+			
+			if let displayedConversation = self.sharedMainViewModel.displayedConversation {
+				displayedConversation.getContentTextMessage(chatRoom: displayedConversation.chatRoom)
+			}
+			
+			var attachmentNameList: String = ""
+			var attachmentList: [Attachment] = []
+			var contentText = ""
+			
+			if !message.contents.isEmpty {
+				message.contents.forEach { content in
+					if content.isText && content.name == nil {
+						contentText = content.utf8Text ?? ""
+					} else if content.name != nil && !content.name!.isEmpty {
+						if content.filePath == nil || content.filePath!.isEmpty {
+							let path = URL(string: self.getNewFilePath(name: content.name ?? ""))
+							
+							if path != nil {
+								let attachment =
+								Attachment(
+									id: UUID().uuidString,
+									name: content.name!,
+									url: path!,
+									type: .fileTransfer,
+									size: content.fileSize,
+									transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+								)
+								attachmentNameList += ", \(content.name!)"
+								attachmentList.append(attachment)
+							}
+						} else {
+							if content.type != "video" {
+								let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+								guard filePathSep.count > 1 else { return }
+								let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
+								
+								var typeTmp: AttachmentType = .other
+								switch content.type {
+								case "image":
+									typeTmp = (content.name?.lowercased().hasSuffix("gif"))! ? .gif : .image
+								case "audio":
+									typeTmp = content.isVoiceRecording ? .voiceRecording : .audio
+								case "application":
+									typeTmp = content.subtype.lowercased() == "pdf" ? .pdf : .other
+								case "text":
+									typeTmp = .text
+								default:
+									typeTmp = .other
+								}
+								
+								if path != nil {
+									let attachment =
+									Attachment(
+										id: UUID().uuidString,
+										name: content.name!,
+										url: path!,
+										type: typeTmp,
+										duration: typeTmp == .voiceRecording ? content.fileDuration : 0,
+										size: content.fileSize,
+										transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+									)
+									attachmentNameList += ", \(content.name!)"
+									attachmentList.append(attachment)
+									if typeTmp != .voiceRecording {
+										DispatchQueue.main.async {
+											if !attachment.full.pathExtension.isEmpty {
+												self.attachments.append(attachment)
+											}
+										}
+									}
+								}
+							} else if content.type == "video" {
+								let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+								guard filePathSep.count > 1 else { return }
+								let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
+								let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
+								
+								if path != nil && pathThumbnail != nil {
+									let attachment =
+									Attachment(
+										id: UUID().uuidString,
+										name: content.name!,
+										thumbnail: pathThumbnail!,
+										full: path!,
+										type: .video,
+										size: content.fileSize,
+										transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+									)
+									attachmentNameList += ", \(content.name!)"
+									attachmentList.append(attachment)
+									DispatchQueue.main.async {
+										if !attachment.full.pathExtension.isEmpty {
+											self.attachments.append(attachment)
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			
+			if !attachmentNameList.isEmpty {
+				attachmentNameList = String(attachmentNameList.dropFirst(2))
+			}
+			
+			let indexReplyMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.message.replyMessage?.id == message.messageId})
+			
+			DispatchQueue.main.async {
+				if indexMessage != nil {
+					self.conversationMessagesSection[0].rows[indexMessage!].message.text = contentText
+					self.conversationMessagesSection[0].rows[indexMessage!].message.isEdited = true
+					self.conversationMessagesSection[0].rows[indexMessage!].message.attachments = attachmentList
+					self.conversationMessagesSection[0].rows[indexMessage!].message.attachmentsNames = attachmentNameList
+				}
+				
+				if indexReplyMessage != nil {
+					self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage?.text = contentText
+				}
+			}
+		}, onMessageRetracted: {(chatRoom: ChatRoom, message: ChatMessage) in
+			let indexMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId == message.messageId})
+			let indexReplyMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.message.replyMessage?.id == message.messageId})
+			
+			if let displayedConversation = self.sharedMainViewModel.displayedConversation {
+				displayedConversation.getContentTextMessage(chatRoom: displayedConversation.chatRoom)
+			}
+			
+			DispatchQueue.main.async {
+				if indexMessage != nil {
+					self.conversationMessagesSection[0].rows[indexMessage!].message.text = ""
+					self.conversationMessagesSection[0].rows[indexMessage!].message.isRetracted = true
+					self.conversationMessagesSection[0].rows[indexMessage!].message.attachments = []
+					self.conversationMessagesSection[0].rows[indexMessage!].message.attachmentsNames = ""
+				}
+				
+				if indexReplyMessage != nil {
+					self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage?.text = ""
+					self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage?.isRetracted = true
+					self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage?.attachments = []
+					self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage?.attachmentsNames = ""
+				}
+			}
 		})
+		
 		self.chatRoomDelegateHolder = ChatRoomDelegateHolder(chatroom: chatRoom, delegate: chatRoomDelegate)
 	}
 	
@@ -220,6 +377,12 @@ class ConversationViewModel: ObservableObject {
 			
 			self.coreContext.doOnCoreQueue { _ in
 				let chatMessageDelegate = ChatMessageDelegateStub(onMsgStateChanged: { (message: ChatMessage, msgState: ChatMessage.State) in
+					if msgState == .Queued || msgState == .PendingDelivery {
+						if let eventLog = message.eventLog {
+							self.getNewMessages(eventLogs: [eventLog])
+						}
+						return
+					}
 					var statusTmp: Message.Status?
 					switch message.state {
 					case .InProgress:
@@ -253,7 +416,6 @@ class ConversationViewModel: ObservableObject {
 							
 							let filePathSep = filePath.components(separatedBy: "/Library/Images/")
 							guard filePathSep.count > 1 else { return }
-							
 							let thumbnailURL = content.type == "video" ? URL(string: self.generateThumbnail(name: filePathSep[1])) : attachment.thumbnail
 							let fullPath = URL(string: self.getNewFilePath(name: filePathSep[1]))
 							
@@ -292,7 +454,7 @@ class ConversationViewModel: ObservableObject {
 									Log.error("[ConversationViewModel] Invalid contentIndex")
 									return
 								}
-
+								
 								self.conversationMessagesSection[0].rows[indexMessage].message.attachments[contentIndex] = newAttachment
 								let attachmentIndex = self.getAttachmentIndex(attachment: newAttachment)
 								
@@ -324,12 +486,12 @@ class ConversationViewModel: ObservableObject {
 					if !self.conversationMessagesSection.isEmpty,
 					   !self.conversationMessagesSection[0].rows.isEmpty {
 						let indexMessageEventLogId = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId.isEmpty && $0.eventModel.eventLog.chatMessage != nil ? $0.eventModel.eventLog.chatMessage!.messageId == message.messageId : false})
-						let indexMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId == message.messageId})
 						
 						DispatchQueue.main.async {
 							if let indexMessageEventLogId = indexMessageEventLogId, !self.conversationMessagesSection.isEmpty, !self.conversationMessagesSection[0].rows.isEmpty, self.conversationMessagesSection[0].rows.count > indexMessageEventLogId {
 								self.conversationMessagesSection[0].rows[indexMessageEventLogId].eventModel.eventLogId = message.messageId
 							}
+							let indexMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId == message.messageId})
 							if let indexMessage = indexMessage, !self.conversationMessagesSection.isEmpty, !self.conversationMessagesSection[0].rows.isEmpty, self.conversationMessagesSection[0].rows.count > indexMessage {
 								self.conversationMessagesSection[0].rows[indexMessage].message.status = statusTmp ?? .error
 							}
@@ -363,6 +525,7 @@ class ConversationViewModel: ObservableObject {
 					if let indexMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.eventModel.eventLogId == message.messageId}) {
 						
 						let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+						guard filePathSep.count > 1 else { return }
 						let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 						if let contentTmp = self.conversationMessagesSection[0].rows[indexMessage].message.attachments.first(where: {$0.full == path || ($0.name == content.name && $0.transferProgressIndication < 100)}) {
 							DispatchQueue.main.async {
@@ -390,6 +553,8 @@ class ConversationViewModel: ObservableObject {
 						}
 					}
 				})
+				
+				self.chatMessageDelegateHolders.removeAll()
 				
 				self.chatMessageDelegateHolders.append(ChatMessageDelegateHolder(message: message, delegate: chatMessageDelegate))
 			}
@@ -524,7 +689,17 @@ class ConversationViewModel: ObservableObject {
 			self.getUnreadMessagesCount()
 			self.getParticipantConversationModel()
 			self.computeComposingLabel()
-		 	self.getEphemeralTime()
+			self.getEphemeralTime()
+			
+			if let displayedConversation = self.sharedMainViewModel.displayedConversation {
+				let isReadOnlyTmp = displayedConversation.chatRoom.isReadOnly || displayedConversation.isDisabledBecauseNotSecured
+				let peerAddressTmp = displayedConversation.chatRoom.peerAddress?.asStringUriOnly() ?? ""
+				
+				DispatchQueue.main.async {
+					displayedConversation.isReadOnly = isReadOnlyTmp
+					self.peerAddress = peerAddressTmp
+				}
+			}
 			
 			if self.sharedMainViewModel.displayedConversation != nil {
 				let historyEvents = self.sharedMainViewModel.displayedConversation!.chatRoom.getHistoryRangeEvents(begin: 0, end: 30)
@@ -544,6 +719,10 @@ class ConversationViewModel: ObservableObject {
 									id: UUID().uuidString,
 									status: nil,
 									isOutgoing: false,
+									isEditable: false,
+									isRetractable: false,
+									isEdited: false,
+									isRetracted: false,
 									dateReceived: 0,
 									address: "",
 									isFirstMessage: false,
@@ -582,6 +761,7 @@ class ConversationViewModel: ObservableObject {
 								} else {
 									if content.type != "video" {
 										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
 										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 										
 										var typeTmp: AttachmentType = .other
@@ -622,6 +802,7 @@ class ConversationViewModel: ObservableObject {
 										}
 									} else if content.type == "video" {
 										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
 										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 										let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
 										
@@ -704,6 +885,8 @@ class ConversationViewModel: ObservableObject {
 						
 						let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
 						
+						let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+						
 						var attachmentNameReplyList: String = ""
 						
 						chatMessage.replyMessage?.contents.forEach { content in
@@ -721,7 +904,11 @@ class ConversationViewModel: ObservableObject {
 							address: addressReplyCleaned?.asStringUriOnly() ?? "",
 							isFirstMessage: false,
 							text: contentReplyText,
-							isOutgoing: false,
+							isOutgoing: chatMessage.replyMessage!.isOutgoing,
+							isEditable: false,
+							isRetractable: false,
+							isEdited: false,
+							isRetracted: isReplyRetracted,
 							dateReceived: 0,
 							attachmentsNames: attachmentNameReplyList,
 							attachments: []
@@ -735,6 +922,10 @@ class ConversationViewModel: ObservableObject {
 								id: !chatMessage.messageId.isEmpty ? chatMessage.messageId : UUID().uuidString,
 								status: statusTmp,
 								isOutgoing: chatMessage.isOutgoing,
+								isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+								isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+								isEdited: chatMessage.isEdited,
+								isRetracted: chatMessage.isRetracted,
 								dateReceived: chatMessage.time,
 								address: addressCleaned?.asStringUriOnly() ?? "",
 								isFirstMessage: isFirstMessageTmp,
@@ -788,6 +979,10 @@ class ConversationViewModel: ObservableObject {
 									id: UUID().uuidString,
 									status: nil,
 									isOutgoing: false,
+									isEditable: false,
+									isRetractable: false,
+									isEdited: false,
+									isRetracted: false,
 									dateReceived: 0,
 									address: "",
 									isFirstMessage: false,
@@ -826,6 +1021,7 @@ class ConversationViewModel: ObservableObject {
 								} else {
 									if content.type != "video" {
 										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
 										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 										var typeTmp: AttachmentType = .other
 										
@@ -865,6 +1061,7 @@ class ConversationViewModel: ObservableObject {
 										}
 									} else if content.type == "video" {
 										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
 										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 										let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
 										
@@ -896,7 +1093,9 @@ class ConversationViewModel: ObservableObject {
 					let addressPrecCleaned = index > 0 ? historyEvents[index - 1].chatMessage?.fromAddress?.clone() : chatMessage.fromAddress?.clone()
 					addressPrecCleaned?.clean()
 					
-					let addressNextCleaned = index <= historyEvents.count - 2 ? historyEvents[index + 1].chatMessage?.fromAddress?.clone() : chatMessage.fromAddress?.clone()
+					let addressNextCleaned = index <= historyEvents.count - 2
+					? historyEvents[index + 1].chatMessage?.fromAddress?.clone()
+					: self.conversationMessagesSection[0].rows.last?.eventModel.eventLog.chatMessage?.fromAddress?.clone()
 					addressNextCleaned?.clean()
 					
 					let addressCleaned = chatMessage.fromAddress?.clone()
@@ -907,7 +1106,7 @@ class ConversationViewModel: ObservableObject {
 					}
 					
 					let isFirstMessageIncomingTmp = index > 0 ? addressPrecCleaned?.asStringUriOnly() != addressCleaned?.asStringUriOnly() : true
-					let isFirstMessageOutgoingTmp = index <= historyEvents.count - 2 ? addressNextCleaned?.asStringUriOnly() != addressCleaned?.asStringUriOnly() : true
+					let isFirstMessageOutgoingTmp = addressNextCleaned?.asStringUriOnly() != addressCleaned?.asStringUriOnly()
 					
 					let isFirstMessageTmp = chatMessage.isOutgoing ? isFirstMessageOutgoingTmp : isFirstMessageIncomingTmp
 					
@@ -947,6 +1146,8 @@ class ConversationViewModel: ObservableObject {
 						
 						let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
 						
+						let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+						
 						var attachmentNameReplyList: String = ""
 						
 						chatMessage.replyMessage?.contents.forEach { content in
@@ -964,7 +1165,11 @@ class ConversationViewModel: ObservableObject {
 							address: addressReplyCleaned?.asStringUriOnly() ?? "",
 							isFirstMessage: false,
 							text: contentReplyText,
-							isOutgoing: false,
+							isOutgoing: chatMessage.replyMessage!.isOutgoing,
+							isEditable: false,
+							isRetractable: false,
+							isEdited: false,
+							isRetracted: isReplyRetracted,
 							dateReceived: 0,
 							attachmentsNames: attachmentNameReplyList,
 							attachments: []
@@ -978,6 +1183,10 @@ class ConversationViewModel: ObservableObject {
 								id: !chatMessage.messageId.isEmpty ? chatMessage.messageId : UUID().uuidString,
 								status: statusTmp,
 								isOutgoing: chatMessage.isOutgoing,
+								isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+								isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+								isEdited: chatMessage.isEdited,
+								isRetracted: chatMessage.isRetracted,
 								dateReceived: chatMessage.time,
 								address: addressCleaned?.asStringUriOnly() ?? "",
 								isFirstMessage: isFirstMessageTmp,
@@ -1048,6 +1257,10 @@ class ConversationViewModel: ObservableObject {
 								id: UUID().uuidString,
 								status: nil,
 								isOutgoing: false,
+								isEditable: false,
+								isRetractable: false,
+								isEdited: false,
+								isRetracted: false,
 								dateReceived: 0,
 								address: "",
 								isFirstMessage: false,
@@ -1086,6 +1299,7 @@ class ConversationViewModel: ObservableObject {
 							} else if content.name != nil && !content.name!.isEmpty {
 								if content.type != "video" {
 									let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+									guard filePathSep.count > 1 else { return }
 									let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 									
 									var typeTmp: AttachmentType = .other
@@ -1126,6 +1340,7 @@ class ConversationViewModel: ObservableObject {
 									}
 								} else if content.type == "video" {
 									let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+									guard filePathSep.count > 1 else { return }
 									let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 									
 									let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
@@ -1221,6 +1436,8 @@ class ConversationViewModel: ObservableObject {
 					
 					let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
 					
+					let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+					
 					var attachmentNameReplyList: String = ""
 					
 					chatMessage.replyMessage?.contents.forEach { content in
@@ -1238,7 +1455,11 @@ class ConversationViewModel: ObservableObject {
 						address: addressReplyCleaned != nil ? addressReplyCleaned!.asStringUriOnly() : "",
 						isFirstMessage: false,
 						text: contentReplyText,
-						isOutgoing: false,
+						isOutgoing: chatMessage.replyMessage!.isOutgoing,
+						isEditable: false,
+						isRetractable: false,
+						isEdited: false,
+						isRetracted: isReplyRetracted,
 						dateReceived: 0,
 						attachmentsNames: attachmentNameReplyList,
 						attachments: []
@@ -1253,6 +1474,10 @@ class ConversationViewModel: ObservableObject {
 							appData: chatMessage.appdata ?? "",
 							status: statusTmp,
 							isOutgoing: chatMessage.isOutgoing,
+							isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+							isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+							isEdited: chatMessage.isEdited,
+							isRetracted: chatMessage.isRetracted,
 							dateReceived: chatMessage.time,
 							address: addressCleaned != nil ? addressCleaned!.asStringUriOnly() : "",
 							isFirstMessage: isFirstMessageTmp,
@@ -1294,6 +1519,10 @@ class ConversationViewModel: ObservableObject {
 						
 						if !eventLogMessage.message.isOutgoing {
 							self.displayedConversationUnreadMessagesCount = unreadMessagesCount
+							
+							if !self.isPlaying && !self.isRecording {
+								SoundPlayer.shared.playIncomingMessage()
+							}
 						}
 					}
 				}
@@ -1340,10 +1569,10 @@ class ConversationViewModel: ObservableObject {
 					} else if content.name != nil && !content.name!.isEmpty {
 						if content.type != "video" {
 							let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+							guard filePathSep.count > 1 else { return }
 							let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 							
 							var typeTmp: AttachmentType = .other
-							
 							switch content.type {
 							case "image":
 								typeTmp = (content.name?.lowercased().hasSuffix("gif"))! ? .gif : .image
@@ -1380,8 +1609,8 @@ class ConversationViewModel: ObservableObject {
 							}
 						} else if content.type == "video" {
 							let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+							guard filePathSep.count > 1 else { return }
 							let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
-							
 							let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
 							if path != nil && pathThumbnail != nil {
 								let attachment =
@@ -1453,6 +1682,8 @@ class ConversationViewModel: ObservableObject {
 			
 			let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
 			
+			let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+			
 			var attachmentNameReplyList: String = ""
 			
 			chatMessage.replyMessage?.contents.forEach { content in
@@ -1470,7 +1701,11 @@ class ConversationViewModel: ObservableObject {
 				address: addressReplyCleaned != nil ? addressReplyCleaned!.asStringUriOnly() : "",
 				isFirstMessage: false,
 				text: contentReplyText,
-				isOutgoing: false,
+				isOutgoing: chatMessage.replyMessage!.isOutgoing,
+				isEditable: false,
+				isRetractable: false,
+				isEdited: false,
+				isRetracted: isReplyRetracted,
 				dateReceived: 0,
 				attachmentsNames: attachmentNameReplyList,
 				attachments: []
@@ -1485,6 +1720,10 @@ class ConversationViewModel: ObservableObject {
 					appData: chatMessage.appdata ?? "",
 					status: statusTmp,
 					isOutgoing: chatMessage.isOutgoing,
+					isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+					isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+					isEdited: chatMessage.isEdited,
+					isRetracted: chatMessage.isRetracted,
 					dateReceived: chatMessage.time,
 					address: addressCleaned != nil ? addressCleaned!.asStringUriOnly() : "",
 					isFirstMessage: isFirstMessageTmp,
@@ -1507,13 +1746,13 @@ class ConversationViewModel: ObservableObject {
 		
 		if let eventLogMessage = conversationMessagesTmp.last {
 			DispatchQueue.main.async {
-				   Log.info("[ConversationViewModel] Send first message")
-				   if self.conversationMessagesSection.isEmpty && self.sharedMainViewModel.displayedConversation != nil {
-					   self.conversationMessagesSection.append(MessagesSection(date: Date(), chatRoomID: self.sharedMainViewModel.displayedConversation!.id, rows: conversationMessagesTmp))
-				   } else {
-					   self.conversationMessagesSection[0].rows.append(eventLogMessage)
-				   }
-			   }
+				Log.info("[ConversationViewModel] Send first message")
+				if self.conversationMessagesSection.isEmpty && self.sharedMainViewModel.displayedConversation != nil {
+					self.conversationMessagesSection.append(MessagesSection(date: Date(), chatRoomID: self.sharedMainViewModel.displayedConversation!.id, rows: conversationMessagesTmp))
+				} else {
+					self.conversationMessagesSection[0].rows.append(eventLogMessage)
+				}
+			}
 		}
 		
 		getHistorySize()
@@ -1526,6 +1765,10 @@ class ConversationViewModel: ObservableObject {
 				id: UUID().uuidString,
 				status: nil,
 				isOutgoing: false,
+				isEditable: false,
+				isRetractable: false,
+				isEdited: false,
+				isRetracted: false,
 				dateReceived: 0,
 				address: "",
 				isFirstMessage: false,
@@ -1552,15 +1795,33 @@ class ConversationViewModel: ObservableObject {
 		conversationMessagesSection = []
 	}
 	
-    func replyToMessage(index: Int, isMessageTextFocused: Binding<Bool>) {
+	func replyToMessage(index: Int, isMessageTextFocused: Binding<Bool>) {
+		if self.messageToEdit != nil {
+			self.messageToEdit = nil
+		}
 		coreContext.doOnCoreQueue { _ in
 			let messageToReplyTmp = self.conversationMessagesSection[0].rows[index]
-            DispatchQueue.main.async {
-                withAnimation(.linear(duration: 0.15)) {
-                    self.messageToReply = messageToReplyTmp
-                }
-                isMessageTextFocused.wrappedValue = true
-            }
+			DispatchQueue.main.async {
+				withAnimation(.linear(duration: 0.15)) {
+					self.messageToReply = messageToReplyTmp
+				}
+				isMessageTextFocused.wrappedValue = true
+			}
+		}
+	}
+	
+	func editMessage(chatMessage: EventLogMessage, isMessageTextFocused: Binding<Bool>) {
+		if self.messageToReply != nil {
+			self.messageToReply = nil
+		}
+		coreContext.doOnCoreQueue { _ in
+			let messageToEditTmp = chatMessage
+			DispatchQueue.main.async {
+				withAnimation(.linear(duration: 0.15)) {
+					self.messageToEdit = messageToEditTmp
+				}
+				isMessageTextFocused.wrappedValue = true
+			}
 		}
 	}
 	
@@ -1619,6 +1880,10 @@ class ConversationViewModel: ObservableObject {
 											id: UUID().uuidString,
 											status: nil,
 											isOutgoing: false,
+											isEditable: false,
+											isRetractable: false,
+											isEdited: false,
+											isRetracted: false,
 											dateReceived: 0,
 											address: "",
 											isFirstMessage: false,
@@ -1657,9 +1922,10 @@ class ConversationViewModel: ObservableObject {
 										} else {
 											if content.type != "video" {
 												let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
-										  		let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
-												var typeTmp: AttachmentType = .other
+												guard filePathSep.count > 1 else { return }
+												let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 												
+												var typeTmp: AttachmentType = .other
 												switch content.type {
 												case "image":
 													typeTmp = (content.name?.lowercased().hasSuffix("gif"))! ? .gif : .image
@@ -1696,7 +1962,8 @@ class ConversationViewModel: ObservableObject {
 												}
 											} else if content.type == "video" {
 												let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
-										  		let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
+												guard filePathSep.count > 1 else { return }
+												let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
 												let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
 												
 												if path != nil && pathThumbnail != nil {
@@ -1778,6 +2045,8 @@ class ConversationViewModel: ObservableObject {
 								
 								let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
 								
+								let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+								
 								var attachmentNameReplyList: String = ""
 								
 								chatMessage.replyMessage?.contents.forEach { content in
@@ -1795,7 +2064,11 @@ class ConversationViewModel: ObservableObject {
 									address: addressReplyCleaned?.asStringUriOnly() ?? "",
 									isFirstMessage: false,
 									text: contentReplyText,
-									isOutgoing: false,
+									isOutgoing: chatMessage.replyMessage!.isOutgoing,
+									isEditable: false,
+									isRetractable: false,
+									isEdited: false,
+									isRetracted: isReplyRetracted,
 									dateReceived: 0,
 									attachmentsNames: attachmentNameReplyList,
 									attachments: []
@@ -1809,6 +2082,10 @@ class ConversationViewModel: ObservableObject {
 										id: !chatMessage.messageId.isEmpty ? chatMessage.messageId : UUID().uuidString,
 										status: statusTmp,
 										isOutgoing: chatMessage.isOutgoing,
+										isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+										isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+										isEdited: chatMessage.isEdited,
+										isRetracted: chatMessage.isRetracted,
 										dateReceived: chatMessage.time,
 										address: addressCleaned?.asStringUriOnly() ?? "",
 										isFirstMessage: isFirstMessageTmp,
@@ -1873,6 +2150,8 @@ class ConversationViewModel: ObservableObject {
 						if chatMessageToReply != nil {
 							message = try self.sharedMainViewModel.displayedConversation!.chatRoom.createReplyMessage(message: chatMessageToReply!)
 						}
+					} else if let chatMessage = self.messageToEdit?.eventModel.eventLog.chatMessage {
+						message = try self.sharedMainViewModel.displayedConversation!.chatRoom.createReplacesMessage(message: chatMessage)
 					} else {
 						message = try self.sharedMainViewModel.displayedConversation!.chatRoom.createEmptyMessage()
 					}
@@ -1922,22 +2201,26 @@ class ConversationViewModel: ObservableObject {
 								content.name = attachment.full.lastPathComponent
 								
 								if message != nil {
-									
-									let path = FileManager.default.temporaryDirectory.appendingPathComponent(attachment.full.lastPathComponent)
-									if let newPath = URL(string: FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString
-														 + (attachment.full.lastPathComponent)) {
-										do {
-											if FileManager.default.fileExists(atPath: newPath.path) {
-												try FileManager.default.removeItem(atPath: newPath.path)
-											}
-											try FileManager.default.moveItem(atPath: path.path, toPath: newPath.path)
-											
-											content.filePath = newPath.path
-											
-											message!.addFileContent(content: content)
-										} catch {
-											Log.error(error.localizedDescription)
+									let tempPath = FileManager.default.temporaryDirectory.appendingPathComponent(attachment.full.lastPathComponent)
+									let folderURL = FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images")
+									let newPath = folderURL.appendingPathComponent(attachment.full.lastPathComponent)
+
+									do {
+										if !FileManager.default.fileExists(atPath: folderURL.path) {
+											try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
 										}
+										
+										if FileManager.default.fileExists(atPath: newPath.path) {
+											try FileManager.default.removeItem(atPath: newPath.path)
+										}
+										
+										try FileManager.default.moveItem(atPath: tempPath.path, toPath: newPath.path)
+										
+										content.filePath = newPath.path
+										message?.addFileContent(content: content)
+										
+									} catch {
+										Log.error(error.localizedDescription)
 									}
 								}
 							} catch {
@@ -1945,15 +2228,20 @@ class ConversationViewModel: ObservableObject {
 						}
 					}
 					
-					if message != nil && !message!.contents.isEmpty {
+					if let message = message , !message.contents.isEmpty {
 						Log.info("[ConversationViewModel] Sending message")
-						message!.send()
+						
+						self.addChatMessageDelegate(message: message)
+						message.send()
+						
+						self.sharedMainViewModel.displayedConversation!.chatRoom.stopComposing()
 					}
 					
 					Log.info("[ConversationViewModel] Message sent, re-setting defaults")
 					
 					DispatchQueue.main.async {
 						self.messageToReply = nil
+						self.messageToEdit = nil
 						withAnimation {
 							self.mediasToSend.removeAll()
 						}
@@ -2033,23 +2321,19 @@ class ConversationViewModel: ObservableObject {
 		// Log.debug("[ConversationViewModel] Starting downloading content for file \(model.fileName)")
 		if self.sharedMainViewModel.displayedConversation != nil {
 			if let contentName = content.name {
-				var file = FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString + (contentName.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")
-				var fileExists = FileUtil.sharedContainerUrl()
-					.appendingPathComponent("Library/Images")
-					.appendingPathComponent(contentName.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")
-					.path
-				
+				let baseURL = FileUtil.sharedContainerUrl()
+					.appendingPathComponent("Library")
+					.appendingPathComponent("Images")
+
+				var fileURL = baseURL.appendingPathComponent(contentName)
 				var counter = 1
-				while FileManager.default.fileExists(atPath: fileExists) {
-					file = FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString + "\(counter)_" + (contentName.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")
-					fileExists = FileUtil.sharedContainerUrl()
-						.appendingPathComponent("Library/Images")
-						.appendingPathComponent("\(counter)_" + (contentName.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""))
-						.path
+
+				while FileManager.default.fileExists(atPath: fileURL.path) {
+					fileURL = baseURL.appendingPathComponent("\(counter)_\(contentName)")
 					counter += 1
 				}
 				
-				content.filePath = String(file.dropFirst(7))
+				content.filePath = fileURL.path
 				Log.info(
 					"[ConversationViewModel] File \(contentName) will be downloaded at \(content.filePath ?? "NIL")"
 				)
@@ -2061,15 +2345,29 @@ class ConversationViewModel: ObservableObject {
 	}
 	
 	func getNewFilePath(name: String) -> String {
-		return FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString + (name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")
+		let baseURL = FileUtil.sharedContainerUrl()
+			.appendingPathComponent("Library")
+			.appendingPathComponent("Images")
+		
+		let fileURL = baseURL.appendingPathComponent(name)
+		
+		return fileURL.absoluteString
 	}
 	
 	func generateThumbnail(name: String, pathThumbnail: URL? = nil) -> String {
 		do {
-			let path = pathThumbnail == nil
-			? URL(string: "file://" + FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString + (name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""))
-			: pathThumbnail!.appendingPathComponent((name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""))
-			let asset = AVURLAsset(url: path!, options: nil)
+			let baseURL = FileUtil.sharedContainerUrl()
+				.appendingPathComponent("Library")
+				.appendingPathComponent("Images")
+
+			let path: URL = {
+				if let pathThumbnail = pathThumbnail {
+					return pathThumbnail.appendingPathComponent(name)
+				} else {
+					return baseURL.appendingPathComponent(name)
+				}
+			}()
+			let asset = AVURLAsset(url: path, options: nil)
 			let imgGenerator = AVAssetImageGenerator(asset: asset)
 			imgGenerator.appliesPreferredTrackTransform = true
 			let cgImage = try imgGenerator.copyCGImage(at: CMTimeMake(value: 0, timescale: 1), actualTime: nil)
@@ -2079,20 +2377,18 @@ class ConversationViewModel: ObservableObject {
 				return ""
 			}
 			
-			let urlName = pathThumbnail == nil
-			? URL(string: "file://"
-				  + FileUtil.sharedContainerUrl().appendingPathComponent("Library/Images").absoluteString
-				  + "preview_"
-				  + (name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "")
-				  + ".png"
-			)
-			: pathThumbnail!.appendingPathComponent("preview_" + (name.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "") + ".png")
+			let urlName: URL = {
+				let previewName = "preview_\(name).png"
+				if let pathThumbnail = pathThumbnail {
+					return pathThumbnail.appendingPathComponent(previewName)
+				} else {
+					return baseURL.appendingPathComponent(previewName)
+				}
+			}()
 			
-			if urlName != nil {
-				_ = try data.write(to: urlName!)
-			}
+			_ = try data.write(to: urlName)
 			
-			return urlName!.absoluteString
+			return urlName.absoluteString
 		} catch let error {
 			print("*** Error generating thumbnail: \(error.localizedDescription)")
 			return ""
@@ -2147,9 +2443,17 @@ class ConversationViewModel: ObservableObject {
 							
 							let indexMessageSelected = self.conversationMessagesSection[0].rows.firstIndex(of: self.selectedMessageToDisplayDetails!)
 							
+							var reactionsTmp: [String] = []
+							if let messageToSendReactionTmp = messageToSendReaction {
+								messageToSendReactionTmp.reactions.forEach({ chatMessageReaction in
+									reactionsTmp.append(chatMessageReaction.body)
+								})
+							}
+							
 							DispatchQueue.main.async {
 								if indexMessageSelected != nil {
 									self.conversationMessagesSection[0].rows[indexMessageSelected!].message.ownReaction = ""
+									self.conversationMessagesSection[0].rows[indexMessageSelected!].message.reactions = reactionsTmp
 								}
 								self.selectedMessageToDisplayDetails = nil
 								self.isShowSelectedMessageToDisplayDetails = false
@@ -2175,9 +2479,17 @@ class ConversationViewModel: ObservableObject {
 						
 						let indexMessageSelected = self.conversationMessagesSection[0].rows.firstIndex(of: self.selectedMessage!)
 						
+						var reactionsTmp: [String] = []
+						if let messageToSendReactionTmp = messageToSendReaction {
+							messageToSendReactionTmp.reactions.forEach({ chatMessageReaction in
+								reactionsTmp.append(chatMessageReaction.body)
+							})
+						}
+						
 						DispatchQueue.main.async {
 							if indexMessageSelected != nil {
-								self.conversationMessagesSection[0].rows[indexMessageSelected!].message.ownReaction = messageToSendReaction?.ownReaction?.body == emoji ? "" : emoji
+								self.conversationMessagesSection[0].rows[indexMessageSelected!].message.ownReaction = messageToSendReaction?.ownReaction?.body ?? ""
+								self.conversationMessagesSection[0].rows[indexMessageSelected!].message.reactions = reactionsTmp
 							}
 							self.selectedMessage = nil
 						}
@@ -2278,7 +2590,7 @@ class ConversationViewModel: ObservableObject {
 						dispatchGroup.enter()
 						ContactAvatarModel.getAvatarModelFromAddress(address: chatMessageReaction.fromAddress!) { avatarResult in
 							if let account = core.defaultAccount,
-							   let contactAddress = account.contactAddress,
+							   let contactAddress = account.params?.identityAddress,
 							   contactAddress.asStringUriOnly().contains(avatarResult.address) {
 								
 								let innerSheetCat = InnerSheetCategory(
@@ -2329,11 +2641,14 @@ class ConversationViewModel: ObservableObject {
 	func startVoiceRecordPlayer(voiceRecordPath: URL) {
 		coreContext.doOnCoreQueue { core in
 			if self.vrpManager == nil || self.vrpManager!.voiceRecordPath != voiceRecordPath {
-				self.vrpManager = VoiceRecordPlayerManager(core: core, voiceRecordPath: voiceRecordPath)
+				self.vrpManager = VoiceRecordPlayerManager(core: core, voiceRecordPath: voiceRecordPath, isPlaying: self.isPlaying)
 			}
 			
 			if self.vrpManager != nil {
 				self.vrpManager!.startVoiceRecordPlayer()
+				DispatchQueue.main.async {
+					self.isPlaying = true
+				}
 			}
 		}
 	}
@@ -2358,6 +2673,9 @@ class ConversationViewModel: ObservableObject {
 		coreContext.doOnCoreQueue { _ in
 			if self.vrpManager != nil {
 				self.vrpManager!.pauseVoiceRecordPlayer()
+				DispatchQueue.main.async {
+					self.isPlaying = false
+				}
 			}
 		}
 	}
@@ -2366,14 +2684,27 @@ class ConversationViewModel: ObservableObject {
 		coreContext.doOnCoreQueue { _ in
 			if self.vrpManager != nil {
 				self.vrpManager!.stopVoiceRecordPlayer()
+				DispatchQueue.main.async {
+					self.isPlaying = false
+				}
 			}
 		}
 	}
 	
-	func compose() {
+	func compose(stop: Bool, cachedConversation: ConversationModel? = nil) {
 		coreContext.doOnCoreQueue { _ in
-			if self.sharedMainViewModel.displayedConversation != nil {
-				self.sharedMainViewModel.displayedConversation!.chatRoom.compose()
+			if let displayedConversation = self.sharedMainViewModel.displayedConversation {
+				if stop {
+					displayedConversation.chatRoom.stopComposing()
+				} else {
+					displayedConversation.chatRoom.composeTextMessage()
+				}
+			} else if let displayedConversation = cachedConversation {
+				if stop {
+					displayedConversation.chatRoom.stopComposing()
+				} else {
+					displayedConversation.chatRoom.composeTextMessage()
+				}
 			}
 		}
 	}
@@ -2652,17 +2983,6 @@ class ConversationViewModel: ObservableObject {
 		}
 	}
 	
-	func removeParticipant(address: String) {
-		if self.sharedMainViewModel.displayedConversation != nil {
-			coreContext.doOnCoreQueue { _ in
-				if let participant = self.sharedMainViewModel.displayedConversation!.chatRoom.participants.first(where: {$0.address?.asStringUriOnly() == address}) {
-					self.sharedMainViewModel.displayedConversation!.chatRoom.removeParticipant(participant: participant)
-				}
-				
-			}
-		}
-	}
-	
 	func getAttachmentIndex(attachment: Attachment) -> Int {
 		return self.attachments.firstIndex(where: {$0.id == attachment.id}) ?? -1
 	}
@@ -2672,14 +2992,408 @@ class ConversationViewModel: ObservableObject {
 			if let displayedConversation = self.sharedMainViewModel.displayedConversation,
 			   let selectedMessage = self.selectedMessage,
 			   let chatMessage = selectedMessage.eventModel.eventLog.chatMessage {
+				
+				let indexReplyMessage = self.conversationMessagesSection[0].rows.firstIndex(where: {$0.message.replyMessage?.id == chatMessage.messageId})
 				displayedConversation.chatRoom.deleteMessage(message: chatMessage)
+				
+				displayedConversation.getContentTextMessage(chatRoom: displayedConversation.chatRoom)
+				
 				DispatchQueue.main.async {
 					if let sectionIndex = self.conversationMessagesSection.firstIndex(where: { $0.chatRoomID == displayedConversation.id }),
 					   let rowIndex = self.conversationMessagesSection[sectionIndex].rows.firstIndex(of: selectedMessage) {
 						self.conversationMessagesSection[sectionIndex].rows.remove(at: rowIndex)
+						
+						if indexReplyMessage != nil {
+							self.conversationMessagesSection[0].rows[indexReplyMessage!].message.replyMessage = nil
+						}
 					}
 					self.selectedMessage = nil
+					ToastViewModel.shared.show("Success_message_deleted")
 				}
+			}
+		}
+	}
+	
+	func deleteMessageForEveryone(){
+		coreContext.doOnCoreQueue { _ in
+			if let displayedConversation = self.sharedMainViewModel.displayedConversation,
+			   let selectedMessage = self.selectedMessage,
+			   let chatMessage = selectedMessage.eventModel.eventLog.chatMessage {
+				displayedConversation.chatRoom.retractMessage(message: chatMessage)
+				DispatchQueue.main.async {
+					self.selectedMessage = nil
+				}
+			}
+		}
+	}
+	
+	func searchChatMessage(direction: SearchDirection, textToSearch: String) {
+		let textToSearch = textToSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+		if let displayedConversation = self.sharedMainViewModel.displayedConversation {
+			CoreContext.shared.doOnCoreQueue { core in
+				if let match = displayedConversation.chatRoom.searchChatMessageByText(text: textToSearch, from: self.latestMatch?.eventModel.eventLog ?? nil, direction: direction) {
+					
+					Log.info("\(ConversationViewModel.TAG) Found result \(match.chatMessage?.messageId ?? "No message id") while looking up for message with text \(textToSearch) in direction \(direction) starting from message \(self.latestMatch?.eventModel.eventLog.chatMessage?.messageId ?? "No message id")"
+					)
+					
+					if let sectionIndex = self.conversationMessagesSection.firstIndex(where: {
+						$0.chatRoomID == displayedConversation.id
+					}),
+					   let rowIndex = self.conversationMessagesSection[sectionIndex].rows.firstIndex(where: {
+						   $0.eventModel.eventLogId == match.chatMessage?.messageId
+					   }) {
+						self.latestMatch = self.conversationMessagesSection[sectionIndex].rows[rowIndex]
+						
+						Log.info("\(ConversationViewModel.TAG) Found result is already in history, no need to load more history")
+						
+						DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+							self.searchText = textToSearch
+							self.highlightedMessageID = match.chatMessage?.messageId
+							
+							NotificationCenter.default.post(name: NSNotification.Name(rawValue: "onScrollToIndex"), object: nil, userInfo: ["index": rowIndex, "animated": true])
+						}
+						
+						DispatchQueue.main.async {
+							self.canSearchDown = true
+						}
+					} else {
+						DispatchQueue.main.async {
+							self.searchInProgress = true
+							self.canSearchDown = true
+						}
+						
+						Log.info("\(ConversationViewModel.TAG) Found result isn't in currently loaded history, loading missing events")
+						self.loadMessagesUpTo(targetEvent: match, textToSearch: textToSearch)
+					}
+				} else {
+					Log.info("\(ConversationViewModel.TAG) No match found while looking up for message with text \(textToSearch) in direction \(direction) starting from message \(self.latestMatch?.eventModel.eventLog.chatMessage?.messageId ?? "No message id")"
+					)
+					
+					if self.latestMatch == nil {
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show("Failed_search_no_match_found")
+						}
+					} else {
+						// Scroll to last matching event anyway, user may have scrolled away
+						if let sectionIndex = self.conversationMessagesSection.firstIndex(where: {
+							$0.chatRoomID == displayedConversation.id
+						}), let latestMatchTmp = self.latestMatch,
+						   let rowIndex = self.conversationMessagesSection[sectionIndex].rows.firstIndex(of: latestMatchTmp) {
+							DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+								self.searchText = textToSearch
+								self.highlightedMessageID = latestMatchTmp.message.id
+								NotificationCenter.default.post(name: NSNotification.Name(rawValue: "onScrollToIndex"), object: nil, userInfo: ["index": rowIndex, "animated": true])
+							}
+						}
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show("Failed_search_results_limit_reached")
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	private func loadMessagesUpTo(targetEvent: EventLog, textToSearch: String) {
+		if self.conversationMessagesSection[0].rows.last != nil {
+			let firstEventLog = self.sharedMainViewModel.displayedConversation?.chatRoom.getHistoryRangeEvents(
+				begin: self.conversationMessagesSection[0].rows.count - 1,
+				end: self.conversationMessagesSection[0].rows.count
+			)
+			
+			if let chatMessageTmp = targetEvent.chatMessage {
+				let lastEventLog = self.sharedMainViewModel.displayedConversation!.chatRoom.findEventLog(messageId: chatMessageTmp.messageId)
+				
+				var historyEvents = self.sharedMainViewModel.displayedConversation!.chatRoom.getHistoryRangeBetween(
+					firstEvent: firstEventLog!.first,
+					lastEvent: lastEventLog,
+					filters: UInt(ChatRoom.HistoryFilter([.ChatMessage, .InfoNoDevice]).rawValue)
+				)
+				
+				let historyEventsAfter = self.sharedMainViewModel.displayedConversation!.chatRoom.getHistoryRangeEvents(
+					begin: self.conversationMessagesSection[0].rows.count + historyEvents.count + 1,
+					end: self.conversationMessagesSection[0].rows.count + historyEvents.count + 30
+				)
+				
+				if lastEventLog != nil {
+					historyEvents.insert(lastEventLog!, at: 0)
+				}
+				
+				historyEvents.insert(contentsOf: historyEventsAfter, at: 0)
+				
+				var conversationMessagesTmp: [EventLogMessage] = []
+				
+				historyEvents.enumerated().reversed().forEach { index, eventLog in
+					var attachmentNameList: String = ""
+					var attachmentList: [Attachment] = []
+					var contentText = ""
+					
+					guard let chatMessage = eventLog.chatMessage else {
+						conversationMessagesTmp.insert(
+							EventLogMessage(
+								eventModel: EventModel(eventLog: eventLog),
+								message: Message(
+									id: UUID().uuidString,
+									status: nil,
+									isOutgoing: false,
+									isEditable: false,
+									isRetractable: false,
+									isEdited: false,
+									isRetracted: false,
+									dateReceived: 0,
+									address: "",
+									isFirstMessage: false,
+									text: "",
+									attachments: [],
+									ownReaction: "",
+									reactions: []
+								)
+							), at: 0
+						)
+						return
+					}
+					
+					if !chatMessage.contents.isEmpty {
+						chatMessage.contents.forEach { content in
+							if content.isText && content.name == nil {
+								contentText = content.utf8Text ?? ""
+							} else if content.name != nil && !content.name!.isEmpty {
+								if content.filePath == nil || content.filePath!.isEmpty {
+									// self.downloadContent(chatMessage: chatMessage, content: content)
+									let path = URL(string: self.getNewFilePath(name: content.name ?? ""))
+									
+									if path != nil {
+										let attachment =
+										Attachment(
+											id: UUID().uuidString,
+											name: content.name!,
+											url: path!,
+											type: .fileTransfer,
+											size: content.fileSize,
+											transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+										)
+										attachmentNameList += ", \(content.name!)"
+										attachmentList.append(attachment)
+									}
+								} else {
+									if content.type != "video" {
+										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
+										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
+										var typeTmp: AttachmentType = .other
+										
+										switch content.type {
+										case "image":
+											typeTmp = (content.name?.lowercased().hasSuffix("gif"))! ? .gif : .image
+										case "audio":
+											typeTmp = content.isVoiceRecording ? .voiceRecording : .audio
+										case "application":
+											typeTmp = content.subtype.lowercased() == "pdf" ? .pdf : .other
+										case "text":
+											typeTmp = .text
+										default:
+											typeTmp = .other
+										}
+										
+										if path != nil {
+											let attachment =
+											Attachment(
+												id: UUID().uuidString,
+												name: content.name!,
+												url: path!,
+												type: typeTmp,
+												duration: typeTmp == . voiceRecording ? content.fileDuration : 0,
+												size: content.fileSize,
+												transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+											)
+											attachmentNameList += ", \(content.name!)"
+											attachmentList.append(attachment)
+											if typeTmp != .voiceRecording {
+												DispatchQueue.main.async {
+													if !attachment.full.pathExtension.isEmpty {
+														self.attachments.append(attachment)
+													}
+												}
+											}
+										}
+									} else if content.type == "video" {
+										let filePathSep = content.filePath!.components(separatedBy: "/Library/Images/")
+										guard filePathSep.count > 1 else { return }
+										let path = URL(string: self.getNewFilePath(name: filePathSep[1]))
+										let pathThumbnail = URL(string: self.generateThumbnail(name: filePathSep[1]))
+										
+										if path != nil && pathThumbnail != nil {
+											let attachment =
+											Attachment(
+												id: UUID().uuidString,
+												name: content.name!,
+												thumbnail: pathThumbnail!,
+												full: path!,
+												type: .video,
+												size: content.fileSize,
+												transferProgressIndication: content.filePath != nil && !content.filePath!.isEmpty ? 100 : -1
+											)
+											attachmentNameList += ", \(content.name!)"
+											attachmentList.append(attachment)
+											DispatchQueue.main.async {
+												if !attachment.full.pathExtension.isEmpty {
+													self.attachments.append(attachment)
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					let addressPrecCleaned = index > 0 ? historyEvents[index - 1].chatMessage?.fromAddress?.clone() : chatMessage.fromAddress?.clone()
+					addressPrecCleaned?.clean()
+					
+					let addressNextCleaned = index <= historyEvents.count - 2
+					? historyEvents[index + 1].chatMessage?.fromAddress?.clone()
+					: self.conversationMessagesSection[0].rows.last?.eventModel.eventLog.chatMessage?.fromAddress?.clone()
+					addressNextCleaned?.clean()
+					
+					let addressCleaned = chatMessage.fromAddress?.clone()
+					addressCleaned?.clean()
+					
+					if addressCleaned != nil && self.participantConversationModel.first(where: {$0.address == addressCleaned!.asStringUriOnly()}) == nil {
+						self.addParticipantConversationModel(address: addressCleaned!)
+					}
+					
+					let isFirstMessageIncomingTmp = index > 0 ? addressPrecCleaned?.asStringUriOnly() != addressCleaned?.asStringUriOnly() : true
+					let isFirstMessageOutgoingTmp = addressNextCleaned?.asStringUriOnly() != addressCleaned?.asStringUriOnly()
+					
+					let isFirstMessageTmp = chatMessage.isOutgoing ? isFirstMessageOutgoingTmp : isFirstMessageIncomingTmp
+					
+					var statusTmp: Message.Status? = .sending
+					switch chatMessage.state {
+					case .InProgress:
+						statusTmp = .sending
+					case .Delivered:
+						statusTmp = .sent
+					case .DeliveredToUser:
+						statusTmp = .received
+					case .Displayed:
+						statusTmp = .read
+					case .NotDelivered:
+						statusTmp = .error
+					default:
+						statusTmp = .sending
+					}
+					
+					var reactionsTmp: [String] = []
+					chatMessage.reactions.forEach({ chatMessageReaction in
+						reactionsTmp.append(chatMessageReaction.body)
+					})
+					
+					if !attachmentNameList.isEmpty {
+						attachmentNameList = String(attachmentNameList.dropFirst(2))
+					}
+					
+					var replyMessageTmp: ReplyMessage?
+					if chatMessage.replyMessage != nil {
+						let addressReplyCleaned = chatMessage.replyMessage?.fromAddress?.clone()
+						addressReplyCleaned?.clean()
+						
+						if addressReplyCleaned != nil && self.participantConversationModel.first(where: {$0.address == addressReplyCleaned!.asStringUriOnly()}) == nil {
+							self.addParticipantConversationModel(address: addressReplyCleaned!)
+						}
+						
+						let contentReplyText = chatMessage.replyMessage?.utf8Text ?? ""
+						
+						let isReplyRetracted = chatMessage.replyMessage?.isRetracted ?? false
+						
+						var attachmentNameReplyList: String = ""
+						
+						chatMessage.replyMessage?.contents.forEach { content in
+							if !content.isText {
+								attachmentNameReplyList += ", \(content.name!)"
+							}
+						}
+						
+						if !attachmentNameReplyList.isEmpty {
+							attachmentNameReplyList = String(attachmentNameReplyList.dropFirst(2))
+						}
+						
+						replyMessageTmp = ReplyMessage(
+							id: chatMessage.replyMessage!.messageId,
+							address: addressReplyCleaned?.asStringUriOnly() ?? "",
+							isFirstMessage: false,
+							text: contentReplyText,
+							isOutgoing: chatMessage.replyMessage!.isOutgoing,
+							isEditable: false,
+							isRetractable: false,
+							isEdited: false,
+							isRetracted: isReplyRetracted,
+							dateReceived: 0,
+							attachmentsNames: attachmentNameReplyList,
+							attachments: []
+						)
+					}
+					
+					conversationMessagesTmp.insert(
+						EventLogMessage(
+							eventModel: EventModel(eventLog: eventLog),
+							message: Message(
+								id: !chatMessage.messageId.isEmpty ? chatMessage.messageId : UUID().uuidString,
+								status: statusTmp,
+								isOutgoing: chatMessage.isOutgoing,
+								isEditable: chatMessage.isOutgoing ? chatMessage.isEditable : false,
+								isRetractable: chatMessage.isOutgoing ? chatMessage.isRetractable : false,
+								isEdited: chatMessage.isEdited,
+								isRetracted: chatMessage.isRetracted,
+								dateReceived: chatMessage.time,
+								address: addressCleaned?.asStringUriOnly() ?? "",
+								isFirstMessage: isFirstMessageTmp,
+								text: contentText,
+								attachmentsNames: attachmentNameList,
+								attachments: attachmentList,
+								replyMessage: replyMessageTmp,
+								isForward: chatMessage.isForward,
+								ownReaction: chatMessage.ownReaction?.body ?? "",
+								reactions: reactionsTmp,
+								isEphemeral: chatMessage.isEphemeral,
+								ephemeralExpireTime: chatMessage.ephemeralExpireTime,
+								ephemeralLifetime: chatMessage.ephemeralLifetime,
+								isIcalendar: chatMessage.contents.first?.isIcalendar ?? false,
+								messageConferenceInfo: chatMessage.contents.first != nil && chatMessage.contents.first!.isIcalendar == true ? self.parseConferenceInvite(content: chatMessage.contents.first!) : nil
+							)
+						), at: 0
+					)
+					
+					self.addChatMessageDelegate(message: chatMessage)
+				}
+				
+				DispatchQueue.main.async {
+					self.searchInProgress = false
+					
+					
+					guard !conversationMessagesTmp.isEmpty else { return }
+					
+					if let lastRow = self.conversationMessagesSection[0].rows.last,
+					   lastRow.message.address == conversationMessagesTmp.last?.message.address {
+						self.conversationMessagesSection[0].rows[self.conversationMessagesSection[0].rows.count - 1].message.isFirstMessage = false
+					}
+					
+					self.conversationMessagesSection[0].rows.append(contentsOf: conversationMessagesTmp.reversed())
+					
+					if self.conversationMessagesSection[0].rows.count > historyEventsAfter.count {
+						self.targetIndex = self.conversationMessagesSection[0].rows.count - historyEventsAfter.count - 1
+						self.searchText = textToSearch
+						self.highlightedMessageID = targetEvent.chatMessage?.messageId
+						self.latestMatch = self.conversationMessagesSection[0].rows[self.targetIndex]
+					}
+				}
+			} else {
+				DispatchQueue.main.async {
+					self.searchInProgress = false
+				}
+			}
+		} else {
+			DispatchQueue.main.async {
+				self.searchInProgress = false
 			}
 		}
 	}
@@ -2697,9 +3411,12 @@ class VoiceRecordPlayerManager {
 	//private var voiceRecordPlayerPosition: Double = 0
 	//private var voiceRecordingDuration: TimeInterval = 0
 	
-	init(core: Core, voiceRecordPath: URL) {
+	@State var isPlaying: Bool
+	
+	init(core: Core, voiceRecordPath: URL, isPlaying: Bool) {
 		self.core = core
 		self.voiceRecordPath = voiceRecordPath
+		self.isPlaying = isPlaying
 	}
 	
 	private func initVoiceRecordPlayer() {
@@ -2725,7 +3442,11 @@ class VoiceRecordPlayerManager {
 		if voiceRecordAudioFocusRequest == nil {
 			voiceRecordAudioFocusRequest = AVAudioSession.sharedInstance()
 			if let request = voiceRecordAudioFocusRequest {
-				try? request.setActive(true)
+				do {
+					try configureAudio(.voiceMessage)
+				} catch {
+					print("Audio session error: \(error)")
+				}
 			}
 		}
 		
@@ -2741,6 +3462,7 @@ class VoiceRecordPlayerManager {
 		}
 		
 		do {
+			self.isPlaying = true
 			try voiceRecordPlayer!.start()
 			print("Playing voice record")
 		} catch {
@@ -2758,8 +3480,9 @@ class VoiceRecordPlayerManager {
 	
 	func pauseVoiceRecordPlayer() {
 		if !isPlayerClosed() {
-			print("Pausing voice record")
+			self.isPlaying = false
 			try? voiceRecordPlayer?.pause()
+			print("Pausing voice record")
 		}
 	}
 	
@@ -2769,16 +3492,32 @@ class VoiceRecordPlayerManager {
 	
 	func stopVoiceRecordPlayer() {
 		if !isPlayerClosed() {
-			print("Stopping voice record")
+			self.isPlaying = false
 			try? voiceRecordPlayer?.pause()
 			try? voiceRecordPlayer?.seek(timeMs: 0)
 			voiceRecordPlayer?.close()
+			print("Stopping voice record")
 		}
 		
 		if let request = voiceRecordAudioFocusRequest {
 			try? request.setActive(false)
 			voiceRecordAudioFocusRequest = nil
 		}
+	}
+	
+	func seekVoiceRecordPlayer(percent: Double) {
+		guard !isPlayerClosed(),
+			  let player = voiceRecordPlayer,
+			  player.duration > 0 else { return }
+		
+		let clamped = max(0, min(percent, 100))
+		
+		let ratio = clamped / 100.0
+		
+		let timeMs = Int(Double(player.duration) * ratio)
+
+		print("Seek voice record to \(clamped)% (\(timeMs) ms)")
+		try? player.seek(timeMs: timeMs)
 	}
 	
 	func getSpeakerSoundCard(core: Core) -> String? {
@@ -2821,8 +3560,8 @@ class AudioRecorder: NSObject, ObservableObject {
 		
 		if recordingSession != nil {
 			do {
-				try recordingSession!.setCategory(.playAndRecord, mode: .default)
-				try recordingSession!.setActive(true)
+				try configureAudio(.recording)
+				
 				recordingSession!.requestRecordPermission { allowed in
 					if allowed {
 						self.initVoiceRecorder()
@@ -2831,7 +3570,7 @@ class AudioRecorder: NSObject, ObservableObject {
 					}
 				}
 			} catch {
-				print("Failed to setup recording session.")
+				print("Audio session error: \(error)")
 			}
 		}
 	}
@@ -2918,7 +3657,7 @@ class AudioRecorder: NSObject, ObservableObject {
 	func startTimer() {
 		DispatchQueue.main.async {
 			self.recordingTime = 0
-			let maxVoiceRecordDuration = Config.voiceRecordingMaxDuration
+			let maxVoiceRecordDuration = AppServices.corePreferences.voiceRecordingMaxDuration
 			self.timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in  // More frequent updates
 				self.recordingTime += 0.1
 				self.updateSoundPower()

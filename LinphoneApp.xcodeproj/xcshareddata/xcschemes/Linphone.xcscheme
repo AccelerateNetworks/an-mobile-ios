@@ -28,6 +28,30 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C652710B2F88D1CA00FF248C"
+               BuildableName = "LinphoneAppUITests.xctest"
+               BlueprintName = "LinphoneAppUITests"
+               ReferencedContainer = "container:LinphoneApp.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "C6E408AE2F8E1A33003E0F8C"
+               BuildableName = "LinphoneAppTests.xctest"
+               BlueprintName = "LinphoneAppTests"
+               ReferencedContainer = "container:LinphoneApp.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

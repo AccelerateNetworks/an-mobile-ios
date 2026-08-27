@@ -108,7 +108,7 @@ class ConversationForwardMessageViewModel: ObservableObject {
 				guard let chatParams = params.chatParams else { return }
 				chatParams.ephemeralLifetime = 0 // Make sure ephemeral is disabled by default
 				
-				let sameDomain = remote.domain == CorePreferences.defaultDomain && remote.domain == account!.params?.domain
+				let sameDomain = remote.domain == AppServices.corePreferences.defaultDomain && remote.domain == account!.params?.domain
 				if account!.params != nil && (account!.params!.instantMessagingEncryptionMandatory && sameDomain) {
 					Log.info("\(ConversationForwardMessageViewModel.TAG) Account is in secure mode & domain matches, creating an E2E encrypted conversation")
 					chatParams.backend = ChatRoom.Backend.FlexisipChat
@@ -134,8 +134,7 @@ class ConversationForwardMessageViewModel: ObservableObject {
 					
 					DispatchQueue.main.async {
 						self.operationInProgress = false
-						ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-						ToastViewModel.shared.displayToast = true
+						ToastViewModel.shared.show("Failed_to_create_conversation_error")
 					}
 					return
 				}
@@ -180,8 +179,7 @@ class ConversationForwardMessageViewModel: ObservableObject {
 						
 						DispatchQueue.main.async {
 							self.operationInProgress = false
-							ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-							ToastViewModel.shared.displayToast = true
+							ToastViewModel.shared.show("Failed_to_create_conversation_error")
 						}
 					}
 				} else {
@@ -211,8 +209,7 @@ class ConversationForwardMessageViewModel: ObservableObject {
 				self.chatRoomDelegate = nil
 				DispatchQueue.main.async {
 					self.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		}, onConferenceJoined: { (chatRoom: ChatRoom, _: EventLog) in
@@ -250,8 +247,7 @@ class ConversationForwardMessageViewModel: ObservableObject {
 				self.chatRoomDelegate = nil
 				DispatchQueue.main.async {
 					self.operationInProgress = false
-					ToastViewModel.shared.toastMessage = "Failed_to_create_conversation_error"
-					ToastViewModel.shared.displayToast = true
+					ToastViewModel.shared.show("Failed_to_create_conversation_error")
 				}
 			}
 		})

@@ -21,6 +21,11 @@ import Foundation
 import linphonesw
 
 class LinphoneUtils: NSObject {
+	static let RECORDING_FILE_NAME_HEADER = "call_recording_sip_"
+	static let RECORDING_FILE_NAME_URI_TIMESTAMP_SEPARATOR = "_on_"
+	static let RECORDING_MKV_FILE_EXTENSION = ".mkv"
+	static let RECORDING_SMFF_FILE_EXTENSION = ".smff"
+	
 	public class func isChatRoomAGroup(chatRoom: ChatRoom) -> Bool {
 		let oneToOne = chatRoom.hasCapability(mask: ChatRoom.Capabilities.OneToOne.rawValue)
 		let conference = chatRoom.hasCapability(mask: ChatRoom.Capabilities.Conference.rawValue)
@@ -137,7 +142,27 @@ class LinphoneUtils: NSObject {
 	public class func getDefaultAccount() -> Account? {
 		return CoreContext.shared.mCore.defaultAccount ?? (CoreContext.shared.mCore.accountList.first ?? nil)
 	}
-	
+
+	public class func getAddressAsCleanStringUriOnly(address: Address) -> String {
+		guard let cleaned = address.clone() else {
+			return address.asStringUriOnly()
+		}
+		cleaned.clean()
+		return cleaned.asStringUriOnly()
+	}
+
+	public class func getDisplayAddress(address: Address) -> String {
+		let username = address.username ?? ""
+		if !AppServices.corePreferences.onlyDisplaySipUriUsername || username.isEmpty {
+			return getAddressAsCleanStringUriOnly(address: address)
+		}
+		let homeDomain = getDefaultAccount()?.params?.domain
+		if address.domain == homeDomain || address.domain == AppServices.corePreferences.defaultDomain {
+			return username
+		}
+		return getAddressAsCleanStringUriOnly(address: address)
+	}
+
 	public class func getAccountForAddress(address: Address) -> Account? {
 		return CoreContext.shared.mCore.accountList.first { $0.params?.identityAddress?.weakEqual(address2: address) == true }
 	}

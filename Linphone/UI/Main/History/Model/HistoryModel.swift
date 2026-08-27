@@ -35,6 +35,7 @@ class HistoryModel: ObservableObject, Identifiable {
 	@Published var isConf: Bool
 	@Published var addressLinphone: Address
 	@Published var address: String
+	@Published var addressDisplay: String
 	@Published var addressName: String
 	@Published var isOutgoing: Bool
 	@Published var status: Call.Status
@@ -51,7 +52,8 @@ class HistoryModel: ObservableObject, Identifiable {
 		
 		self.addressLinphone = callLog.dir == .Outgoing && callLog.toAddress != nil ? callLog.toAddress! : callLog.fromAddress!
 		self.address = ""
-		
+		self.addressDisplay = ""
+
 		self.addressName = ""
 		
 		self.isOutgoing = false
@@ -80,7 +82,9 @@ class HistoryModel: ObservableObject, Identifiable {
 			: (addressLinphoneTmp.displayName != nil ? addressLinphoneTmp.displayName ?? "" : addressLinphoneTmp.username ?? "")
 			
 			let addressTmp = addressLinphoneTmp.asStringUriOnly()
-			
+
+			let addressDisplayTmp = LinphoneUtils.getDisplayAddress(address: addressLinphoneTmp)
+
 			let isOutgoingTmp = callLog.dir == .Outgoing
 			
 			let statusTmp = callLog.status
@@ -97,6 +101,7 @@ class HistoryModel: ObservableObject, Identifiable {
 				
 				self.addressLinphone = addressLinphoneTmp
 				self.address = addressTmp
+				self.addressDisplay = addressDisplayTmp
 				
 				self.addressName = addressNameTmp
 				

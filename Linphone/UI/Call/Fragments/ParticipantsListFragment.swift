@@ -18,6 +18,7 @@
  */
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ParticipantsListFragment: View {
 	
@@ -34,6 +35,8 @@ struct ParticipantsListFragment: View {
 	
 	@Binding var isShowParticipantsListFragment: Bool
 	
+	@State private var isAdmin = false
+	@State private var isMenuOpen = false
 	@State private var isShowPopup = false
 	@State private var indexToRemove = -1
 	
@@ -69,6 +72,43 @@ struct ParticipantsListFragment: View {
 						
 						Spacer()
 						
+						Menu {
+							Button {
+								isMenuOpen = false
+								
+								UIPasteboard.general.setValue(
+									callViewModel.remoteAddressString,
+									forPasteboardType: UTType.plainText.identifier
+								)
+								
+								DispatchQueue.main.async {
+									ToastViewModel.shared.show("Success_address_copied_into_clipboard")
+								}
+							} label: {
+								HStack {
+									Text("conference_share_link_title")
+									Spacer()
+									Image("share-network")
+										.renderingMode(.template)
+										.resizable()
+										.foregroundStyle(Color.grayMain2c500)
+										.frame(width: 25, height: 25, alignment: .leading)
+										.padding(.all, 10)
+								}
+							}
+						} label: {
+							Image("dots-three-vertical")
+								.renderingMode(.template)
+								.resizable()
+								.foregroundStyle(Color.grayMain2c500)
+								.frame(width: 25, height: 25, alignment: .leading)
+								.padding(.all, 10)
+								.padding(.top, 4)
+						}
+						.onTapGesture {
+							isMenuOpen = true
+						}
+						
 					}
 					.frame(maxWidth: .infinity)
 					.frame(height: 50)
@@ -81,7 +121,7 @@ struct ParticipantsListFragment: View {
 					HStack {
 						Spacer()
 						
-						if callViewModel.myParticipantModel != nil && callViewModel.myParticipantModel!.isAdmin {
+						if isAdmin {
 							NavigationLink(destination: {
 								AddParticipantsFragment(addParticipantsViewModel: addParticipantsViewModel, confirmAddParticipantsFunc: callViewModel.addParticipants, dismissOnCheckClick: true)
 									.onAppear {
@@ -108,17 +148,21 @@ struct ParticipantsListFragment: View {
 				
 				if self.isShowPopup {
 					let contentPopup = Text(String(format: String(localized: "meeting_call_remove_participant_confirmation_message"), callViewModel.participantList[indexToRemove].name))
-					PopupView(isShowPopup: $isShowPopup,
-							  title: Text("meeting_call_remove_participant_confirmation_title"),
-							  content: contentPopup,
-							  titleFirstButton: Text("dialog_no"),
-							  actionFirstButton: {self.isShowPopup.toggle()},
-							  titleSecondButton: Text("dialog_yes"),
-							  actionSecondButton: {
-						callViewModel.removeParticipant(index: indexToRemove)
-						self.isShowPopup.toggle()
-						indexToRemove = -1
-					})
+					PopupView(
+						isShowPopup: $isShowPopup,
+						title: Text("meeting_call_remove_participant_confirmation_title"),
+						content: contentPopup,
+						titleFirstButton: nil,
+						actionFirstButton: {},
+						titleSecondButton: Text("dialog_yes"),
+						actionSecondButton: {
+							callViewModel.removeParticipant(index: indexToRemove)
+							self.isShowPopup.toggle()
+							indexToRemove = -1
+						},
+						titleThirdButton: Text("dialog_no"),
+						actionThirdButton: { self.isShowPopup.toggle() }
+					)
 					.background(.black.opacity(0.65))
 					.onTapGesture {
 						self.isShowPopup.toggle()
@@ -127,6 +171,9 @@ struct ParticipantsListFragment: View {
 				}
 			}
 			.navigationBarHidden(true)
+		}
+		.onAppear {
+			isAdmin = callViewModel.myParticipantModel?.isAdmin ?? false
 		}
 	}
 	

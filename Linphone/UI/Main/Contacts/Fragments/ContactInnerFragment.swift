@@ -34,244 +34,311 @@ struct ContactInnerFragment: View {
 	
 	@State var cnContact: CNContact?
 	@State private var presentingEditContact = false
+	@State private var isShowMediaFilesFragment = false
+	@State private var isShowDocumentsFilesFragment = false
 	
 	@Binding var isShowDeletePopup: Bool
 	@Binding var showingSheet: Bool
 	@Binding var showShareSheet: Bool
 	@Binding var isShowDismissPopup: Bool
+	@Binding var isShowTrustLevelPopup: Bool
 	@Binding var isShowSipAddressesPopup: Bool
 	@Binding var isShowSipAddressesPopupType: Int
+	@Binding var isShowIncreaseTrustLevelPopup: Bool
 	@Binding var isShowEditContactFragmentInContactDetails: Bool
 	
 	var body: some View {
 		NavigationView {
-			ZStack {
-				VStack(spacing: 1) {
-					Rectangle()
-						.foregroundColor(Color.orangeMain500)
-						.edgesIgnoringSafeArea(.top)
-						.frame(height: 0)
-					
-					HStack {
-						if !(orientation == .landscapeLeft || orientation == .landscapeRight
-							 || UIScreen.main.bounds.size.width > UIScreen.main.bounds.size.height) {
-							Image("caret-left")
-								.renderingMode(.template)
-								.resizable()
-								.foregroundStyle(Color.orangeMain500)
-								.frame(width: 25, height: 25, alignment: .leading)
-								.padding(.all, 10)
-								.padding(.top, 2)
-								.padding(.leading, -10)
-								.onTapGesture {
-									withAnimation {
-										SharedMainViewModel.shared.displayedFriend = nil
-									}
-								}
-						}
+			GeometryReader { geometry in
+				ZStack {
+					VStack(spacing: 1) {
+						Rectangle()
+							.foregroundColor(Color.orangeMain500)
+							.edgesIgnoringSafeArea(.top)
+							.frame(height: 0)
 						
-						Spacer()
-						
-						if !contactAvatarModel.nativeUri.isEmpty {
-							Button(action: {
-								editNativeContact()
-							}, label: {
-								Image("pencil-simple")
+						HStack {
+							if !(orientation == .landscapeLeft || orientation == .landscapeRight
+								 || UIScreen.main.bounds.size.width > UIScreen.main.bounds.size.height) {
+								Image("caret-left")
 									.renderingMode(.template)
 									.resizable()
 									.foregroundStyle(Color.orangeMain500)
 									.frame(width: 25, height: 25, alignment: .leading)
 									.padding(.all, 10)
 									.padding(.top, 2)
-							})
-						} else {
-							NavigationLink(destination: EditContactFragment(
-								contactAvatarModel: contactAvatarModel,
-								isShowEditContactFragment: $isShowEditContactFragmentInContactDetails,
-								isShowDismissPopup: $isShowDismissPopup)) {
-									Image("pencil-simple")
-										.renderingMode(.template)
-										.resizable()
-										.foregroundStyle(Color.orangeMain500)
-										.frame(width: 25, height: 25, alignment: .leading)
-										.padding(.all, 10)
-										.padding(.top, 2)
-								}
-								.simultaneousGesture(
-									TapGesture().onEnded {
-										isShowEditContactFragmentInContactDetails = true
+									.padding(.leading, -10)
+									.onTapGesture {
+										withAnimation {
+											SharedMainViewModel.shared.displayedFriend = nil
+										}
 									}
-						  )
-						}
-					}
-					.frame(maxWidth: .infinity)
-					.frame(height: 50)
-					.padding(.horizontal)
-					.padding(.bottom, 4)
-					.background(.white)
-					
-					ScrollView {
-						VStack(spacing: 0) {
-							VStack(spacing: 0) {
-								VStack(spacing: 0) {
-									if SharedMainViewModel.shared.displayedFriend != nil {
-										Avatar(contactAvatarModel: contactAvatarModel, avatarSize: 100)
-										
-										Text(contactAvatarModel.name)
-											.foregroundStyle(Color.grayMain2c700)
-											.multilineTextAlignment(.center)
-											.default_text_style(styleSize: 14)
-											.frame(maxWidth: .infinity)
-											.padding(.top, 10)
-										
-										Text(contactAvatarModel.lastPresenceInfo)
-											.foregroundStyle(contactAvatarModel.lastPresenceInfo == "Online"
-															 ? Color.greenSuccess500
-															 : Color.orangeWarning600)
-											.multilineTextAlignment(.center)
-											.default_text_style_300(styleSize: 12)
-											.frame(maxWidth: .infinity)
-									}
-								}
-								.frame(minHeight: 150)
-								.frame(maxWidth: .infinity)
-								.padding(.top, 10)
-								.background(Color.gray100)
-								
-								HStack {
-									Spacer()
-									
-									Button(action: {
-										if contactAvatarModel.addresses.count <= 1 {
-											do {
-												let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
-												telecomManager.doCallOrJoinConf(address: address, isVideo: false)
-											} catch {
-												Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
-											}
-										} else {
-											isShowSipAddressesPopupType = 0
-											isShowSipAddressesPopup = true
-										}
-									}, label: {
-										VStack {
-											HStack(alignment: .center) {
-												Image("phone")
-													.renderingMode(.template)
-													.resizable()
-													.foregroundStyle(contactAvatarModel.address.isEmpty ? Color.grayMain2c400 : Color.grayMain2c600)
-													.frame(width: 25, height: 25)
-											}
-											.padding(16)
-											.background(contactAvatarModel.address.isEmpty ? Color.grayMain2c100 : Color.grayMain2c200)
-											.cornerRadius(40)
-											
-											Text("contact_call_action")
-												.default_text_style(styleSize: 14)
-										}
-									})
-									.disabled(contactAvatarModel.address.isEmpty)
-                                    
-                                    if !CorePreferences.disableChatFeature {
-                                        Spacer()
-                                        
-                                        Button(action: {
-                                            if contactAvatarModel.addresses.count <= 1 {
-                                                do {
-                                                    let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
-                                                    contactsListViewModel.createOneToOneChatRoomWith(remote: address)
-                                                } catch {
-                                                    Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
-                                                }
-                                            } else {
-                                                isShowSipAddressesPopupType = 1
-                                                isShowSipAddressesPopup = true
-                                            }
-                                        }, label: {
-                                            VStack {
-                                                HStack(alignment: .center) {
-                                                    Image("chat-teardrop-text")
-                                                        .renderingMode(.template)
-                                                        .resizable()
-                                                        .foregroundStyle(contactAvatarModel.address.isEmpty ? Color.grayMain2c400 : Color.grayMain2c600)
-                                                        .frame(width: 25, height: 25)
-                                                }
-                                                .padding(16)
-                                                .background(contactAvatarModel.address.isEmpty ? Color.grayMain2c100 : Color.grayMain2c200)
-                                                .cornerRadius(40)
-                                                
-                                                Text("contact_message_action")
-                                                    .default_text_style(styleSize: 14)
-                                            }
-                                        })
-                                        .disabled(contactAvatarModel.address.isEmpty)
-                                    }
-                                    
-									Spacer()
-									
-									Button(action: {
-										if contactAvatarModel.addresses.count <= 1 {
-											do {
-												let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
-												telecomManager.doCallOrJoinConf(address: address, isVideo: true)
-											} catch {
-												Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
-											}
-										} else {
-											isShowSipAddressesPopupType = 2
-											isShowSipAddressesPopup = true
-										}
-									}, label: {
-										VStack {
-											HStack(alignment: .center) {
-												Image("video-camera")
-													.renderingMode(.template)
-													.resizable()
-													.foregroundStyle(contactAvatarModel.address.isEmpty ? Color.grayMain2c400 : Color.grayMain2c600)
-													.frame(width: 25, height: 25)
-											}
-											.padding(16)
-											.background(contactAvatarModel.address.isEmpty ? Color.grayMain2c100 : Color.grayMain2c200)
-											.cornerRadius(40)
-											
-											Text("contact_video_call_action")
-												.default_text_style(styleSize: 14)
-										}
-									})
-									.disabled(contactAvatarModel.address.isEmpty)
-									
-									Spacer()
-								}
-								.padding(.top, 20)
-								.frame(maxWidth: .infinity)
-								.background(Color.gray100)
-								
-								ContactInnerActionsFragment(
-									showingSheet: $showingSheet,
-									showShareSheet: $showShareSheet,
-									isShowDeletePopup: $isShowDeletePopup,
-									isShowDismissPopup: $isShowDismissPopup,
-									isShowEditContactFragmentInContactDetails: $isShowEditContactFragmentInContactDetails,
-									actionEditButton: editNativeContact
-								)
 							}
-							.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
+							
+							Spacer()
+							
+							if !contactAvatarModel.isReadOnly && !AppServices.corePreferences.hideContactEdition {
+								if !contactAvatarModel.editable {
+									Button(action: {
+										editNativeContact()
+									}, label: {
+										Image("pencil-simple")
+											.renderingMode(.template)
+											.resizable()
+											.foregroundStyle(Color.orangeMain500)
+											.frame(width: 25, height: 25, alignment: .leading)
+											.padding(.all, 10)
+											.padding(.top, 2)
+									})
+								} else {
+									NavigationLink(destination: EditContactFragment(
+										contactAvatarModel: contactAvatarModel,
+										isShowEditContactFragment: $isShowEditContactFragmentInContactDetails,
+										isShowDismissPopup: $isShowDismissPopup)) {
+											Image("pencil-simple")
+												.renderingMode(.template)
+												.resizable()
+												.foregroundStyle(Color.orangeMain500)
+												.frame(width: 25, height: 25, alignment: .leading)
+												.padding(.all, 10)
+												.padding(.top, 2)
+										}
+										.simultaneousGesture(
+											TapGesture().onEnded {
+												isShowEditContactFragmentInContactDetails = true
+											}
+										)
+								}
+							}
 						}
 						.frame(maxWidth: .infinity)
+						.frame(height: 50)
+						.padding(.horizontal)
+						.padding(.bottom, 4)
+						.background(.white)
+						
+						ScrollView {
+							VStack(spacing: 0) {
+								VStack(spacing: 0) {
+									VStack(spacing: 0) {
+										if SharedMainViewModel.shared.displayedFriend != nil {
+											Avatar(contactAvatarModel: contactAvatarModel, avatarSize: 100)
+											
+											Text(contactAvatarModel.name)
+												.foregroundStyle(Color.grayMain2c700)
+												.multilineTextAlignment(.center)
+												.default_text_style(styleSize: 14)
+												.frame(maxWidth: .infinity)
+												.padding(.top, 10)
+											
+											Text(contactAvatarModel.lastPresenceInfo)
+												.foregroundStyle(contactAvatarModel.lastPresenceInfo == "Online"
+																 ? Color.greenSuccess500
+																 : Color.orangeWarning600)
+												.multilineTextAlignment(.center)
+												.default_text_style_300(styleSize: 12)
+												.frame(maxWidth: .infinity)
+										}
+									}
+									.frame(minHeight: 150)
+									.frame(maxWidth: .infinity)
+									.padding(.top, 10)
+									.background(Color.gray100)
+									
+									HStack {
+										Spacer()
+										
+										Button(action: {
+											CoreContext.shared.doOnCoreQueue { core in
+												if contactAvatarModel.addresses.count == 1 && contactAvatarModel.phoneNumbersWithLabel.isEmpty {
+													do {
+														let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
+														telecomManager.doCallOrJoinConf(address: address, isVideo: false)
+													} catch {
+														Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
+													}
+												} else if contactAvatarModel.addresses.isEmpty && contactAvatarModel.phoneNumbersWithLabel.count == 1 {
+													if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let address = core.interpretUrl(url: firstPhoneNumbersWithLabel.phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+														telecomManager.doCallOrJoinConf(address: address, isVideo: false)
+													}
+												} else {
+													DispatchQueue.main.async {
+														isShowSipAddressesPopupType = 0
+														isShowSipAddressesPopup = true
+													}
+												}
+											}
+										}, label: {
+											VStack {
+												HStack(alignment: .center) {
+													Image("phone")
+														.renderingMode(.template)
+														.resizable()
+														.foregroundStyle(Color.grayMain2c600)
+														.frame(width: 25, height: 25)
+												}
+												.padding(16)
+												.background(Color.grayMain2c200)
+												.cornerRadius(40)
+												
+												Text("contact_call_action")
+													.default_text_style(styleSize: 14)
+											}
+										})
+										
+										if !AppServices.corePreferences.disableChatFeature {
+											Spacer()
+											
+											Button(action: {
+												CoreContext.shared.doOnCoreQueue { core in
+													if contactAvatarModel.addresses.count == 1 && contactAvatarModel.phoneNumbersWithLabel.isEmpty {
+														do {
+															let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
+															contactsListViewModel.createOneToOneChatRoomWith(remote: address)
+														} catch {
+															Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
+														}
+													} else if contactAvatarModel.addresses.isEmpty && contactAvatarModel.phoneNumbersWithLabel.count == 1 {
+														if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let address = core.interpretUrl(url: firstPhoneNumbersWithLabel.phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+															contactsListViewModel.createOneToOneChatRoomWith(remote: address)
+														}
+													} else {
+														DispatchQueue.main.async {
+															isShowSipAddressesPopupType = 1
+															isShowSipAddressesPopup = true
+														}
+													}
+												}
+											}, label: {
+												VStack {
+													HStack(alignment: .center) {
+														Image("chat-teardrop-text")
+															.renderingMode(.template)
+															.resizable()
+															.foregroundStyle(Color.grayMain2c600)
+															.frame(width: 25, height: 25)
+													}
+													.padding(16)
+													.background(Color.grayMain2c200)
+													.cornerRadius(40)
+													
+													Text("contact_message_action")
+														.default_text_style(styleSize: 14)
+												}
+											})
+										}
+										
+										Spacer()
+										
+										if !SharedMainViewModel.shared.disableVideoCall {
+											Button(action: {
+												CoreContext.shared.doOnCoreQueue { core in
+													if contactAvatarModel.addresses.count == 1 && contactAvatarModel.phoneNumbersWithLabel.isEmpty {
+														do {
+															let address = try Factory.Instance.createAddress(addr: contactAvatarModel.address)
+															telecomManager.doCallOrJoinConf(address: address, isVideo: true)
+														} catch {
+															Log.error("[ContactInnerFragment] unable to create address for a new outgoing call : \(contactAvatarModel.address) \(error) ")
+														}
+													} else if contactAvatarModel.addresses.isEmpty && contactAvatarModel.phoneNumbersWithLabel.count == 1 {
+														if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let address = core.interpretUrl(url: firstPhoneNumbersWithLabel.phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+															telecomManager.doCallOrJoinConf(address: address, isVideo: true)
+														}
+													} else {
+														DispatchQueue.main.async {
+															isShowSipAddressesPopupType = 2
+															isShowSipAddressesPopup = true
+														}
+													}
+												}
+											}, label: {
+												VStack {
+													HStack(alignment: .center) {
+														Image("video-camera")
+															.renderingMode(.template)
+															.resizable()
+															.foregroundStyle(Color.grayMain2c600)
+															.frame(width: 25, height: 25)
+													}
+													.padding(16)
+													.background(Color.grayMain2c200)
+													.cornerRadius(40)
+													
+													Text("contact_video_call_action")
+														.default_text_style(styleSize: 14)
+												}
+											})
+											
+											Spacer()
+										}
+									}
+									.padding(.top, 20)
+									.frame(maxWidth: .infinity)
+									.background(Color.gray100)
+									
+									ContactInnerActionsFragment(
+										showingSheet: $showingSheet,
+										showShareSheet: $showShareSheet,
+										isShowDeletePopup: $isShowDeletePopup,
+										isShowDismissPopup: $isShowDismissPopup,
+										isShowTrustLevelPopup: $isShowTrustLevelPopup,
+										isShowMediaFilesFragment: $isShowMediaFilesFragment,
+										isShowDocumentsFilesFragment: $isShowDocumentsFilesFragment,
+										isShowIncreaseTrustLevelPopup: $isShowIncreaseTrustLevelPopup,
+										isShowEditContactFragmentInContactDetails: $isShowEditContactFragmentInContactDetails,
+										geometry: geometry,
+										actionEditButton: editNativeContact
+									)
+									.onAppear {
+										contactsListViewModel.fetchDevicesAndTrust()
+										contactsListViewModel.getOneToOneChatRoomWith()
+									}
+									.onChange(of: SharedMainViewModel.shared.displayedFriend?.id) { _ in
+										isShowMediaFilesFragment = false
+										isShowDocumentsFilesFragment = false
+										SharedMainViewModel.shared.displayedFriendExistingChatRoom = nil
+										
+										contactsListViewModel.fetchDevicesAndTrust()
+										contactsListViewModel.getOneToOneChatRoomWith()
+									}
+									.onDisappear {
+										SharedMainViewModel.shared.displayedFriendExistingChatRoom = nil
+									}
+								}
+								.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
+							}
+							.frame(maxWidth: .infinity)
+						}
+						.background(Color.gray100)
 					}
-					.background(Color.gray100)
-				}
-				.background(.white)
-				.navigationBarHidden(true)
-				.onRotate { newOrientation in
-					orientation = newOrientation
-				}
-				.fullScreenCover(isPresented: $presentingEditContact) {
-					NavigationView {
-						EditContactView(contact: $cnContact)
-							.navigationBarTitle("contact_edit_title")
-							.navigationBarTitleDisplayMode(.inline)
-							.edgesIgnoringSafeArea(.vertical)
+					.background(.white)
+					.navigationBarHidden(true)
+					.onRotate { newOrientation in
+						orientation = newOrientation
+					}
+					.fullScreenCover(isPresented: $presentingEditContact) {
+						NavigationView {
+							EditContactView(contact: $cnContact)
+								.navigationBarTitle("contact_edit_title")
+								.navigationBarTitleDisplayMode(.inline)
+								.edgesIgnoringSafeArea(.vertical)
+						}
+					}
+					
+					if isShowMediaFilesFragment {
+						ConversationMediaListFragment(
+							isShowMediaFilesFragment: $isShowMediaFilesFragment
+						)
+						.zIndex(5)
+						.transition(.move(edge: .trailing))
+					}
+					
+					if isShowDocumentsFilesFragment {
+						ConversationDocumentsListFragment(
+							isShowDocumentsFilesFragment: $isShowDocumentsFilesFragment
+						)
+						.zIndex(5)
+						.transition(.move(edge: .trailing))
 					}
 				}
 			}
@@ -295,16 +362,4 @@ struct ContactInnerFragment: View {
 			print(error)
 		}
 	}
-}
-
-#Preview {
-	ContactInnerFragment(
-		isShowDeletePopup: .constant(false),
-		showingSheet: .constant(false),
-		showShareSheet: .constant(false),
-		isShowDismissPopup: .constant(false),
-		isShowSipAddressesPopup: .constant(false),
-		isShowSipAddressesPopupType: .constant(0),
-		isShowEditContactFragmentInContactDetails: .constant(false)
-	)
 }

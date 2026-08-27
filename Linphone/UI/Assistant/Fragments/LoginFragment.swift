@@ -70,25 +70,33 @@ struct LoginFragment: View {
 							let contentPopup3 = Text(.init(splitMsg[1]))
 							let contentPopup4 = Text(.init(privacyPolicy)).underline()
 							let contentPopup5 = Text(.init(splitMsg[2]))
-							PopupView(isShowPopup: $isShowPopup,
-									  title: Text("assistant_dialog_general_terms_and_privacy_policy_title"),
-									  content: contentPopup1 + contentPopup2 + contentPopup3 + contentPopup4 + contentPopup5,
-									  titleFirstButton: Text("dialog_deny"),
-									  actionFirstButton: {self.isShowPopup.toggle()},
-									  titleSecondButton: Text("dialog_accept"),
-									  actionSecondButton: {acceptGeneralTerms()})
+							PopupView(
+								isShowPopup: $isShowPopup,
+								title: Text("assistant_dialog_general_terms_and_privacy_policy_title"),
+								content: contentPopup1 + contentPopup2 + contentPopup3 + contentPopup4 + contentPopup5,
+								titleFirstButton: nil,
+								actionFirstButton: {},
+								titleSecondButton: Text("dialog_accept"),
+								actionSecondButton: { acceptGeneralTerms() },
+								titleThirdButton: Text("dialog_deny"),
+								actionThirdButton: { self.isShowPopup.toggle() }
+							)
 							.background(.black.opacity(0.65))
 							.onTapGesture {
 								self.isShowPopup.toggle()
 							}
 						} else {  // backup just in case
-							PopupView(isShowPopup: $isShowPopup,
-									  title: Text("assistant_dialog_general_terms_and_privacy_policy_title"),
-									  content: Text(.init(String(format: String(localized: "assistant_dialog_general_terms_and_privacy_policy_message"), generalTerms, privacyPolicy))),
-									  titleFirstButton: Text("dialog_deny"),
-									  actionFirstButton: {self.isShowPopup.toggle()},
-									  titleSecondButton: Text("dialog_accept"),
-									  actionSecondButton: {acceptGeneralTerms()})
+							PopupView(
+								isShowPopup: $isShowPopup,
+								title: Text("assistant_dialog_general_terms_and_privacy_policy_title"),
+								content: Text(.init(String(format: String(localized: "assistant_dialog_general_terms_and_privacy_policy_message"), generalTerms, privacyPolicy))),
+								titleFirstButton: nil,
+								actionFirstButton: {},
+								titleSecondButton: Text("dialog_accept"),
+								actionSecondButton: { acceptGeneralTerms() },
+								titleThirdButton: Text("dialog_deny"),
+								actionThirdButton: { self.isShowPopup.toggle() }
+							)
 							.background(.black.opacity(0.65))
 							.onTapGesture {
 								self.isShowPopup.toggle()
@@ -171,107 +179,111 @@ struct LoginFragment: View {
 			.padding(.bottom, 20)
 			
 			VStack(alignment: .leading) {
-//				Text(String(localized: "username")+"*")
-//					.default_text_style_700(styleSize: 15)
-//					.padding(.bottom, -5)
-//				
-//				TextField("username", text: $accountLoginViewModel.username)
-//					.default_text_style(styleSize: 15)
-//					.disableAutocorrection(true)
-//					.autocapitalization(.none)
-//					.frame(height: 25)
-//					.padding(.horizontal, 20)
-//					.padding(.vertical, 15)
-//					.cornerRadius(60)
-//					.overlay(
-//						RoundedRectangle(cornerRadius: 60)
-//							.inset(by: 0.5)
-//							.stroke(isNameFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
-//					)
-//					.padding(.bottom)
-//					.focused($isNameFocused)
-//				
-//				Text(String(localized: "password")+"*")
-//					.default_text_style_700(styleSize: 15)
-//					.padding(.bottom, -5)
+				if false { // AccelerateNetworks: QR-only login — manual login form hidden
+				Text(String(localized: "username")+"*")
+					.default_text_style_700(styleSize: 15)
+					.padding(.bottom, -5)
 				
-//				ZStack(alignment: .trailing) {
-//					Group {
-//						if isSecured {
-//							SecureField("password", text: $accountLoginViewModel.passwd)
-//								.default_text_style(styleSize: 15)
-//								.frame(height: 25)
-//								.focused($isPasswordFocused)
-//						} else {
-//							TextField("password", text: $accountLoginViewModel.passwd)
-//								.default_text_style(styleSize: 15)
-//								.disableAutocorrection(true)
-//								.autocapitalization(.none)
-//								.frame(height: 25)
-//								.focused($isPasswordFocused)
-//						}
-//					}
-//					
-//					Button(action: {
-//						isSecured.toggle()
-//					}, label: {
-//						Image(self.isSecured ? "eye-slash" : "eye")
-//							.renderingMode(.template)
-//							.resizable()
-//							.foregroundStyle(Color.grayMain2c500)
-//							.frame(width: 20, height: 20)
-//					})
-//				}
-//				.padding(.horizontal, 20)
-//				.padding(.vertical, 15)
-//				.cornerRadius(60)
-//				.overlay(
-//					RoundedRectangle(cornerRadius: 60)
-//						.inset(by: 0.5)
-//						.stroke(isPasswordFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
-//				)
-//				.padding(.bottom)
-//				
-//				Button(action: {
-//					SharedMainViewModel.shared.changeDisplayProfileMode()
-//					self.accountLoginViewModel.login()
-//					coreContext.loggingInProgress = true
-//				}, label: {
-//					Text("assistant_account_login")
-//						.default_text_style_white_600(styleSize: 20)
-//						.frame(height: 35)
-//						.frame(maxWidth: .infinity)
-//				})
-//				.padding(.horizontal, 20)
-//				.padding(.vertical, 10)
-//				.background((accountLoginViewModel.username.isEmpty || accountLoginViewModel.passwd.isEmpty) ? Color.orangeMain100 : Color.orangeMain500)
-//				.cornerRadius(60)
-//				.disabled(accountLoginViewModel.username.isEmpty || accountLoginViewModel.passwd.isEmpty)
-//				.padding(.bottom)
+				TextField("username", text: $accountLoginViewModel.username)
+					.default_text_style(styleSize: 15)
+					.disableAutocorrection(true)
+					.autocapitalization(.none)
+					.frame(height: 25)
+					.padding(.horizontal, 20)
+					.padding(.vertical, 15)
+					.cornerRadius(60)
+					.overlay(
+						RoundedRectangle(cornerRadius: 60)
+							.inset(by: 0.5)
+							.stroke(isNameFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+					)
+					.padding(.bottom)
+					.focused($isNameFocused)
 				
-//				HStack {
-//					Text(.init(String(format: ("[%@](%@)"), String(localized: "assistant_forgotten_password"), "https://subscribe.linphone.org/")))
-//						.underline()
-//						.tint(Color.grayMain2c600)
-//						.default_text_style_600(styleSize: 15)
-//						.foregroundStyle(Color.grayMain2c500)
-//				}
-//				.frame(maxWidth: .infinity)
-//				.padding(.bottom, 30)
-//				
-//				HStack {
-//					VStack {
-//						Divider()
-//					}
-//					Text("or")
-//						.default_text_style(styleSize: 15)
-//						.foregroundStyle(Color.grayMain2c500)
-//					VStack {
-//						Divider()
-//					}
-//				}
-//				.padding(.bottom, 10)
+				Text(String(localized: "password")+"*")
+					.default_text_style_700(styleSize: 15)
+					.padding(.bottom, -5)
 				
+				ZStack(alignment: .trailing) {
+					Group {
+						if isSecured {
+							SecureField("password", text: $accountLoginViewModel.passwd)
+								.default_text_style(styleSize: 15)
+								.frame(height: 25)
+								.focused($isPasswordFocused)
+						} else {
+							TextField("password", text: $accountLoginViewModel.passwd)
+								.default_text_style(styleSize: 15)
+								.disableAutocorrection(true)
+								.autocapitalization(.none)
+								.frame(height: 25)
+								.focused($isPasswordFocused)
+						}
+					}
+					
+					Button(action: {
+						isSecured.toggle()
+					}, label: {
+						Image(self.isSecured ? "eye-slash" : "eye")
+							.renderingMode(.template)
+							.resizable()
+							.foregroundStyle(Color.grayMain2c500)
+							.frame(width: 20, height: 20)
+					})
+				}
+				.padding(.horizontal, 20)
+				.padding(.vertical, 15)
+				.cornerRadius(60)
+				.overlay(
+					RoundedRectangle(cornerRadius: 60)
+						.inset(by: 0.5)
+						.stroke(isPasswordFocused ? Color.orangeMain500 : Color.gray200, lineWidth: 1)
+				)
+				.padding(.bottom)
+				
+				Button(action: {
+					SharedMainViewModel.shared.changeDisplayProfileMode()
+					self.accountLoginViewModel.login()
+					coreContext.loggingInProgress = true
+				}, label: {
+					Text("assistant_account_login")
+						.default_text_style_white_600(styleSize: 20)
+						.frame(height: 35)
+						.frame(maxWidth: .infinity)
+				})
+				.padding(.horizontal, 20)
+				.padding(.vertical, 10)
+				.background((accountLoginViewModel.username.isEmpty || accountLoginViewModel.passwd.isEmpty) ? Color.orangeMain100 : Color.orangeMain500)
+				.cornerRadius(60)
+				.disabled(accountLoginViewModel.username.isEmpty || accountLoginViewModel.passwd.isEmpty)
+				.padding(.bottom)
+				
+				NavigationLink(destination: {
+					RecoverAccountFragment()
+				}, label: {
+					Text(String(localized: "assistant_forgotten_password"))
+						.underline()
+						.tint(Color.grayMain2c600)
+						.default_text_style_600(styleSize: 15)
+						.foregroundStyle(Color.grayMain2c500)
+				})
+				.frame(maxWidth: .infinity)
+				.padding(.bottom, 30)
+				
+				HStack {
+					VStack {
+						Divider()
+					}
+					Text("or")
+						.default_text_style(styleSize: 15)
+						.foregroundStyle(Color.grayMain2c500)
+					VStack {
+						Divider()
+					}
+				}
+				.padding(.bottom, 10)
+				} // AccelerateNetworks: end hidden manual login form
+
 				NavigationLink(destination: {
 					QrCodeScannerFragment()
 				}, label: {
@@ -299,79 +311,83 @@ struct LoginFragment: View {
 				)
 				.padding(.bottom)
 				
-//				NavigationLink(isActive: $isLinkSIPActive, destination: {
-//					ThirdPartySipAccountWarningFragment(accountLoginViewModel: accountLoginViewModel)
-//				}, label: {
-//					Text("assistant_login_third_party_sip_account")
-//						.default_text_style_orange_600(styleSize: 20)
-//						.frame(height: 35)
-//						.frame(maxWidth: .infinity)
-//					
-//				})
-//				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
-//				.padding(.horizontal, 20)
-//				.padding(.vertical, 10)
-//				.cornerRadius(60)
-//				.overlay(
-//					RoundedRectangle(cornerRadius: 60)
-//						.inset(by: 0.5)
-//						.stroke(Color.orangeMain500, lineWidth: 1)
-//				)
-//				.padding(.bottom)
-//				.simultaneousGesture(
-//					TapGesture().onEnded {
-//						self.linkActive = "SIP"
-//						if !SharedMainViewModel.shared.generalTermsAccepted {
-//							withAnimation {
-//								self.isShowPopup.toggle()
-//							}
-//						} else {
-//							self.isLinkSIPActive = true
-//						}
-//					}
-//				)
+				if false { // AccelerateNetworks: third-party SIP account hidden
+				NavigationLink(isActive: $isLinkSIPActive, destination: {
+					ThirdPartySipAccountWarningFragment(accountLoginViewModel: accountLoginViewModel)
+				}, label: {
+					Text("assistant_login_third_party_sip_account")
+						.default_text_style_orange_600(styleSize: 20)
+						.frame(height: 35)
+						.frame(maxWidth: .infinity)
+					
+				})
+				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
+				.padding(.horizontal, 20)
+				.padding(.vertical, 10)
+				.cornerRadius(60)
+				.overlay(
+					RoundedRectangle(cornerRadius: 60)
+						.inset(by: 0.5)
+						.stroke(Color.orangeMain500, lineWidth: 1)
+				)
+				.padding(.bottom)
+				.simultaneousGesture(
+					TapGesture().onEnded {
+						self.linkActive = "SIP"
+						if !SharedMainViewModel.shared.generalTermsAccepted {
+							withAnimation {
+								self.isShowPopup.toggle()
+							}
+						} else {
+							self.isLinkSIPActive = true
+						}
+					}
+				)
+				} // AccelerateNetworks: end hidden third-party SIP
 			}
 			.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
 			.padding(.horizontal, 20)
 			
 			Spacer()
-			
-//			HStack(alignment: .center) {
-//				
-//				Spacer()
-//				
-//				Text("assistant_no_account_yet")
-//					.default_text_style(styleSize: 15)
-//					.foregroundStyle(Color.grayMain2c700)
-//					.padding(.horizontal, 10)
-//				
-//				NavigationLink(destination: RegisterFragment(), isActive: $isLinkREGActive, label: { Text("assistant_account_register")
-//						.default_text_style_white_600(styleSize: 20)
-//						.frame(height: 35)
-//				})
-//				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
-//				.padding(.horizontal, 20)
-//				.padding(.vertical, 10)
-//				.background(Color.orangeMain500)
-//				.cornerRadius(60)
-//				.padding(.horizontal, 10)
-//				.simultaneousGesture(
-//					TapGesture().onEnded {
-//						self.linkActive = "REG"
-//						if !SharedMainViewModel.shared.generalTermsAccepted {
-//							withAnimation {
-//								self.isShowPopup.toggle()
-//							}
-//						} else {
-//							self.isLinkREGActive = true
-//						}
-//					}
-//				)
-//				
-//				Spacer()
-//			}
-//			.padding(.bottom)
-			
+
+			if false { // AccelerateNetworks: account creation / register hidden
+			HStack(alignment: .center) {
+				
+				Spacer()
+				
+				Text("assistant_no_account_yet")
+					.default_text_style(styleSize: 15)
+					.foregroundStyle(Color.grayMain2c700)
+					.padding(.horizontal, 10)
+				
+				NavigationLink(destination: RegisterFragment(), isActive: $isLinkREGActive, label: { Text("assistant_account_register")
+						.default_text_style_white_600(styleSize: 20)
+						.frame(height: 35)
+				})
+				.disabled(!SharedMainViewModel.shared.generalTermsAccepted)
+				.padding(.horizontal, 20)
+				.padding(.vertical, 10)
+				.background(Color.orangeMain500)
+				.cornerRadius(60)
+				.padding(.horizontal, 10)
+				.simultaneousGesture(
+					TapGesture().onEnded {
+						self.linkActive = "REG"
+						if !SharedMainViewModel.shared.generalTermsAccepted {
+							withAnimation {
+								self.isShowPopup.toggle()
+							}
+						} else {
+							self.isLinkREGActive = true
+						}
+					}
+				)
+				
+				Spacer()
+			}
+			.padding(.bottom)
+			} // AccelerateNetworks: end hidden account creation
+
 			Image("mountain2")
 				.resizable()
 				.scaledToFill()

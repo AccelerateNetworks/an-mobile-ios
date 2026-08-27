@@ -102,7 +102,7 @@ class TelecomManager: ObservableObject {
 			Log.info("Can not start a call with null address!")
 			return
 		}
-		
+
 		if TelecomManager.callKitEnabled(core: core) {// && !nextCallIsTransfer != true {
 			let uuid = UUID()
 			let name = addr?.asStringUriOnly() ?? "Unknown"
@@ -167,22 +167,24 @@ class TelecomManager: ObservableObject {
 	}
 	
 	func doCallOrJoinConf(address: Address, isVideo: Bool = false, isConference: Bool = false) {
-		if address.asStringUriOnly().hasPrefix("sip:conference-focus@sip.linphone.org") {
-			do {
-				let meetingAddress = try Factory.Instance.createAddress(addr: address.asStringUriOnly())
-				
-				DispatchQueue.main.async {
-					withAnimation {
-						self.meetingWaitingRoomDisplayed = true
-						self.meetingWaitingRoomSelected = meetingAddress
-					}
-				}
-			} catch {}
-		} else {
-			doCallWithCore(
-				addr: address, isVideo: isVideo, isConference: isConference
-			)
-		}
+        CoreContext.shared.doOnCoreQueue { core in
+            if let _ = core.findConferenceInformationFromUri(uri: address) {
+                do {
+                    let meetingAddress = try Factory.Instance.createAddress(addr: address.asStringUriOnly())
+                    
+                    DispatchQueue.main.async {
+                        withAnimation {
+                            self.meetingWaitingRoomDisplayed = true
+                            self.meetingWaitingRoomSelected = meetingAddress
+                        }
+                    }
+                } catch {}
+            } else {
+                self.doCallWithCore(
+                    addr: address, isVideo: isVideo, isConference: isConference
+                )
+            }
+        }
 	}
 	
 	func doCallWithCore(addr: Address, isVideo: Bool, isConference: Bool) {
@@ -195,17 +197,13 @@ class TelecomManager: ObservableObject {
 		}
 	}
 	
-	private func makeRecordFilePath() -> String {
-		var filePath = "recording_"
-		let now = Date()
-		let dateFormat = DateFormatter()
-		dateFormat.dateFormat = "E-d-MMM-yyyy-HH-mm-ss"
-		let date = dateFormat.string(from: now)
-		filePath = filePath.appending("\(date).mkv")
+	private func makeRecordFilePath(address: String) -> String {
+		var filePath = "call_recording_sip_" + address.dropFirst(4) + "_on_"
 		
-		let paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true)
-		let writablePath = paths[0]
-		return writablePath.appending("/\(filePath)")
+		filePath = filePath.appending("\(Int(Date().timeIntervalSince1970)).mkv")
+		
+		let writablePath = FileUtil.sharedContainerUrl().appendingPathComponent("Library/Recordings/\(filePath)")
+		return writablePath.path
 	}
 	
 	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws {
@@ -237,7 +235,7 @@ class TelecomManager: ObservableObject {
 			// Log.directLog(BCTBX_LOG_DEBUG, text: "record file path: \(writablePath)")
 			// lcallParams.recordFile = writablePath
 			
-			lcallParams.recordFile = makeRecordFilePath()
+			lcallParams.recordFile = makeRecordFilePath(address: addr.asStringUriOnly())
 			
 			if isSas {
 				lcallParams.mediaEncryption = .ZRTP
@@ -292,7 +290,7 @@ class TelecomManager: ObservableObject {
 	func acceptCall(core: Core, call: Call, hasVideo: Bool) {
 		do {
 			let callParams = try core.createCallParams(call: call)
-			callParams.recordFile = makeRecordFilePath()
+			callParams.recordFile = makeRecordFilePath(address: call.remoteAddress?.asStringUriOnly() ?? "")
 			callParams.videoEnabled = hasVideo
 			/*if (ConfigManager.instance().lpConfigBoolForKey(key: "edge_opt_preference")) {
 			 let low_bandwidth = (AppManager.network() == .network_2g)
@@ -387,6 +385,17 @@ class TelecomManager: ObservableObject {
 		}
 	}
 	
+	static func isAudioRouteAllowedForCall() -> Bool {
+		guard AppServices.corePreferences.onlyAllowEarpieceDuringCall else { return true }
+		let output = AVAudioSession.sharedInstance().currentRoute.outputs.first
+		Log.info("Current audio route output is \(output?.portType.rawValue ?? "Unknown")")
+		guard let portType = output?.portType else { return false }
+		return portType == .builtInReceiver
+			|| portType == .headphones
+			|| portType == .usbAudio
+			|| portType == .lineOut
+	}
+
 	static func callKitEnabled(core: Core) -> Bool {
 #if !targetEnvironment(simulator)
 		return core.callkitEnabled
@@ -437,6 +446,7 @@ class TelecomManager: ObservableObject {
 	func onCallStateChanged(core: Core, call: Call, state cstate: Call.State, message: String) {
 		let callLog = call.callLog
 		let callId = callLog?.callId ?? ""
+		
 		if !callInProgress && participantsInvited {
 			if let remoteAddress = call.remoteAddress {
 				let uuid = UUID()
@@ -496,38 +506,36 @@ class TelecomManager: ObservableObject {
 			
 			let isRecordingByRemoteTmp = call.remoteParams?.isRecording ?? false
 			
-			if isRecordingByRemoteTmp && ToastViewModel.shared.toastMessage.isEmpty {
-				
-				var displayName = ""
-				let friend = ContactsManager.shared.getFriendWithAddress(address: call.remoteAddress!)
-				if friend != nil && friend!.address != nil && friend!.address!.displayName != nil {
-					displayName = friend!.address!.displayName!
-				} else {
-					if call.remoteAddress!.displayName != nil {
-						displayName = call.remoteAddress!.displayName!
-					} else if call.remoteAddress!.username != nil {
-						displayName = call.remoteAddress!.username!
-					} else {
-						displayName = String(call.remoteAddress!.asStringUriOnly().dropFirst(4))
-					}
-				}
-				
-				DispatchQueue.main.async {
-					self.isRecordingByRemote = isRecordingByRemoteTmp
-					ToastViewModel.shared.toastMessage = "\(displayName) is recording"
-					ToastViewModel.shared.displayToast = true
-				}
-				
-				Log.info("[Call] Call is recording by \(call.remoteAddress!.asStringUriOnly())")
+			let displayName: String
+			let friend = ContactsManager.shared.getFriendWithAddress(address: call.remoteAddress)
+			
+			if let name = friend?.address?.displayName {
+				displayName = name
+			} else if let name = call.remoteAddress?.displayName {
+				displayName = name
+			} else if let username = call.remoteAddress?.username {
+				displayName = username
+			} else if let uri = call.remoteAddress?.asStringUriOnly() {
+				displayName = String(uri.dropFirst(4))
+			} else {
+				displayName = "Unknown"
 			}
 			
-			if !isRecordingByRemoteTmp && ToastViewModel.shared.toastMessage.contains("is recording") {
-				DispatchQueue.main.async {
-					self.isRecordingByRemote = isRecordingByRemoteTmp
-					ToastViewModel.shared.toastMessage = ""
-					ToastViewModel.shared.displayToast = false
+			DispatchQueue.main.async {
+				self.isRecordingByRemote = isRecordingByRemoteTmp
+				
+				if isRecordingByRemoteTmp {
+					ToastViewModel.shared.show("\(displayName) is recording")
+				} else if let toast = ToastViewModel.shared.toast,
+						  toast.message.contains("is recording") {
+					ToastViewModel.shared.hide()
 				}
-				Log.info("[Call] Recording is stopped by \(call.remoteAddress!.asStringUriOnly())")
+			}
+			
+			if isRecordingByRemoteTmp {
+				Log.info("[Call] Call is recording by \(call.remoteAddress?.asStringUriOnly() ?? "")")
+			} else {
+				Log.info("[Call] Recording is stopped by \(call.remoteAddress?.asStringUriOnly() ?? "")")
 			}
 			
 			if cstate == Call.State.PausedByRemote {
@@ -625,6 +633,11 @@ class TelecomManager: ObservableObject {
 						
 						Log.info("CallKit: outgoing call started connecting with uuid \(uuid!) and callId \(callId)")
 						providerDelegate.reportOutgoingCallStartedConnecting(uuid: uuid!)
+					} else if callId != "" && cstate == .OutgoingInit {
+						if let uuidTmp = providerDelegate.uuids["\(callId)"] {
+							providerDelegate.uuids.removeValue(forKey: callId)
+							providerDelegate.uuids.updateValue(uuidTmp, forKey: "")
+						}
 					} else {
 						referedToCall = callId
 					}
@@ -650,8 +663,12 @@ class TelecomManager: ObservableObject {
 							do {
 								try core.setVideodevice(newValue: "AV Capture: com.apple.avfoundation.avcapturedevice.built-in_video:1")
 							} catch _ {
-								
+
 							}
+
+							UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["linphone-earpiece-enforcement"])
+							UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["linphone-earpiece-enforcement"])
+
 							withAnimation {
 								self.outgoingCallStarted = false
 								self.callInProgress = false
@@ -726,6 +743,10 @@ class TelecomManager: ObservableObject {
 				}
 			case .Released:
 				TelecomManager.setAppData(sCall: call, appData: nil)
+				if core.callsNb == 0 {
+					UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["linphone-earpiece-enforcement"])
+					UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["linphone-earpiece-enforcement"])
+				}
 			case .Referred:
 				referedFromCall = call.callLog?.callId
 			default:

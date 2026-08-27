@@ -28,10 +28,14 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 	
 	@Published var name: String = ""
 	@Published var address: String = ""
+	@Published var addressDisplay: String = ""
 	@Published var addresses: [String] = []
+	@Published var addressesDisplay: [String] = []
 	@Published var phoneNumbersWithLabel: [(label: String, phoneNumber: String)] = []
 	
 	var nativeUri: String = ""
+	var editable: Bool = true
+	var isReadOnly: Bool = false
 	var withPresence: Bool?
 	
 	@Published var starred: Bool = false
@@ -43,6 +47,8 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 	@Published var photo: String = ""
 	@Published var lastPresenceInfo: String = ""
 	@Published var presenceStatus: ConsolidatedPresence = .Offline
+	@Published var unsafeFriend: Bool = false
+	@Published var trustedFriend: Bool = false
 	
 	private var friendDelegate: FriendDelegate?
 	
@@ -57,10 +63,16 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 			self.friend = friend
 			let nameTmp = name
 			let addressTmp = address
+			var addressDisplayTmp = address
+			if let parsed = try? Factory.Instance.createAddress(addr: address) {
+				addressDisplayTmp = LinphoneUtils.getDisplayAddress(address: parsed)
+			}
 			var addressesTmp: [String] = []
+			var addressesDisplayTmp: [String] = []
 			if let friend = friend {
 				friend.addresses.forEach { address in
 					addressesTmp.append(address.asStringUriOnly())
+					addressesDisplayTmp.append(LinphoneUtils.getDisplayAddress(address: address))
 				}
 			}
 			var phoneNumbersWithLabelTmp: [(label: String, phoneNumber: String)] = []
@@ -70,14 +82,25 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 				}
 			}
 			let nativeUriTmp = friend?.nativeUri ?? ""
+			let editableTmp = friend?.friendList?.type == .CardDAV || nativeUriTmp.isEmpty
+			let isReadOnlyTmp = (friend?.isReadOnly == true) || (friend?.inList() == false)
 			let withPresenceTmp = withPresence
 			let starredTmp = friend?.starred ?? false
 			let vcardTmp = friend?.vcard ?? nil
 			let organizationTmp = friend?.organization ?? ""
 			let jobTitleTmp = friend?.jobTitle ?? ""
-			let photoTmp = friend?.photo ?? ""
+			var photoTmp = friend?.photo ?? ""
+			
+			if friend?.friendList?.type == .CardDAV && friend?.photo?.isEmpty == false {
+				let fileName = "file:/" + name + ".png"
+				photoTmp = fileName.replacingOccurrences(of: " ", with: "")
+			}
+			
 			var lastPresenceInfoTmp = ""
 			var presenceStatusTmp: ConsolidatedPresence = .Offline
+			
+			let unsafeFriendTmp = (friend?.securityLevel ?? .None) == .Unsafe
+			let trustedFriendTmp = (friend?.securityLevel ?? .None) == .EndToEndEncryptedAndVerified
 			
 			if let friend = friend, withPresence == true {
                 
@@ -105,9 +128,13 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 			DispatchQueue.main.async {
 				self.name = nameTmp
 				self.address = addressTmp
+				self.addressDisplay = addressDisplayTmp
 				self.addresses = addressesTmp
+				self.addressesDisplay = addressesDisplayTmp
 				self.phoneNumbersWithLabel = phoneNumbersWithLabelTmp
 				self.nativeUri = nativeUriTmp
+				self.editable = editableTmp
+				self.isReadOnly = isReadOnlyTmp
 				self.withPresence = withPresenceTmp
 				self.starred = starredTmp
 				self.vcard = vcardTmp
@@ -116,6 +143,8 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 				self.photo = photoTmp
 				self.lastPresenceInfo = lastPresenceInfoTmp
 				self.presenceStatus = presenceStatusTmp
+				self.unsafeFriend = unsafeFriendTmp
+				self.trustedFriend = trustedFriendTmp
 			}
 		}
 	}
@@ -192,6 +221,17 @@ class ContactAvatarModel: ObservableObject, Identifiable {
 					if avatarModel == nil {
 						avatarModel = ContactAvatarModel(friend: nil, name: addressFriend.name!, address: addressFriend.address!.asStringUriOnly(), withPresence: false)
 					}
+					completion(avatarModel!)
+				} else if !addressFriend.phoneNumbers.isEmpty {
+					var avatarModel = ContactsManager.shared.avatarListModel.first(where: {
+						$0.friend != nil && $0.friend!.name == addressFriend.name && !$0.friend!.phoneNumbers.isEmpty
+						&& $0.friend!.phoneNumbers == addressFriend.phoneNumbers
+					})
+					
+					if avatarModel == nil {
+						avatarModel = ContactAvatarModel(friend: nil, name: addressFriend.name!, address: addressFriend.phoneNumbers.first ?? addressFriend.address?.asStringUriOnly() ?? "", withPresence: false)
+					}
+					
 					completion(avatarModel!)
 				} else {
 					var name = ""

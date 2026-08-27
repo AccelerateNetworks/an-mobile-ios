@@ -22,15 +22,14 @@ import SwiftUI
 
 extension Color {
 	
+	private static var theme: Theme { ColorProvider.shared.theme }
+	
 	static let transparentColor = Color(hex: "#00000000")
 	static let black = Color(hex: "#000000")
 	static let white = Color(hex: "#FFFFFF")
 	
-	static let orangeMain700 = Color(hex: "#B72D00")
-	static let orangeMain500 = Color(hex: "#FF5E00")
-	static let orangeMain300 = Color(hex: "#FFB266")
-	static let orangeMain100 = Color(hex: "#FFEACB")
-	static let orangeMain100Alpha50 = Color(hex: "#80FFEACB")
+	static var orangeMain100: Color { theme.main100 }
+	static var orangeMain500: Color { theme.main500 }
 	
 	static let grayMain2c800 = Color(hex: "#22334D")
 	static let grayMain2c800Alpha65 = Color(hex: "#A622334D")

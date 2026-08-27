@@ -113,6 +113,8 @@ final class ContactsManager: ObservableObject {
                         core.addFriendList(list: tempRemoteFriendList)
                     }
                 }
+				
+				self.refreshCardDavContacts()
 			}
 			
 			let store = CNContactStore()
@@ -195,9 +197,24 @@ final class ContactsManager: ObservableObject {
 	}
 	
 	func textToImage(firstName: String?, lastName: String?) -> UIImage {
-		let firstInitial = firstName?.first.map { String($0) } ?? ""
-		let lastInitial = lastName?.first.map { String($0) } ?? ""
-		let textToDisplay = (firstInitial + lastInitial).uppercased()
+		let firstParts = firstName?
+			.split(separator: " ")
+			.map(String.init) ?? []
+
+		let firstInitial = firstParts.first?.first.map(String.init) ?? ""
+		let secondInitial = firstParts.count > 1 ? firstParts[1].first.map(String.init) ?? "" : ""
+
+		let lastInitial = lastName?.first.map(String.init) ?? ""
+
+		let textToDisplay: String
+
+		if !firstInitial.isEmpty && !secondInitial.isEmpty {
+			textToDisplay = firstInitial.uppercased() + secondInitial.uppercased()
+		} else if !firstInitial.isEmpty {
+			textToDisplay = firstInitial.uppercased() + lastInitial.uppercased()
+		} else {
+			textToDisplay = lastInitial.uppercased()
+		}
 
 		let size = CGSize(width: 200, height: 200)
 		let renderer = UIGraphicsImageRenderer(size: size)
@@ -229,31 +246,63 @@ final class ContactsManager: ObservableObject {
 		}
 	}
 	
-	func saveImage(image: UIImage, name: String, prefix: String, contact: Contact, linphoneFriend: String, existingFriend: Friend?, completion: @escaping () -> Void) {
+	func imageFromBase64(_ base64String: String) -> UIImage? {
+		let cleanedString: String
+		if let range = base64String.range(of: "base64,") {
+			cleanedString = String(base64String[range.upperBound...])
+		} else {
+			cleanedString = base64String
+		}
+		
+		guard let imageData = Data(base64Encoded: cleanedString, options: .ignoreUnknownCharacters) else {
+			print("Error: failed to decode Base64 string")
+			return nil
+		}
+		
+		return UIImage(data: imageData)
+	}
+	
+	func saveImage(image: UIImage, name: String, prefix: String, contact: Contact, linphoneFriend: String, existingFriend: Friend?, editingFriend: Bool = false, completion: @escaping () -> Void) {
 		guard let data = image.jpegData(compressionQuality: 1) ?? image.pngData() else {
 			return
 		}
 		
-		awaitDataWrite(data: data, name: name, prefix: prefix) { result in
-			self.saveFriend(result: result, contact: contact, existingFriend: existingFriend) { resultFriend in
-				self.coreContext.doOnCoreQueue { core in
-					if let friend = resultFriend {
-						if linphoneFriend != self.nativeAddressBookFriendList && existingFriend == nil {
-							if let linphoneFL = self.linphoneFriendList, linphoneFriend == linphoneFL.displayName {
-								_ = linphoneFL.addFriend(linphoneFriend: friend)
-							} else if let linphoneFL = self.tempRemoteFriendList {
-								_ = linphoneFL.addFriend(linphoneFriend: friend)
-							}
-						} else if existingFriend == nil {
-							if let friendListTmp = self.friendList {
-								_ = friendListTmp.addLocalFriend(linphoneFriend: friend)
+		let base64Tmp = existingFriend?.friendList?.type == .CardDAV || linphoneAddressBookFriendList != AppServices.corePreferences.friendListInWhichStoreNewlyCreatedFriends
+		
+		awaitDataWrite(data: data, name: name, prefix: prefix, base64: base64Tmp) { result in
+			if existingFriend?.friendList?.type != .CardDAV
+				|| (existingFriend?.friendList?.type == .CardDAV && linphoneFriend == self.linphoneAddressBookFriendList)
+				|| (editingFriend && linphoneFriend == AppServices.corePreferences.friendListInWhichStoreNewlyCreatedFriends) {
+				self.saveFriend(result: result, contact: contact, existingFriend: existingFriend) { resultFriend in
+					self.coreContext.doOnCoreQueue { core in
+						if let friend = resultFriend {
+							if linphoneFriend != self.nativeAddressBookFriendList && existingFriend == nil {
+								if let linphoneFL = self.linphoneFriendList, linphoneFriend == linphoneFL.displayName {
+									_ = linphoneFL.addFriend(linphoneFriend: friend)
+								} else if let linphoneFL = core.friendsLists.first(where: { $0.type == .CardDAV && $0.displayName == AppServices.corePreferences.friendListInWhichStoreNewlyCreatedFriends }) {
+									if linphoneFL.type == .CardDAV {
+										_ = linphoneFL.addFriend(linphoneFriend: friend)
+									}
+								} else if let linphoneFL = self.tempRemoteFriendList {
+									if friend.friendList?.type != .CardDAV {
+										_ = linphoneFL.addFriend(linphoneFriend: friend)
+									}
+								}
+							} else if existingFriend == nil {
+								if let friendListTmp = self.friendList {
+									_ = friendListTmp.addLocalFriend(linphoneFriend: friend)
+								}
 							}
 						}
+						
+						DispatchQueue.main.async {
+							completion()
+						}
 					}
-					
-					DispatchQueue.main.async {
-						completion()
-					}
+				}
+			} else {
+				DispatchQueue.main.async {
+					completion()
 				}
 			}
 		}
@@ -284,7 +333,7 @@ final class ContactsManager: ObservableObject {
 				// Clear existing addresses and add new ones
 				friend.addresses.forEach { friend.removeAddress(address: $0) }
 				for sipAddress in contact.sipAddresses where !sipAddress.isEmpty {
-					if let address = core.interpretUrl(url: sipAddress, applyInternationalPrefix: true),
+					if let address = core.interpretUrl(url: sipAddress, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)),
 					   !friend.addresses.contains(where: { $0.asString() == address.asString() }) {
 						friend.addAddress(address: address)
 					}
@@ -303,7 +352,7 @@ final class ContactsManager: ObservableObject {
 				}
 				
 				// Set photo
-				friend.photo = "file:/" + result
+				friend.photo = (friend.friendList?.type != .CardDAV && self.linphoneAddressBookFriendList == AppServices.corePreferences.friendListInWhichStoreNewlyCreatedFriends ? "file:/" : "") + result
 				
 				// Linphone subscription settings
 				try friend.setSubscribesenabled(newValue: false)
@@ -330,21 +379,41 @@ final class ContactsManager: ObservableObject {
 		return imagePath
 	}
 	
-	func awaitDataWrite(data: Data, name: String, prefix: String, completion: @escaping (String) -> Void) {
+	func awaitDataWrite(data: Data, name: String, prefix: String, base64: Bool? = false, completion: @escaping (String) -> Void) {
 		guard let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
 			completion("")
 			return
 		}
-		
-		do {
-			let fileName = name + prefix + ".png"
-			let fileURL = directory.appendingPathComponent(fileName)
-			
-			try data.write(to: fileURL)
-			completion(fileName)
-		} catch {
-			print("Error writing image: \(error)")
-			completion("")
+		if base64 == false {
+			do {
+				let fileName = name + prefix + ".png"
+				
+				let fileURL = directory.appendingPathComponent(fileName.replacingOccurrences(of: " ", with: ""))
+				
+				try data.write(to: fileURL)
+				completion(fileName.replacingOccurrences(of: " ", with: ""))
+			} catch {
+				print("Error writing image: \(error)")
+				completion("")
+			}
+		} else {
+			do {
+				let fileName = name + prefix + ".png"
+				
+				let fileURL = directory.appendingPathComponent(fileName.replacingOccurrences(of: " ", with: ""))
+				
+				try data.write(to: fileURL)
+				
+				if prefix.isEmpty {
+					let base64 = data.base64EncodedString()
+					completion("data:image/jpeg;base64,\(base64)")
+				} else {
+					completion("")
+				}
+			} catch {
+				print("Error writing image: \(error)")
+				completion("")
+			}
 		}
 	}
 	
@@ -364,20 +433,63 @@ final class ContactsManager: ObservableObject {
 		guard let address = address, let clonedAddress = address.clone() else {
 			return nil
 		}
+		
 		clonedAddress.clean()
 		let sipUri = clonedAddress.asStringUriOnly()
 		
+		let core = CoreContext.shared.mCore
+		let account = core?.defaultAccount
+		
+		let normalizedIncoming = address.username.flatMap {
+			account?.normalizePhoneNumber(username: $0)
+		}
+		
+		func matches(_ friend: Friend) -> Bool {
+			
+			let sipMatch = friend.addresses.contains {
+				$0.asStringUriOnly() == sipUri
+			}
+			
+			let phoneMatch = friend.phoneNumbers.contains { phone in
+				guard
+					let normalizedIncoming,
+					!normalizedIncoming.isEmpty,
+					let normalized = account?.normalizePhoneNumber(username: phone),
+					!normalized.isEmpty
+				else {
+					return false
+				}
+				return normalized == normalizedIncoming
+			}
+			return sipMatch || phoneMatch
+		}
+		
 		var friend: Friend?
 		
+		// Friend list
 		if let friendList = self.friendList {
-			friend = friendList.friends.first(where: { $0.addresses.contains(where: { $0.asStringUriOnly() == sipUri }) })
+			friend = friendList.friends.first(where: matches)
 		}
+		
+		// Linphone friend list
 		if friend == nil, let linphoneFriendList = self.linphoneFriendList {
-			friend = linphoneFriendList.friends.first(where: { $0.addresses.contains(where: { $0.asStringUriOnly() == sipUri }) })
-        }
-        if friend == nil, let tempRemoteFriendList = self.tempRemoteFriendList {
-            friend = tempRemoteFriendList.friends.first(where: { $0.addresses.contains(where: { $0.asStringUriOnly() == sipUri }) })
-        }
+			friend = linphoneFriendList.friends.first(where: matches)
+		}
+		
+		// Temp remote friend list
+		if friend == nil, let tempRemoteFriendList = self.tempRemoteFriendList {
+			friend = tempRemoteFriendList.friends.first(where: matches)
+		}
+		
+		// CardDAV lists
+		if friend == nil, let core {
+			for list in core.friendsLists where list.type == .CardDAV {
+				friend = list.friends.first(where: matches)
+				if friend != nil {
+					break
+				}
+			}
+		}
 		
 		return friend
 	}
@@ -396,6 +508,13 @@ final class ContactsManager: ObservableObject {
 				friendList.updateSubscriptions()
 			}
 			
+			if let friendListDelegateToDelete = self.friendListDelegate {
+				CoreContext.shared.mCore.friendsLists.forEach { friendList in
+					friendList.removeDelegate(delegate: friendListDelegateToDelete)
+				}
+			}
+			self.friendListDelegate = nil
+			
 			let friendListDelegateTmp = FriendListDelegateStub(
 				onContactCreated: { (friendList: FriendList, linphoneFriend: Friend) in
 					Log.info("\(ContactsManager.TAG) FriendListDelegateStub onContactCreated")
@@ -407,8 +526,11 @@ final class ContactsManager: ObservableObject {
 					Log.info("\(ContactsManager.TAG) FriendListDelegateStub onContactUpdated")
 				},
 				onSyncStatusChanged: { (friendList: FriendList, status: FriendList.SyncStatus?, message: String?) in
-					Log.info("\(ContactsManager.TAG) FriendListDelegateStub onSyncStatusChanged")
+					Log.info("\(ContactsManager.TAG) FriendListDelegateStub onSyncStatusChanged \(friendList.displayName ?? "No Display Name") -- Status: \(status != nil ? String(describing: status!) : "No Status")")
 					if status == .Successful {
+						if friendList.type == .VCard4 {
+							self.enableDirectoryPresenceSubscriptions(friendList: friendList)
+						}
                         if friendList.displayName != self.nativeAddressBookFriendList && friendList.displayName != self.linphoneAddressBookFriendList {
                             if let tempRemoteFriendList = self.tempRemoteFriendList {
 								tempRemoteFriendList.friends.forEach { friend in
@@ -421,31 +543,60 @@ final class ContactsManager: ObservableObject {
                         }
                         
                         let dispatchGroup = DispatchGroup()
-                        
 						friendList.friends.forEach { friend in
                             dispatchGroup.enter()
 							let addressTmp = friend.address?.clone()?.asStringUriOnly() ?? ""
 							
 							let newContact = Contact(
 								identifier: UUID().uuidString,
-								firstName: friend.name ?? addressTmp,
-								lastName: "",
-								organizationName: "",
-								jobTitle: "",
+								firstName: friend.firstName ?? addressTmp,
+								lastName: friend.lastName ?? "",
+								organizationName: friend.organization ?? "",
+								jobTitle: friend.jobTitle ?? "",
 								displayName: friend.address?.displayName ?? "",
 								sipAddresses: friend.addresses.map { $0.asStringUriOnly() },
-								phoneNumbers: [],
+								phoneNumbers: friend.phoneNumbersWithLabel.map { PhoneNumber(numLabel: $0.label ?? "", num: $0.phoneNumber)},
 								imageData: ""
 							)
 							
-							let image = self.textToImage(firstName: friend.name ?? addressTmp, lastName: "")
-							self.saveImage(
-								image: image,
-								name: friend.name ?? addressTmp,
-								prefix: "-default",
-								contact: newContact, linphoneFriend: friendList.displayName ?? "No Display Name", existingFriend: nil) {
-									dispatchGroup.leave()
+							let image: UIImage?
+							
+							if let photo = friend.photo, !photo.isEmpty, friendList.type == .CardDAV {
+								if let imageTmp = self.imageFromBase64(photo) {
+									image = imageTmp
+									if let image = image {
+										self.saveImage(
+											image: image,
+											name: friend.name ?? addressTmp,
+											prefix: "",
+											contact: newContact, linphoneFriend: friendList.displayName ?? "No Display Name", existingFriend: friend.friendList?.type == .CardDAV ? friend : nil) {
+												dispatchGroup.leave()
+											}
+									}
+								} else {
+									image = self.textToImage(firstName: friend.name ?? addressTmp, lastName: "")
+									if let image = image {
+										self.saveImage(
+											image: image,
+											name: friend.name ?? addressTmp,
+											prefix: "-default",
+											contact: newContact, linphoneFriend: friendList.displayName ?? "No Display Name", existingFriend: friend.friendList?.type == .CardDAV ? friend : nil) {
+												dispatchGroup.leave()
+											}
+									}
 								}
+							} else {
+								image = self.textToImage(firstName: friend.name ?? addressTmp, lastName: "")
+								if let image = image {
+									self.saveImage(
+										image: image,
+										name: friend.name ?? addressTmp,
+										prefix: "-default",
+										contact: newContact, linphoneFriend: friendList.displayName ?? "No Display Name", existingFriend: friend.friendList?.type == .CardDAV ? friend : nil) {
+											dispatchGroup.leave()
+										}
+								}
+							}
 						}
                         
                         dispatchGroup.notify(queue: .main) {
@@ -556,11 +707,24 @@ final class ContactsManager: ObservableObject {
 			CoreContext.shared.mCore.friendsLists.forEach { friendList in
 				friendList.addDelegate(delegate: friendListDelegateTmp)
 			}
+
+			// VCard4 directory list can sync before this delegate attaches (its
+			// onSyncStatusChanged is then missed), so enable presence here too
+			CoreContext.shared.mCore.friendsLists.forEach { friendList in
+				if friendList.type == .VCard4 && !friendList.friends.isEmpty {
+					self.enableDirectoryPresenceSubscriptions(friendList: friendList)
+				}
+			}
 		}
 	}
-	
+
 	func addCoreDelegate(core: Core) {
 		self.coreContext.doOnCoreQueue { _ in
+			if let coreDelegate = self.coreDelegate {
+				core.removeDelegate(delegate: coreDelegate)
+				self.coreDelegate = nil
+			}
+			
 			self.coreDelegate = CoreDelegateStub(
 				onFriendListCreated: { (_: Core, friendList: FriendList) in
 					Log.info("\(ContactsManager.TAG) Friend list \(friendList.displayName) created")
@@ -595,10 +759,39 @@ final class ContactsManager: ObservableObject {
 		}
 	}
 	
+	func enableDirectoryPresenceSubscriptions(friendList: FriendList) {
+		guard let homeDomain = LinphoneUtils.getDefaultAccount()?.params?.domain else { return }
+		var changed = false
+		friendList.friends.forEach { friend in
+			if !friend.subscribesEnabled && friend.addresses.contains(where: { $0.domain == homeDomain }) {
+				friend.edit()
+				try? friend.setSubscribesenabled(newValue: true)
+				friend.done()
+				changed = true
+			}
+		}
+		if changed {
+			friendList.subscriptionsEnabled = true
+			friendList.updateSubscriptions()
+			Log.info("\(ContactsManager.TAG) Enabled presence subscriptions for directory extensions on [\(homeDomain)]")
+		}
+	}
+
 	func updateSubscriptionsLinphoneList() {
 		self.coreContext.doOnCoreQueue { _ in
 			if let linphoneFL = self.linphoneFriendList {
 				linphoneFL.updateSubscriptions()
+			}
+		}
+	}
+	
+	func refreshCardDavContacts() {
+		self.coreContext.doOnCoreQueue { core in
+			core.friendsLists.forEach{ friendList in
+				if (friendList.type == .CardDAV) {
+					Log.info("\(ContactsManager.TAG) Found CardDAV friend list \(friendList.displayName), starting update")
+					friendList.synchronizeFriendsFromServer()
+				}
 			}
 		}
 	}

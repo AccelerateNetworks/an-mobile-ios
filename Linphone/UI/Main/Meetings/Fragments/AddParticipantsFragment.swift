@@ -35,6 +35,9 @@ struct AddParticipantsFragment: View {
 	
 	@FocusState var isSearchFieldFocused: Bool
 	
+	@State private var isShowSipAddressesPopup: Bool = false
+	@State private var contactAvatarModel: ContactAvatarModel? = nil
+	
 	var dismissOnCheckClick: Bool
 	
 	var body: some View {
@@ -167,78 +170,107 @@ struct AddParticipantsFragment: View {
 				.padding(.bottom)
 				.padding(.horizontal)
 				
-				ScrollView {
-					ForEach(0..<contactsManager.avatarListModel.count, id: \.self) { index in
-						HStack {
+				ZStack {
+					ScrollView {
+						ForEach(0..<contactsManager.avatarListModel.count, id: \.self) { index in
 							HStack {
-								if index == 0
-									|| contactsManager.avatarListModel[index].name.lowercased().folding(
-										options: .diacriticInsensitive,
-										locale: .current
-									).first
-									!= contactsManager.avatarListModel[index-1].name.lowercased().folding(
-										options: .diacriticInsensitive,
-										locale: .current
-									).first {
-									Text(
-										String(
-											(contactsManager.avatarListModel[index].name.uppercased().folding(
-												options: .diacriticInsensitive,
-												locale: .current
-											).first)!))
-									.contact_text_style_500(styleSize: 20)
-									.frame(width: 18)
-									.padding(.leading, 5)
-									.padding(.trailing, 5)
-								} else {
-									Text("")
+								HStack {
+									if index == 0
+										|| contactsManager.avatarListModel[index].name.lowercased().folding(
+											options: .diacriticInsensitive,
+											locale: .current
+										).first
+										!= contactsManager.avatarListModel[index-1].name.lowercased().folding(
+											options: .diacriticInsensitive,
+											locale: .current
+										).first {
+										Text(
+											String(
+												(contactsManager.avatarListModel[index].name.uppercased().folding(
+													options: .diacriticInsensitive,
+													locale: .current
+												).first)!))
 										.contact_text_style_500(styleSize: 20)
 										.frame(width: 18)
 										.padding(.leading, 5)
 										.padding(.trailing, 5)
-								}
-								
-								Avatar(contactAvatarModel: contactsManager.avatarListModel[index], avatarSize: 50)
-								
-								Text(contactsManager.avatarListModel[index].name)
-									.default_text_style(styleSize: 16)
-									.frame(maxWidth: .infinity, alignment: .leading)
-									.foregroundStyle(Color.orangeMain500)
-								
-								if addParticipantsViewModel.participantsToAdd.contains(where: {
-									$0.address.asStringUriOnly() == contactsManager.avatarListModel[index].address
-								}) {
-									Image("check")
-										.renderingMode(.template)
-										.resizable()
+									} else {
+										Text("")
+											.contact_text_style_500(styleSize: 20)
+											.frame(width: 18)
+											.padding(.leading, 5)
+											.padding(.trailing, 5)
+									}
+									
+									Avatar(contactAvatarModel: contactsManager.avatarListModel[index], avatarSize: 50)
+									
+									Text(contactsManager.avatarListModel[index].name)
+										.default_text_style(styleSize: 16)
+										.frame(maxWidth: .infinity, alignment: .leading)
 										.foregroundStyle(Color.orangeMain500)
-										.frame(width: 25, height: 25)
-										.padding(.horizontal)
+									
+									if addParticipantsViewModel.participantsToAdd.contains(where: {
+										$0.address.asStringUriOnly() == contactsManager.avatarListModel[index].address
+										|| $0.avatarModel.address == contactsManager.avatarListModel[index].address
+										|| phoneListsEqual(
+											$0.avatarModel.phoneNumbersWithLabel,
+											contactsManager.avatarListModel[index].phoneNumbersWithLabel
+										)
+									}) {
+										Image("check")
+											.renderingMode(.template)
+											.resizable()
+											.foregroundStyle(Color.orangeMain500)
+											.frame(width: 25, height: 25)
+											.padding(.horizontal)
+									}
 								}
 							}
-						}
-						.background(.white)
-						.onTapGesture {
-							if let addr = try? Factory.Instance.createAddress(addr: contactsManager.avatarListModel[index].address) {
-								addParticipantsViewModel.selectParticipant(addr: addr)
+							.background(.white)
+							.onTapGesture {
+								CoreContext.shared.doOnCoreQueue { core in
+									self.contactAvatarModel = contactsManager.avatarListModel[index]
+									if let contactAvatarModelTmp = self.contactAvatarModel {
+										if contactAvatarModelTmp.addresses.count == 1 && contactAvatarModelTmp.phoneNumbersWithLabel.isEmpty {
+											if let firstAddress = contactAvatarModelTmp.addresses.first, let addr = try? Factory.Instance.createAddress(addr: firstAddress) {
+												addParticipantsViewModel.selectParticipant(addr: addr)
+											}
+										} else if contactAvatarModelTmp.addresses.isEmpty && contactAvatarModelTmp.phoneNumbersWithLabel.count == 1 {
+											if let address = core.interpretUrl(url: contactAvatarModelTmp.phoneNumbersWithLabel.first?.phoneNumber ?? "", applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+												addParticipantsViewModel.selectParticipant(addr: address)
+											}
+										} else {
+											DispatchQueue.main.async {
+												isShowSipAddressesPopup = true
+											}
+										}
+									}
+								}
 							}
+							.buttonStyle(.borderless)
+							.listRowSeparator(.hidden)
 						}
-						.buttonStyle(.borderless)
-						.listRowSeparator(.hidden)
-					}
-					
-					HStack(alignment: .center) {
-						Text("generic_address_picker_suggestions_list_title")
-							.default_text_style_800(styleSize: 16)
 						
-						Spacer()
+						HStack(alignment: .center) {
+							Text("generic_address_picker_suggestions_list_title")
+								.default_text_style_800(styleSize: 16)
+							
+							Spacer()
+						}
+						.padding(.vertical, 10)
+						.padding(.horizontal, 16)
+						
+						suggestionsList
 					}
-					.padding(.vertical, 10)
-					.padding(.horizontal, 16)
 					
-					suggestionsList
+					if magicSearch.isLoading {
+						ProgressView()
+							.controlSize(.large)
+							.progressViewStyle(CircularProgressViewStyle(tint: .orangeMain500))
+					}
 				}
 			}
+			
 			Button {
 				withAnimation {
 					confirmAddParticipantsFunc(addParticipantsViewModel.participantsToAdd)
@@ -261,6 +293,100 @@ struct AddParticipantsFragment: View {
 				
 			}
 			.padding()
+			
+			if isShowSipAddressesPopup && contactAvatarModel != nil {
+				VStack(alignment: .leading) {
+					HStack {
+						Text("contact_dialog_pick_phone_number_or_sip_address_title")
+							.default_text_style_800(styleSize: 16)
+							.padding(.bottom, 2)
+						
+						Spacer()
+						
+						Image("x")
+							.renderingMode(.template)
+							.resizable()
+							.foregroundStyle(Color.grayMain2c600)
+							.frame(width: 25, height: 25)
+							.padding(.all, 10)
+					}
+					.frame(maxWidth: .infinity)
+					
+					ForEach(0..<(AppServices.corePreferences.suppressSipAddresses ? 0 : contactAvatarModel!.addresses.count), id: \.self) { index in
+						HStack {
+							HStack {
+								VStack {
+									Text(String(localized: "sip_address") + ":")
+										.default_text_style_700(styleSize: 14)
+										.frame(maxWidth: .infinity, alignment: .leading)
+									Text(contactAvatarModel!.addressesDisplay[index])
+										.default_text_style(styleSize: 14)
+										.frame(maxWidth: .infinity, alignment: .leading)
+										.lineLimit(1)
+										.fixedSize(horizontal: false, vertical: true)
+								}
+								Spacer()
+							}
+							.padding(.vertical, 15)
+							.padding(.horizontal, 10)
+						}
+						.background(.white)
+						.onTapGesture {
+							do {
+								let addr = try Factory.Instance.createAddress(addr: contactAvatarModel!.addresses[index])
+								addParticipantsViewModel.selectParticipant(addr: addr)
+								self.isShowSipAddressesPopup = false
+							} catch {
+								Log.error("[AddParticipantsFragment] unable to create address for a new outgoing call : \(contactAvatarModel!.addresses[index]) \(error) ")
+							}
+						}
+					}
+					
+					ForEach(0..<contactAvatarModel!.phoneNumbersWithLabel.count, id: \.self) { index in
+						HStack {
+							HStack {
+								VStack {
+									Text(String(localized: "phone_number") + ":")
+										.default_text_style_700(styleSize: 14)
+										.frame(maxWidth: .infinity, alignment: .leading)
+									Text(contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber)
+										.default_text_style(styleSize: 14)
+										.frame(maxWidth: .infinity, alignment: .leading)
+										.lineLimit(1)
+										.fixedSize(horizontal: false, vertical: true)
+								}
+								Spacer()
+							}
+							.padding(.vertical, 15)
+							.padding(.horizontal, 10)
+						}
+						.background(.white)
+						.onTapGesture {
+							CoreContext.shared.doOnCoreQueue { core in
+								if let phoneAddr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+									addParticipantsViewModel.selectParticipant(addr: phoneAddr)
+									self.isShowSipAddressesPopup = false
+								} else {
+									Log.error("[AddParticipantsFragment] unable to create address (interpret Url for phone number) for a new outgoing call : \(contactAvatarModel!.addresses[index])")
+								}
+							}
+						}
+					}
+				}
+				.padding(.horizontal, 20)
+				.padding(.vertical, 20)
+				.background(.white)
+				.cornerRadius(20)
+				.frame(maxHeight: .infinity)
+				.shadow(color: Color.orangeMain500, radius: 0, x: 0, y: 2)
+				.frame(maxWidth: SharedMainViewModel.shared.maxWidth)
+				.padding(.horizontal, 20)
+				.background(.black.opacity(0.65))
+				.zIndex(3)
+				.onTapGesture {
+					isShowSipAddressesPopup.toggle()
+				}
+			}
 		}
 		.navigationTitle("")
 		.navigationBarHidden(true)
@@ -282,19 +408,39 @@ struct AddParticipantsFragment: View {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
 						&& contactsManager.lastSearchSuggestions[index].address != nil {
-						Image(uiImage: contactsManager.textToImage(
-							   firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
-							   lastName: ""))
-						   .resizable()
-						   .frame(width: 45, height: 45)
-						   .clipShape(Circle())
-						   
-						   Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
-							   .default_text_style(styleSize: 16)
-                               .lineLimit(1)
-							   .lineLimit(1)
-							   .frame(maxWidth: .infinity, alignment: .leading)
-							   .foregroundStyle(Color.orangeMain500)
+						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
+							Image(uiImage: contactsManager.textToImage(
+								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
+								lastName: ""))
+							.resizable()
+							.frame(width: 45, height: 45)
+							.clipShape(Circle())
+							
+							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
+								.default_text_style(styleSize: 16)
+								.lineLimit(1)
+								.frame(maxWidth: .infinity, alignment: .leading)
+								.foregroundStyle(Color.orangeMain500)
+						} else {
+							if let address = contactsManager.lastSearchSuggestions[index].address {
+								let nameTmp = address.displayName
+								?? address.username
+								?? String(address.asStringUriOnly().dropFirst(4))
+								
+								Image(uiImage: contactsManager.textToImage(
+									firstName: nameTmp,
+									lastName: ""))
+								.resizable()
+								.frame(width: 45, height: 45)
+								.clipShape(Circle())
+								
+								Text(nameTmp)
+									.default_text_style(styleSize: 16)
+									.lineLimit(1)
+									.frame(maxWidth: .infinity, alignment: .leading)
+									.foregroundStyle(Color.orangeMain500)
+							}
+						}
 						
 						if let searchAddress = contactsManager.lastSearchSuggestions[index].address?.asStringUriOnly() {
 							if addParticipantsViewModel.participantsToAdd.contains(where: {
@@ -324,6 +470,20 @@ struct AddParticipantsFragment: View {
 			}
 			.buttonStyle(.borderless)
 			.listRowSeparator(.hidden)
+		}
+	}
+	
+	func phoneListsEqual(
+		_ lhs: [(label: String, phoneNumber: String)],
+		_ rhs: [(label: String, phoneNumber: String)]
+	) -> Bool {
+		guard !lhs.isEmpty && !rhs.isEmpty else {
+			return false
+		}
+		
+		return lhs.count == rhs.count &&
+		zip(lhs, rhs).allSatisfy { l, r in
+			l.label == r.label && l.phoneNumber == r.phoneNumber
 		}
 	}
 }

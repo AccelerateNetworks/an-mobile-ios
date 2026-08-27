@@ -20,6 +20,8 @@
 import SwiftUI
 import linphonesw
 import UserNotifications
+import Intents
+import PushKit
 
 let accountTokenNotification = Notification.Name("AccountCreationTokenReceived")
 var displayedChatroomPeerAddr: String?
@@ -61,7 +63,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 		// Set up notifications
 		UNUserNotificationCenter.current().delegate = self
-		
+
 		return true
 	}
 	
@@ -108,7 +110,28 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 				}
 			}
 		}
-			
+	}
+	
+	func application(_ application: UIApplication,
+					 continue userActivity: NSUserActivity,
+					 restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+		
+		guard let interaction = userActivity.interaction,
+			  let intent = interaction.intent as? INStartCallIntent,
+			  let person = intent.contacts?.first,
+			  let number = person.personHandle?.value else { return false }
+
+		let isVideo = intent.callCapability == .videoCall
+		
+		Log.info("[AppDelegate][INStartCallIntent] Generic call intent received for number: \(number) isVideo: \(isVideo)")
+
+		CoreContext.shared.doOnCoreQueue { core in
+			if let address = core.interpretUrl(url: number, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+				TelecomManager.shared.doCallOrJoinConf(address: address, isVideo: isVideo)
+			}
+		}
+		
+		return true
 	}
 	
 	func applicationWillTerminate(_ application: UIApplication) {
@@ -129,28 +152,92 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 @main
 struct LinphoneApp: App {
-	@Environment(\.scenePhase) var scenePhase
 	@UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
+	@State private var configAvailable = AppServices.configIfAvailable != nil
+	private let earlyPushDelegate = EarlyPushkitDelegate()
+	private let voipRegistry = PKPushRegistry(queue: coreQueue)
+
+	init() {
+#if DEBUG
+		LinphoneApp.applyUITestMDMConfigIfNeeded()
+#endif
+		if !configAvailable {
+			voipRegistry.delegate = earlyPushDelegate
+			voipRegistry.desiredPushTypes = [.voIP]
+			waitForConfig()
+		} else {
+			let _ = CoreContext.shared
+		}
+	}
+
+#if DEBUG
+	/// UI-test hook: reads `UITEST_MDM_CONFIG` (JSON) or `UITEST_MDM_CONFIG_CLEAR=1` from
+	/// the launch environment and writes it to the managed config key before MDMManager runs.
+	/// Only active in DEBUG builds.
+	private static func applyUITestMDMConfigIfNeeded() {
+		let env = ProcessInfo.processInfo.environment
+		let key = "com.apple.configuration.managed"
+		if env["UITEST_MDM_CONFIG_CLEAR"] == "1" {
+			UserDefaults.standard.removeObject(forKey: key)
+			return
+		}
+		guard let json = env["UITEST_MDM_CONFIG"],
+			  let data = json.data(using: .utf8),
+			  let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+			return
+		}
+		UserDefaults.standard.set(dict, forKey: key)
+	}
+#endif
+
+	var body: some Scene {
+		WindowGroup {
+			if configAvailable {
+				AppView(delegate: delegate)
+			} else {
+				SplashScreen(showSpinner: true)
+					.onAppear {
+						waitForConfig()
+				}
+			}
+		}
+	}
+
+	private func waitForConfig() {
+		if AppServices.configIfAvailable != nil {
+			let _ = CoreContext.shared
+			configAvailable = true
+		} else {
+			Log.warn("AppServices.config not available yet, retrying in 1s...")
+			DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+				waitForConfig()
+			}
+		}
+	}
+}
+
+struct AppView: View {
+	@Environment(\.scenePhase) var scenePhase
+	let delegate: AppDelegate
 
 	@StateObject private var coreContext = CoreContext.shared
 	@StateObject private var navigationManager = NavigationManager()
 	@StateObject private var telecomManager = TelecomManager.shared
 	@StateObject private var sharedMainViewModel = SharedMainViewModel.shared
 
-	var body: some Scene {
-		WindowGroup {
-			RootView(
-				coreContext: coreContext,
-				telecomManager: telecomManager,
-				sharedMainViewModel: sharedMainViewModel,
-				navigationManager: navigationManager,
-				appDelegate: delegate
-			)
-			.environmentObject(coreContext)
-			.environmentObject(navigationManager)
-			.environmentObject(telecomManager)
-			.environmentObject(sharedMainViewModel)
-		}
+	var body: some View {
+		RootView(
+			coreContext: coreContext,
+			telecomManager: telecomManager,
+			sharedMainViewModel: sharedMainViewModel,
+			navigationManager: navigationManager,
+			appDelegate: delegate
+		)
+		.environmentObject(coreContext)
+		.environmentObject(navigationManager)
+		.environmentObject(telecomManager)
+		.environmentObject(sharedMainViewModel)
 		.onChange(of: scenePhase) { newPhase in
 			if !telecomManager.callInProgress {
 				switch newPhase {
@@ -240,6 +327,22 @@ struct RootView: View {
 				pendingURL = url
 			}
 		}
+		.onContinueUserActivity("INStartCallIntent") { activity in
+			guard let interaction = activity.interaction,
+				  let intent = interaction.intent as? INStartCallIntent,
+				  let person = intent.contacts?.first,
+				  let number = person.personHandle?.value else { return }
+			
+			let isVideo = intent.callCapability == .videoCall
+			
+			Log.info("[INStartCallIntent] Generic call intent received for number: \(number) isVideo: \(isVideo)")
+			
+			coreContext.doOnCoreQueue { core in
+				if let address = core.interpretUrl(url: number, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+					telecomManager.doCallOrJoinConf(address: address, isVideo: isVideo)
+				}
+			}
+		}
 	}
 	
 	
@@ -248,7 +351,8 @@ struct RootView: View {
 	}
 
 	var showAssistant: Bool {
-		(coreContext.coreIsStarted && coreContext.accounts.isEmpty)
+		(coreContext.codeScannerIsOpen && coreContext.accounts.isEmpty)
+		|| (coreContext.coreIsStarted && coreContext.accounts.isEmpty)
 		|| sharedMainViewModel.displayProfileMode
 	}
 }
@@ -259,6 +363,7 @@ struct MainViewSwitcher: View {
 	let sharedMainViewModel: SharedMainViewModel
 	@Binding var pendingURL: URL?
 	let appDelegate: AppDelegate
+	@ObservedObject private var colors = ColorProvider.shared
 
 	var body: some View {
 		selectedMainView()
@@ -277,5 +382,6 @@ struct MainViewSwitcher: View {
 					navigationManager.openChatRoom(callId: callId, peerAddr: peerAddr, localAddr: localAddr)
 				}
 			}
+			.id(colors.theme.name)
 	}
 }

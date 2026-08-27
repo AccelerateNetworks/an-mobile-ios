@@ -18,6 +18,7 @@
  */
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 // swiftlint:disable type_body_length
 struct ConversationInfoFragment: View {
@@ -33,10 +34,13 @@ struct ConversationInfoFragment: View {
 	
 	@Binding var isMuted: Bool
 	@Binding var isShowEphemeralFragment: Bool
+	@Binding var isShowMediaFilesFragment: Bool
+	@Binding var isShowDocumentsFilesFragment: Bool
 	@Binding var isShowStartCallGroupPopup: Bool
 	@Binding var isShowInfoConversationFragment: Bool
 	@Binding var isShowEditContactFragment: Bool
 	@Binding var isShowEditContactFragmentAddress: String
+	@Binding var isShowRemoveParticipantPopup: Bool
 	
 	@Binding var isShowScheduleMeetingFragment: Bool
 	
@@ -44,9 +48,14 @@ struct ConversationInfoFragment: View {
 	@Binding var isShowScheduleMeetingFragmentParticipants: [SelectedAddressModel]
 	
 	@State private var participantListIsOpen = true
+	@State private var displayPeerAddress = false
 	
 	@Binding var isShowConversationInfoPopup: Bool
 	@Binding var conversationInfoPopupText: String
+	
+	@Binding var showLeaveConversationPopup: Bool
+	@Binding var showDeleteConversationPopup: Bool
+	@Binding var showDeleteConversationHistoryPopup: Bool
 	
 	var body: some View {
 		let accountModel = CoreContext.shared.accounts[accountProfileViewModel.accountModelIndex ?? 0]
@@ -75,6 +84,13 @@ struct ConversationInfoFragment: View {
 								}
 							
 							Spacer()
+							
+							Rectangle()
+								.foregroundColor(.white)
+								.frame(width: 45, height: 45)
+								.onLongPressGesture(minimumDuration: 0.3) {
+									displayPeerAddress = true
+								}
 						}
 						.frame(maxWidth: .infinity)
 						.frame(height: 50)
@@ -104,12 +120,55 @@ struct ConversationInfoFragment: View {
 												.frame(maxWidth: .infinity)
 												.padding(.top, 10)
 											
-											Text(conversationViewModel.participantConversationModel.first?.address ?? "")
-												.foregroundStyle(Color.grayMain2c700)
-												.multilineTextAlignment(.center)
-												.default_text_style(styleSize: 14)
-												.frame(maxWidth: .infinity)
-												.padding(.top, 5)
+											if !AppServices.corePreferences.hideSipAddresses {
+												Button {
+													UIPasteboard.general.setValue(
+														conversationViewModel.participantConversationModel.first?.address ?? "",
+														forPasteboardType: UTType.plainText.identifier
+													)
+													
+													ToastViewModel.shared.show("Success_address_copied_into_clipboard")
+												} label: {
+													HStack {
+														Text(conversationViewModel.participantConversationModel.first?.addressDisplay ?? "")
+															.foregroundStyle(Color.grayMain2c700)
+															.default_text_style(styleSize: 14)
+															.padding(.top, 5)
+														
+														Image("copy")
+															.renderingMode(.template)
+															.resizable()
+															.foregroundStyle(Color.grayMain2c500)
+															.frame(width: 25, height: 25)
+													}
+												}
+												.padding(.horizontal, 10)
+											}
+											
+											if displayPeerAddress {
+												Button {
+													UIPasteboard.general.setValue(
+														conversationViewModel.peerAddress,
+														forPasteboardType: UTType.plainText.identifier
+													)
+													
+													ToastViewModel.shared.show("Success_address_copied_into_clipboard")
+												} label: {
+													HStack {
+														Text(conversationViewModel.peerAddress)
+															.foregroundStyle(Color.grayMain2c700)
+															.default_text_style(styleSize: 14)
+															.padding(.top, 5)
+														
+														Image("copy")
+															.renderingMode(.template)
+															.resizable()
+															.foregroundStyle(Color.grayMain2c500)
+															.frame(width: 25, height: 25, alignment: .leading)
+													}
+												}
+												.padding(.horizontal, 10)
+											}
 											
 											if !SharedMainViewModel.shared.displayedConversation!.avatarModel.lastPresenceInfo.isEmpty {
 												Text(SharedMainViewModel.shared.displayedConversation!.avatarModel.lastPresenceInfo)
@@ -156,6 +215,31 @@ struct ConversationInfoFragment: View {
 												}
 											}
 											.padding(.leading, conversationViewModel.isUserAdmin ? 20 : 0)
+											
+											if displayPeerAddress {
+												Button {
+													UIPasteboard.general.setValue(
+														conversationViewModel.peerAddress,
+														forPasteboardType: UTType.plainText.identifier
+													)
+													
+													ToastViewModel.shared.show("Success_address_copied_into_clipboard")
+												} label: {
+													HStack {
+														Text(conversationViewModel.peerAddress)
+															.foregroundStyle(Color.grayMain2c700)
+															.default_text_style(styleSize: 14)
+															.padding(.top, 5)
+														
+														Image("copy")
+															.renderingMode(.template)
+															.resizable()
+															.foregroundStyle(Color.grayMain2c500)
+															.frame(width: 25, height: 25, alignment: .leading)
+													}
+												}
+												.padding(.horizontal, 10)
+											}
 										}
 									}
 									.frame(minHeight: 150)
@@ -351,59 +435,66 @@ struct ConversationInfoFragment: View {
 														
 														if conversationViewModel.myParticipantConversationModel != nil && conversationViewModel.myParticipantConversationModel!.address != participantConversationModel.address {
 															Menu {
-																Button(
-																	action: {
-																		let addressConv = participantConversationModel.address
-																		
-																		let friendIndex = contactsManager.avatarListModel.first(
-																			where: {$0.addresses.contains(where: {$0 == addressConv})})
-																		
-																		SharedMainViewModel.shared.displayedCall = nil
-																		SharedMainViewModel.shared.changeIndexView(indexViewInt: 0)
-																		
-																		if friendIndex != nil {
-																			withAnimation {
-																				SharedMainViewModel.shared.displayedFriend = friendIndex
-																			}
-																		} else {
-																			withAnimation {
-																				isShowEditContactFragment.toggle()
-																				isShowEditContactFragmentAddress = String(participantConversationModel.address.dropFirst(4))
-																			}
-																		}
-																	},
-																	label: {
-																		HStack {
-																			let addressConv = participantConversationModel.address
+																let addressConv = participantConversationModel.address
 																			
-																			let friendIndex = contactsManager.lastSearch.firstIndex(
+																let friendIndex = contactsManager.lastSearch.firstIndex(
 																				where: {$0.friend!.addresses.contains(where: {$0.asStringUriOnly() == addressConv})})
+																
+																let disableAddContact = AppServices.corePreferences.disableAddContact
+																let hideContactEdition = AppServices.corePreferences.hideContactEdition
+
+																if (!disableAddContact || (disableAddContact && friendIndex != nil)) && !hideContactEdition {
+																	Button(
+																		action: {
+																			let addressConv = participantConversationModel.address
+
+																			let friendIndex = contactsManager.avatarListModel.first(
+																				where: {$0.addresses.contains(where: {$0 == addressConv})})
+																			
+																			SharedMainViewModel.shared.changeIndexView(indexViewInt: 0)
+																			
 																			if friendIndex != nil {
-																				Image("address-book")
-																					.renderingMode(.template)
-																					.resizable()
-																					.foregroundStyle(Color.grayMain2c600)
-																					.frame(width: 25, height: 25)
-																				
-																				Text("conversation_info_menu_go_to_contact")
-																					.default_text_style(styleSize: 16)
-																					.frame(maxWidth: .infinity, alignment: .leading)
-																					.lineLimit(1)
+																				withAnimation {
+																					SharedMainViewModel.shared.displayedFriend = friendIndex
+																				}
 																			} else {
-																				Image("user-plus")
-																					.renderingMode(.template)
-																					.resizable()
-																					.foregroundStyle(Color.grayMain2c600)
-																					.frame(width: 25, height: 25)
-																				
-																				Text("conversation_info_menu_add_to_contacts")
-																					.default_text_style(styleSize: 16)
-																					.frame(maxWidth: .infinity, alignment: .leading)
-																					.lineLimit(1)
+																				withAnimation {
+																					isShowEditContactFragment.toggle()
+																					isShowEditContactFragmentAddress = String(participantConversationModel.address.dropFirst(4))
+																				}
+																			}
+																			
+																			SharedMainViewModel.shared.displayedConversation = nil
+																		},
+																		label: {
+																			HStack {
+																				if friendIndex != nil {
+																					Image("address-book")
+																						.renderingMode(.template)
+																						.resizable()
+																						.foregroundStyle(Color.grayMain2c600)
+																						.frame(width: 25, height: 25)
+																					
+																					Text("conversation_info_menu_go_to_contact")
+																						.default_text_style(styleSize: 16)
+																						.frame(maxWidth: .infinity, alignment: .leading)
+																						.lineLimit(1)
+																				} else {
+																					Image("user-plus")
+																						.renderingMode(.template)
+																						.resizable()
+																						.foregroundStyle(Color.grayMain2c600)
+																						.frame(width: 25, height: 25)
+																					
+																					Text("conversation_info_menu_add_to_contacts")
+																						.default_text_style(styleSize: 16)
+																						.frame(maxWidth: .infinity, alignment: .leading)
+																						.lineLimit(1)
+																				}
 																			}
 																		}
-																	}
-																)
+																	)
+																}
 																
 																if conversationViewModel.isUserAdmin {
 																	let participantConversationModelIsAdmin = conversationViewModel.participantConversationModelAdmin.first(
@@ -425,7 +516,8 @@ struct ConversationInfoFragment: View {
 																	}
 																	
 																	Button(role: .destructive) {
-																		conversationViewModel.removeParticipant(address: participantConversationModel.address)
+																		SharedMainViewModel.shared.participantAddressToRemove = participantConversationModel.address
+																		self.isShowRemoveParticipantPopup.toggle()
 																	} label: {
 																		HStack {
 																			Text("conversation_info_admin_menu_remove_participant")
@@ -517,6 +609,69 @@ struct ConversationInfoFragment: View {
 										}
 									}
 									
+									Text("conversation_details_media_documents_title")
+										.default_text_style_800(styleSize: 18)
+										.frame(maxWidth: .infinity, alignment: .leading)
+										.padding(.horizontal, 20)
+										.padding(.top, 20)
+									
+									VStack(spacing: 0) {
+										Button(
+											action: {
+												withAnimation {
+													isShowMediaFilesFragment = true
+												}
+											},
+											label: {
+												HStack {
+													Image("image")
+														.renderingMode(.template)
+														.resizable()
+														.foregroundStyle(Color.grayMain2c600)
+														.frame(width: 25, height: 25)
+													
+													Text("conversation_menu_media_files")
+														.default_text_style(styleSize: 16)
+														.frame(maxWidth: .infinity, alignment: .leading)
+														.lineLimit(1)
+													
+												}
+											}
+										)
+										.frame(height: 60)
+										
+										Divider()
+										
+										Button(
+											action: {
+												withAnimation {
+													isShowDocumentsFilesFragment = true
+												}
+											},
+											label: {
+												HStack {
+													Image("file-pdf")
+														.renderingMode(.template)
+														.resizable()
+														.foregroundStyle(Color.grayMain2c600)
+														.frame(width: 25, height: 25)
+													
+													Text("conversation_menu_documents_files")
+														.default_text_style(styleSize: 16)
+														.frame(maxWidth: .infinity, alignment: .leading)
+														.lineLimit(1)
+													
+												}
+											}
+										)
+										.frame(height: 60)
+									}
+									.padding(.horizontal, 20)
+									.padding(.vertical, 4)
+									.background(.white)
+									.cornerRadius(15)
+									.padding(.all)
+									
 									Text("contact_details_actions_title")
 										.default_text_style_800(styleSize: 18)
 										.frame(maxWidth: .infinity, alignment: .leading)
@@ -525,7 +680,15 @@ struct ConversationInfoFragment: View {
 									
 									VStack(spacing: 0) {
 										if !SharedMainViewModel.shared.displayedConversation!.isReadOnly {
-											if !SharedMainViewModel.shared.displayedConversation!.isGroup {
+											let addressConv = conversationViewModel.participantConversationModel.first?.address ?? ""
+											
+											let friendIndex = contactsManager.lastSearch.firstIndex(
+												where: {$0.friend!.addresses.contains(where: {$0.asStringUriOnly() == addressConv})})
+											
+											let disableAddContact = AppServices.corePreferences.disableAddContact
+											let hideContactEdition = AppServices.corePreferences.hideContactEdition
+
+											if !SharedMainViewModel.shared.displayedConversation!.isGroup && (!disableAddContact || (disableAddContact && friendIndex != nil)) && !hideContactEdition {
 												Button(
 													action: {
 														if SharedMainViewModel.shared.displayedConversation != nil {
@@ -553,10 +716,6 @@ struct ConversationInfoFragment: View {
 													},
 													label: {
 														HStack {
-															let addressConv = conversationViewModel.participantConversationModel.first?.address ?? ""
-															
-															let friendIndex = contactsManager.lastSearch.firstIndex(
-																where: {$0.friend!.addresses.contains(where: {$0.asStringUriOnly() == addressConv})})
 															if friendIndex != nil {
 																Image("address-book")
 																 .renderingMode(.template)
@@ -617,8 +776,8 @@ struct ConversationInfoFragment: View {
 											if SharedMainViewModel.shared.displayedConversation!.isGroup {
 												Button(
 													action: {
-														SharedMainViewModel.shared.displayedConversation!.leave()
-														SharedMainViewModel.shared.displayedConversation!.isReadOnly = true
+														conversationsListViewModel.targetConversation = SharedMainViewModel.shared.displayedConversation!
+							 							showLeaveConversationPopup = true
 														isShowInfoConversationFragment = false
 													},
 													label: {
@@ -645,8 +804,9 @@ struct ConversationInfoFragment: View {
 										
 										Button(
 											action: {
-												SharedMainViewModel.shared.displayedConversation!.deleteChatRoom()
-												SharedMainViewModel.shared.displayedConversation = nil
+												conversationsListViewModel.targetConversation = SharedMainViewModel.shared.displayedConversation!
+												showDeleteConversationHistoryPopup = true
+												isShowInfoConversationFragment = false
 											},
 											label: {
 												HStack {
@@ -699,15 +859,21 @@ struct ConversationInfoFragment: View {
 	ConversationInfoFragment(
 		isMuted: .constant(false),
 		isShowEphemeralFragment: .constant(false),
+		isShowMediaFilesFragment: .constant(false),
+		isShowDocumentsFilesFragment: .constant(false),
 		isShowStartCallGroupPopup: .constant(false),
 		isShowInfoConversationFragment: .constant(true),
 		isShowEditContactFragment: .constant(false),
 		isShowEditContactFragmentAddress: .constant(""),
+		isShowRemoveParticipantPopup: .constant(false),
 		isShowScheduleMeetingFragment: .constant(false),
 		isShowScheduleMeetingFragmentSubject: .constant(""),
 		isShowScheduleMeetingFragmentParticipants: .constant([]),
 		isShowConversationInfoPopup: .constant(false),
-		conversationInfoPopupText: .constant("")
+		conversationInfoPopupText: .constant(""),
+		showLeaveConversationPopup: .constant(false),
+		showDeleteConversationPopup: .constant(false),
+		showDeleteConversationHistoryPopup: .constant(false)
 	)
 }
 // swiftlint:enable type_body_length
