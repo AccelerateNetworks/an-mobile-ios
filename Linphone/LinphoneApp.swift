@@ -48,10 +48,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 	private func forwardPendingRemotePushToken() {
 		guard let coreContext = coreContext, let tokenStr = pendingRemotePushToken else { return }
-		pendingRemotePushToken = nil
 		coreContext.doOnCoreQueue { core in
 			Log.info("Forwarding remote push token to core")
 			core.didRegisterForRemotePushWithStringifiedToken(deviceTokenStr: tokenStr + ":remote")
+			DispatchQueue.main.async {
+				if self.pendingRemotePushToken == tokenStr {
+					self.pendingRemotePushToken = nil
+				}
+			}
 		}
 	}
 	
