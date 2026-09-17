@@ -46,7 +46,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 	func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
 		let tokenStr = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-		Log.info("Received remote push token : \(tokenStr)")
+		Log.info("Received remote push token : \(tokenStr.prefix(8))...")
 		pendingRemotePushToken = tokenStr
 		forwardPendingRemotePushToken()
 	}
