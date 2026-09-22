@@ -48,8 +48,9 @@ class HelpViewModel: ObservableObject {
 			sdkGitBranch = String(sdkGitBranch.dropFirst("remotes/origin/".count))
 		}
 		
-		self.appVersion = appGitTag
-		self.version = appGitTag + "-" + appGitVersion + "\n(\(appGitBranch))"
+		self.appVersion = "\(AppGitInfo.marketingVersion) (\(AppGitInfo.build))"
+		self.version = "\(AppGitInfo.marketingVersion) (\(AppGitInfo.build))\n"
+			+ appGitTag + "-" + appGitVersion + "\n(\(appGitBranch))"
 		
 		self.sdkVersion = sdkGitVersion + "\n(\(sdkGitBranch))"
 		

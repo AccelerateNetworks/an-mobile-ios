@@ -200,9 +200,9 @@ class CoreContext: ObservableObject {
 				sdkGitBranch = String(sdkGitBranch.dropFirst("remotes/origin/".count))
 			}
 			
-			Log.info("Git Info — App: \(appGitTag + "-" + appGitVersion) [\(appGitBranch)] | SDK: \(sdkGitVersion) [\(sdkGitBranch)]")
+			Log.info("Git Info — App: \(AppGitInfo.marketingVersion) (\(AppGitInfo.build)) \(appGitTag + "-" + appGitVersion) [\(appGitBranch)] | SDK: \(sdkGitVersion) [\(sdkGitBranch)]")
 			
-			let userAgent = "Accelerate NetworksiOS/\(appGitTag) (\(UIDevice.current.localizedModel.replacingOccurrences(of: "'", with: ""))) LinphoneSDK"
+			let userAgent = "Accelerate NetworksiOS/\(AppGitInfo.identifier) (\(UIDevice.current.localizedModel.replacingOccurrences(of: "'", with: ""))) LinphoneSDK"
 			self.mCore.setUserAgent(name: userAgent, version: self.coreVersion)
 			
 			self.mCore.videoPreviewEnabled = false
