@@ -339,6 +339,22 @@ class TelecomManager: ObservableObject {
 		}
 	}
 	
+	// callInProgress gates the scenePhase core start/stop in LinphoneApp, so it must never stay set
+	// once no call remains: the core stopped on the last backgrounding would never be restarted.
+	func resetCallState() {
+		DispatchQueue.main.async {
+			guard self.callInProgress else { return }
+			Log.warn("[TelecomManager] no call in progress but callInProgress was set, clearing it")
+			withAnimation {
+				self.callInProgress = false
+				self.callDisplayed = false
+				self.callStarted = false
+				self.callConnected = false
+				self.outgoingCallStarted = false
+			}
+		}
+	}
+	
 	func terminateCall(call: Call) {
 		CoreContext.shared.doOnCoreQueue { _ in
 			do {
@@ -746,6 +762,7 @@ class TelecomManager: ObservableObject {
 				if core.callsNb == 0 {
 					UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: ["linphone-earpiece-enforcement"])
 					UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["linphone-earpiece-enforcement"])
+					resetCallState()
 				}
 			case .Referred:
 				referedFromCall = call.callLog?.callId
