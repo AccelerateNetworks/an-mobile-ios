@@ -403,6 +403,16 @@ extension ProviderDelegate: CXProviderDelegate {
 		uuids.removeAll()
 		callInfos.removeAll()
 		TelecomManager.shared.resetCallState()
+		// CallKit's contract is that the app ends its calls on reset. Without this a core call keeps
+		// running with audio, unreachable from CallKit and no longer holding callInProgress, so the
+		// next backgrounding can stop the core under it.
+		CoreContext.shared.doOnCoreQueue { core in
+			do {
+				try core.terminateAllCalls()
+			} catch {
+				Log.error("CallKit: terminateAllCalls after provider reset failed because \(error)")
+			}
+		}
 	}
 	
 	func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
