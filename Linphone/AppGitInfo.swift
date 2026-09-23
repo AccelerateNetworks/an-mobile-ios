@@ -8,12 +8,12 @@ public enum AppGitInfo {
     public static let build = value("CFBundleVersion")
     public static let branch = value("ANGitBranch")
     public static let commit = value("ANGitCommit")
-    public static let tag = value("ANGitTag", fallback: marketingVersion)
+    public static let tag = value("ANGitTag")
 
     /// "<marketing>.<build>+<tag>", e.g. "6.2.3.94+an-6.2.3".
     public static let identifier = "\(marketingVersion).\(build)+\(tag)"
 
-    private static func value(_ key: String, fallback: String = "unknown") -> String {
-        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? fallback
+    private static func value(_ key: String) -> String {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "unknown"
     }
 }
