@@ -402,7 +402,8 @@ extension ProviderDelegate: CXProviderDelegate {
 		// CallKit has dropped every call it held, so anything left in these maps is unreachable.
 		uuids.removeAll()
 		callInfos.removeAll()
-		TelecomManager.shared.resetCallState()
+		// actionToFulFill holds a CXCallAction from a transaction CallKit has just discarded.
+		TelecomManager.shared.actionToFulFill = nil
 		// CallKit's contract is that the app ends its calls on reset. Without this a core call keeps
 		// running with audio, unreachable from CallKit and no longer holding callInProgress, so the
 		// next backgrounding can stop the core under it.
@@ -413,6 +414,10 @@ extension ProviderDelegate: CXProviderDelegate {
 				Log.error("CallKit: terminateAllCalls after provider reset failed because \(error)")
 			}
 		}
+		// Passing the core keeps the flags set until the calls above are actually gone; the .Released
+		// they produce clears them. Kept off the core queue so a reset with the core stopped - the
+		// wedged state this whole fix is about - still clears.
+		TelecomManager.shared.resetCallState(core: CoreContext.shared.mCore)
 	}
 	
 	func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
