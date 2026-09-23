@@ -414,10 +414,7 @@ extension ProviderDelegate: CXProviderDelegate {
 				Log.error("CallKit: terminateAllCalls after provider reset failed because \(error)")
 			}
 		}
-		// Passing the core keeps the flags set until the calls above are actually gone; the .Released
-		// they produce clears them. Kept off the core queue so a reset with the core stopped - the
-		// wedged state this whole fix is about - still clears.
-		TelecomManager.shared.resetCallState(core: CoreContext.shared.mCore)
+		TelecomManager.shared.resetCallState()
 	}
 	
 	func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
