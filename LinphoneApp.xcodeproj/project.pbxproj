@@ -88,7 +88,7 @@
 		D719ABC92ABC6FD700B41C10 /* CoreContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = D719ABC82ABC6FD700B41C10 /* CoreContext.swift */; };
 		D719ABCC2ABC769C00B41C10 /* AssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D719ABCB2ABC769C00B41C10 /* AssistantView.swift */; };
 		D719ABCF2ABC779A00B41C10 /* AccountLoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D719ABCE2ABC779A00B41C10 /* AccountLoginViewModel.swift */; };
-		D719EF892EDF4AFA00509AAB /* GeneratedGit.swift in Sources */ = {isa = PBXBuildFile; fileRef = D719EF882EDF4AFA00509AAB /* GeneratedGit.swift */; };
+		D719EF892EDF4AFA00509AAB /* AppGitInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = D719EF882EDF4AFA00509AAB /* AppGitInfo.swift */; };
 		D71A0E192B485ADF0002C6CD /* ViewExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71A0E182B485ADF0002C6CD /* ViewExtension.swift */; };
 		D71FCA812AE14CFC00D2E43E /* ContactsListFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71FCA802AE14CFC00D2E43E /* ContactsListFragment.swift */; };
 		D71FCA832AE14D6E00D2E43E /* ContactFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71FCA822AE14D6E00D2E43E /* ContactFragment.swift */; };
@@ -370,7 +370,7 @@
 		D719ABC82ABC6FD700B41C10 /* CoreContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreContext.swift; sourceTree = "<group>"; };
 		D719ABCB2ABC769C00B41C10 /* AssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantView.swift; sourceTree = "<group>"; };
 		D719ABCE2ABC779A00B41C10 /* AccountLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountLoginViewModel.swift; sourceTree = "<group>"; };
-		D719EF882EDF4AFA00509AAB /* GeneratedGit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneratedGit.swift; sourceTree = "<group>"; };
+		D719EF882EDF4AFA00509AAB /* AppGitInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGitInfo.swift; sourceTree = "<group>"; };
 		D71A0E182B485ADF0002C6CD /* ViewExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtension.swift; sourceTree = "<group>"; };
 		D71C266F2E819A0D001A7F92 /* sk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sk; path = Localizable/sk.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D71FCA802AE14CFC00D2E43E /* ContactsListFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsListFragment.swift; sourceTree = "<group>"; };
@@ -810,7 +810,7 @@
 				D719ABBD2ABC67BF00B41C10 /* Preview Content */,
 				D7D24D0C2AC1B4C700C6F35B /* Fonts */,
 				D7ADF6012AFE5C7C00212231 /* Ressources */,
-				D719EF882EDF4AFA00509AAB /* GeneratedGit.swift */,
+				D719EF882EDF4AFA00509AAB /* AppGitInfo.swift */,
 			);
 			path = Linphone;
 			sourceTree = "<group>";
@@ -1361,7 +1361,7 @@
 				660AAF802B839272004C0FA6 /* Embed Foundation Extensions */,
 				D719ABB12ABC67BF00B41C10 /* Resources */,
 				D72F04F52DDB2CB800F4C713 /* ShellScript */,
-				D7D1F5432EDDB9C20034EEB0 /* ShellScript */,
+				D7D1F5432EDDB9C20034EEB0 /* Stamp git info into Info.plist */,
 			);
 			buildRules = (
 			);
@@ -1582,8 +1582,9 @@
 			shellPath = /bin/sh;
 			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
 		};
-		D7D1F5432EDDB9C20034EEB0 /* ShellScript */ = {
+		D7D1F5432EDDB9C20034EEB0 /* Stamp git info into Info.plist */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -1591,13 +1592,14 @@
 			);
 			inputPaths = (
 			);
+			name = "Stamp git info into Info.plist";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n#!/bin/bash\n\nbranch=$(git symbolic-ref --short HEAD 2>/dev/null || echo \"detached\")\ncommit=$(git rev-parse --short HEAD)\ntag=$(git describe --tags --exact-match 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo \"no-tag\")\n\ncat <<EOF > \"$SRCROOT/Linphone/GeneratedGit.swift\"\nimport Foundation\n\npublic enum AppGitInfo {\n    public static let branch = \"$branch\"\n    public static let commit = \"$commit\"\n    public static let tag = \"$tag\"\n}\nEOF\n";
+			shellScript = "set -eu\n\nplist=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ ! -f \"$plist\" ]; then\n    echo \"error: no Info.plist at $plist\"\n    exit 1\nfi\n\ncd \"${SRCROOT}\"\nbranch=\"${CI_BRANCH:-$(git symbolic-ref --short HEAD 2>/dev/null || echo detached)}\"\ncommit=\"${CI_COMMIT:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}\"\ncommit=$(printf '%.9s' \"$commit\")\ntag=\"${CI_TAG:-$(git describe --tags --abbrev=0 --dirty --match 'an-*' 2>/dev/null || echo no-tag)}\"\n\nplutil -replace ANGitBranch -string \"$branch\" \"$plist\"\nplutil -replace ANGitCommit -string \"$commit\" \"$plist\"\nplutil -replace ANGitTag -string \"$tag\" \"$plist\"\necho \"note: stamped $tag $commit [$branch]\"\n\nif [ -n \"${CI_BUILD_NUMBER:-}\" ]; then\n    plutil -replace CFBundleVersion -string \"$CI_BUILD_NUMBER\" \"$plist\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1661,7 +1663,7 @@
 				D7C2DA1D2CA44DE400A2441B /* EventModel.swift in Sources */,
 				D719ABC92ABC6FD700B41C10 /* CoreContext.swift in Sources */,
 				D70A26F22B7F5D95006CC8FC /* ConversationFragment.swift in Sources */,
-				D719EF892EDF4AFA00509AAB /* GeneratedGit.swift in Sources */,
+				D719EF892EDF4AFA00509AAB /* AppGitInfo.swift in Sources */,
 				D7D1F5282EDD939E0034EEB0 /* RecordingMediaPlayerViewModel.swift in Sources */,
 				D76D3BD22FFCED2600D2CDC8 /* RecoverAccountFragment.swift in Sources */,
 				D7DC096F2CFA1D7600A6D47C /* AccountProfileFragment.swift in Sources */,
@@ -1927,7 +1929,7 @@
 				CODE_SIGN_ENTITLEMENTS = msgNotificationService/msgNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -1948,7 +1950,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.msgNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1971,7 +1973,7 @@
 				CODE_SIGN_ENTITLEMENTS = msgNotificationService/msgNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -1991,7 +1993,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.msgNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2247,7 +2249,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Linphone/Linphone.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_ASSET_PATHS = "\"Linphone/Preview Content\"";
@@ -2290,7 +2292,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2311,7 +2313,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Linphone/Linphone.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"Linphone/Preview Content\"";
 				DEVELOPMENT_TEAM = 892DLX6GA8;
@@ -2352,7 +2354,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 13.3;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -DUSE_CRASHLYTICS";
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -2371,7 +2373,7 @@
 				CODE_SIGN_ENTITLEMENTS = linphoneExtension/linphoneExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2386,7 +2388,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.linphoneExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2405,7 +2407,7 @@
 				CODE_SIGN_ENTITLEMENTS = linphoneExtension/linphoneExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2420,7 +2422,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.linphoneExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2438,7 +2440,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2453,7 +2455,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.intentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2474,7 +2476,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_TEAM = 892DLX6GA8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2489,7 +2491,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 6.2.2;
+				MARKETING_VERSION = 6.2.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.acceleratenetworks.mobile.intentsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
