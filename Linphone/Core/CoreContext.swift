@@ -41,7 +41,7 @@ class CoreContext: ObservableObject {
 	@Published var loggedIn: Bool = false
 	@Published var loggingInProgress: Bool = false
 	@Published var coreHasStartedOnce: Bool = false
-	@Published var coreIsStarted: Bool = false
+	@Published var coreIsStarted: Bool = false // published for the view layer; doOnCoreQueue no longer gates on this
 	@Published var codeScannerIsOpen: Bool = false
 	@Published var accounts: [AccountModel] = []
 	@Published var shortcuts: [ShortcutModel] = []
@@ -54,7 +54,11 @@ class CoreContext: ObservableObject {
 	var networkStatusIsConnected: Bool = true // updated on core queue
 	
 	private var mCoreDelegate: CoreDelegate!
-	private var actionsToPerformOnCoreQueueWhenCoreIsStarted: [((Core) -> Void)] = []
+	private let dispatchLock = NSLock()
+	// Guarded by dispatchLock. nil means the core has started and callers dispatch directly; non-nil
+	// means dispatch is deferred and appends here. The optional is the gate, so the gate and the queue
+	// cannot disagree.
+	private var pendingActions: [((Core) -> Void)]? = []
 	private var callStateCallBacks: [((Call.State) -> Void)] = []
 	private var configuringStateCallBacks: [((ConfiguringState) -> Void)] = []
 	
@@ -123,6 +127,9 @@ class CoreContext: ObservableObject {
 		}
 	}
 	
+	/// Runs `lambda` on the core queue. If the caller is already on that queue it runs inline,
+	/// regardless of `synchronous`; otherwise `synchronous` picks `sync` over `async`.
+	/// Skipped with a warning if the core is Off.
 	func doOnCoreQueueCoreStarted(synchronous: Bool = false, lambda: @escaping (Core) -> Void) {
 		let isOnQueue = DispatchQueue.getSpecific(key: coreQueueKey) != nil
 
@@ -303,8 +310,7 @@ class CoreContext: ObservableObject {
 						account.params = newParams
 					}
 					
-					self.actionsToPerformOnCoreQueueWhenCoreIsStarted.forEach {	$0(core) }
-					self.actionsToPerformOnCoreQueueWhenCoreIsStarted.removeAll()
+					self.startDispatch()
 					
 					var accountModels: [AccountModel] = []
 					for account in self.mCore.accountList {
@@ -319,6 +325,7 @@ class CoreContext: ObservableObject {
 						self.accounts = accountModels
 					}
 				} else {
+					self.stopDispatch()
 					DispatchQueue.main.async {
 						self.coreIsStarted = state == GlobalState.On
 					}
@@ -549,14 +556,56 @@ class CoreContext: ObservableObject {
 		fatalError("Crashing app to test crashlytics")
 	}
 	
+	/// Runs `action` on the core queue, or defers it until the core starts.
+	///
+	/// `synchronous` applies only when the action runs now. While dispatch is deferred the call
+	/// returns immediately having only enqueued, so `synchronous: true` does not mean the action has
+	/// finished - and it never runs at all if the core never starts.
 	func doOnCoreQueue(synchronous: Bool = false, action: @escaping (_ core: Core) -> Void ) {
-		if coreIsStarted {
-			doOnCoreQueueCoreStarted(synchronous: synchronous) { core in
+		dispatchLock.lock()
+		let deferred = pendingActions != nil
+		pendingActions?.append(action)
+		dispatchLock.unlock()
+
+		if deferred { return }
+		doOnCoreQueueCoreStarted(synchronous: synchronous) { core in
+			action(core)
+		}
+	}
+
+	/// Claims the queue and opens direct dispatch in one acquisition of dispatchLock: draining first
+	/// would strand any action appended before the gate closes. Runs the backlog afterwards, outside
+	/// the lock, because a drained action may itself call doOnCoreQueue and NSLock is not recursive.
+	///
+	/// Must run on the core queue: the backlog then runs inline and in order, and anything arriving
+	/// after the gate opens queues behind it. Called off-queue it would become N separate async
+	/// dispatches that other work could interleave with.
+	private func startDispatch() {
+		assert(DispatchQueue.getSpecific(key: coreQueueKey) != nil,
+		       "startDispatch must run on coreQueue: the backlog runs inline and ordering depends on it")
+		dispatchLock.lock()
+		let pending = pendingActions ?? []
+		pendingActions = nil
+		dispatchLock.unlock()
+
+		if !pending.isEmpty {
+			Log.info("[CoreContext] draining \(pending.count) deferred core queue action(s)")
+		}
+		pending.forEach { action in
+			doOnCoreQueueCoreStarted { core in
 				action(core)
 			}
-		} else {
-			actionsToPerformOnCoreQueueWhenCoreIsStarted.append(action)
 		}
+	}
+
+	/// Sends callers back to deferring. Deliberately cannot open dispatch: that means claiming the
+	/// queue, which is startDispatch's job, and doing it here would discard the queue unrun.
+	/// Idempotent - it runs for every state other than On: three transitions on the way up
+	/// (Ready, Startup, Configuring) and two on the way down (Shutdown, Off).
+	private func stopDispatch() {
+		dispatchLock.lock()
+		if pendingActions == nil { pendingActions = [] }
+		dispatchLock.unlock()
 	}
 	
 	func addCoreDelegateStub(delegate: CoreDelegateStub) {
