@@ -32,7 +32,11 @@ class CallAppData: NSObject {
 	var batteryWarningShown = false
 	var videoRequested = false /*set when user has requested for video*/
 	var isConference = false
-	
+
+}
+
+enum CallStartError: Error {
+	case inviteRefusedByCore(String)
 }
 
 class TelecomManager: ObservableObject {
@@ -162,7 +166,7 @@ class TelecomManager: ObservableObject {
 			let address = try Factory.Instance.createAddress(addr: addr)
 			try startCallCallKit(core: core, addr: address, isSas: isSas, isVideo: isVideo, isConference: isConference)
 		} catch {
-			Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+			Log.error("[TelecomManager] unable to start outgoing call : \(addr) \(error) ")
 		}
 	}
 	
@@ -192,7 +196,7 @@ class TelecomManager: ObservableObject {
 			do {
 				try self.startCallCallKit(core: core, addr: addr, isSas: false, isVideo: isVideo, isConference: isConference)
 			} catch {
-				Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+				Log.error("[TelecomManager] unable to start outgoing call : \(addr) \(error) ")
 			}
 		}
 	}
@@ -260,20 +264,26 @@ class TelecomManager: ObservableObject {
 				}
 			}
 			
-			if let call = core.inviteAddressWithParams(addr: addr, params: lcallParams) {
-				// The LinphoneCallAppData object should be set on call creation with callback
-				// - (void)onCall:StateChanged:withMessage:. If not, we are in big trouble and expect it to crash
-				// We are NOT responsible for creating the AppData.
-				if let data = TelecomManager.getAppData(sCall: call) {
-					data.isConference = isConference
-					data.videoRequested = lcallParams.videoEnabled
-					TelecomManager.setAppData(sCall: call, appData: data)
-				} else {
-					Log.error("New call instanciated but app data was not set. Expect it to crash.")
-					/* will be used later to notify user if video was not activated because of the linphone core*/
-				}
+			// Returns nil when the core refuses the call (e.g. another call holds the sound
+			// resources and cannot be paused). Callers rely on doCall throwing in that case:
+			// a CXStartCallAction handler that returns normally will fulfil the action, leaving
+			// CallKit with an active call that no Call object backs and nothing can ever end.
+			guard let call = core.inviteAddressWithParams(addr: addr, params: lcallParams) else {
+				throw CallStartError.inviteRefusedByCore(addr.asStringUriOnly())
 			}
-			
+
+			// The LinphoneCallAppData object should be set on call creation with callback
+			// - (void)onCall:StateChanged:withMessage:. If not, we are in big trouble and expect it to crash
+			// We are NOT responsible for creating the AppData.
+			if let data = TelecomManager.getAppData(sCall: call) {
+				data.isConference = isConference
+				data.videoRequested = lcallParams.videoEnabled
+				TelecomManager.setAppData(sCall: call, appData: data)
+			} else {
+				Log.error("New call instantiated but app data was not set. Expect it to crash.")
+				/* will be used later to notify user if video was not activated because of the linphone core*/
+			}
+
 			DispatchQueue.main.async {
 				self.outgoingCallStarted = true
 				self.callStarted = true
