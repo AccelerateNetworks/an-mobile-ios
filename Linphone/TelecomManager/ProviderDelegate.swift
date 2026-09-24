@@ -348,6 +348,13 @@ extension ProviderDelegate: CXProviderDelegate {
 					action.fulfill()
 				} catch {
 					Log.info("CallKit: Call started failed because \(error)")
+					// CallKit drops the call on fail(), so the mirrors must drop it too. uuids[""]
+					// is the single slot outgoing calls occupy until their call-id binds; leaving a
+					// dead uuid there makes the next lookup for "" resolve to a call that never existed.
+					self.callInfos.removeValue(forKey: uuid)
+					if self.uuids[""] == uuid {
+						self.uuids.removeValue(forKey: "")
+					}
 					action.fail()
 				}
 			}
