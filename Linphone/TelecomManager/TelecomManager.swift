@@ -166,7 +166,7 @@ class TelecomManager: ObservableObject {
 			let address = try Factory.Instance.createAddress(addr: addr)
 			try startCallCallKit(core: core, addr: address, isSas: isSas, isVideo: isVideo, isConference: isConference)
 		} catch {
-			Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+			Log.error("[TelecomManager] unable to start outgoing call : \(addr) \(error) ")
 		}
 	}
 	
@@ -196,7 +196,7 @@ class TelecomManager: ObservableObject {
 			do {
 				try self.startCallCallKit(core: core, addr: addr, isSas: false, isVideo: isVideo, isConference: isConference)
 			} catch {
-				Log.error("[TelecomManager] unable to create address for a new outgoing call : \(addr) \(error) ")
+				Log.error("[TelecomManager] unable to start outgoing call : \(addr) \(error) ")
 			}
 		}
 	}
