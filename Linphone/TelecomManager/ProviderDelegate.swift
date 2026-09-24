@@ -60,13 +60,128 @@ class CallInfo {
  */
 class ProviderDelegate: NSObject {
 	let provider: CXProvider
-	var uuids: [String: UUID] = [:]
-	var callInfos: [UUID: CallInfo] = [:]
-	
+
+	// `uuids`/`callInfos` mirror CallKit's own call bookkeeping. Every CXProviderDelegate callback
+	// runs on the main queue (provider.setDelegate(self, queue: nil)), but onCallStateChanged /
+	// doOnCoreQueue mutate the same mirror from the core queue. `mirrorLock` serializes every
+	// membership change and read below so the two queues cannot race (an-mobile-ios#44).
+	// `actionToFulFill` has the same two-queue exposure (CXSetHeldCallAction on the core queue,
+	// providerDidReset on the main queue) and is folded into the same lock.
+	private var uuids: [String: UUID] = [:]
+	private var callInfos: [UUID: CallInfo] = [:]
+	private var actionToFulFill: CXCallAction?
+	private let mirrorLock = NSLock()
+
 	override init() {
 		provider = CXProvider(configuration: ProviderDelegate.providerConfiguration)
 		super.init()
 		provider.setDelegate(self, queue: nil)
+	}
+
+	// MARK: - Owned, serialized mirror surface (an-mobile-ios#44)
+
+	/// Insert a call, keyed by both its CallKit UUID and its (possibly sentinel `""`) call-id.
+	///
+	/// If `callId` is already claimed by a *different* UUID, that UUID is displaced: forgotten from
+	/// the mirror and told to end via CallKit. Without this, CallKit is left believing the displaced
+	/// UUID is still a live call forever - observed 2026-09-24 when a call got started twice in quick
+	/// succession (state transitions for one real call raced two `track`/`rekey` calls): the first
+	/// UUID was silently evicted from `uuids` and never ended, leaving CallKit's own call screen
+	/// stuck on it (an-mobile-ios#44's class of bug, a second instance).
+	func track(_ info: CallInfo, uuid: UUID, callId: String) {
+		mirrorLock.lock()
+		let displaced = displaceLocked(callId: callId, for: uuid)
+		info.callId = callId
+		callInfos[uuid] = info
+		uuids[callId] = uuid
+		mirrorLock.unlock()
+		if let displaced = displaced {
+			endCall(uuid: displaced)
+		}
+	}
+
+	/// Remove a call's mirror entries. Idempotent: safe to call on an already-forgotten UUID.
+	func forget(uuid: UUID) {
+		mirrorLock.lock()
+		if let callId = callInfos[uuid]?.callId {
+			uuids.removeValue(forKey: callId)
+		}
+		callInfos.removeValue(forKey: uuid)
+		mirrorLock.unlock()
+	}
+
+	/// CallKit has dropped every call it held (providerDidReset); nothing left in the mirror is
+	/// reachable.
+	func forgetAll() {
+		mirrorLock.lock()
+		uuids.removeAll()
+		callInfos.removeAll()
+		mirrorLock.unlock()
+	}
+
+	/// Move a tracked call's key from its current call-id to `callId` (which may itself be the `""`
+	/// sentinel), keeping `CallInfo.callId` in sync. No-op if `uuid` isn't tracked. Displaces (and
+	/// ends) any other UUID already occupying the destination key - see `track(_:uuid:callId:)`.
+	func rekey(uuid: UUID, to callId: String) {
+		mirrorLock.lock()
+		guard let info = callInfos[uuid] else {
+			mirrorLock.unlock()
+			return
+		}
+		let displaced = displaceLocked(callId: callId, for: uuid)
+		uuids.removeValue(forKey: info.callId)
+		info.callId = callId
+		uuids[callId] = uuid
+		mirrorLock.unlock()
+		if let displaced = displaced {
+			endCall(uuid: displaced)
+		}
+	}
+
+	/// Must be called with `mirrorLock` held. If `callId` is currently mapped to a UUID other than
+	/// `uuid`, removes that UUID's mirror entries and returns it so the caller can end its CallKit
+	/// call once the lock is released (CXProvider calls must not be made while holding the lock).
+	private func displaceLocked(callId: String, for uuid: UUID) -> UUID? {
+		guard let existing = uuids[callId], existing != uuid else { return nil }
+		callInfos.removeValue(forKey: existing)
+		return existing
+	}
+
+	func info(for uuid: UUID) -> CallInfo? {
+		mirrorLock.lock()
+		defer { mirrorLock.unlock() }
+		return callInfos[uuid]
+	}
+
+	func uuid(forCallId callId: String) -> UUID? {
+		mirrorLock.lock()
+		defer { mirrorLock.unlock() }
+		return uuids[callId]
+	}
+
+	/// A point-in-time (call-id, uuid) snapshot of every tracked entry, for callers that must walk
+	/// the whole mirror (registration-state teardown). Membership changes made after the snapshot is
+	/// taken are not reflected in it.
+	func snapshotEntries() -> [(callId: String, uuid: UUID)] {
+		mirrorLock.lock()
+		defer { mirrorLock.unlock() }
+		return uuids.map { (callId: $0.key, uuid: $0.value) }
+	}
+
+	func setActionToFulFill(_ action: CXCallAction?) {
+		mirrorLock.lock()
+		actionToFulFill = action
+		mirrorLock.unlock()
+	}
+
+	/// Fulfil and clear the pending action in one step, so nothing else can observe it between the
+	/// two. No-op if nothing is pending.
+	func fulfillAndClearActionToFulFill() {
+		mirrorLock.lock()
+		let action = actionToFulFill
+		actionToFulFill = nil
+		mirrorLock.unlock()
+		action?.fulfill()
 	}
 	
 	static var providerConfiguration: CXProviderConfiguration {
@@ -91,9 +206,9 @@ class ProviderDelegate: NSObject {
 		update.hasVideo = hasVideo
 		update.localizedCallerName = displayName
 		
-		let callInfo = callInfos[uuid]
+		let callInfo = info(for: uuid)
 		let callId = callInfo?.callId ?? ""
-		
+
 		/*
 		 if (ConfigManager.instance().config?.hasEntry(section: "app", key: "max_calls") == 1)  { // moved from misc to app section intentionally upon app start or remote configuration
 		 if let maxCalls = ConfigManager.instance().config?.getInt(section: "app",key: "max_calls",defaultValue: 10), Core.get().callsNb > maxCalls {
@@ -131,7 +246,8 @@ class ProviderDelegate: NSObject {
 				default:
 					callInfo?.reason = Reason.Unknown
 				}
-				self.callInfos.updateValue(callInfo!, forKey: uuid)
+				// CallInfo is a class - callInfo is the same instance already stored in the mirror,
+				// so mutating .reason above already updated it; no write-back needed.
 				CoreContext.shared.doOnCoreQueue(synchronous: true) { _ in
 					try? call?.decline(reason: callInfo!.reason)
 				}
@@ -166,7 +282,7 @@ class ProviderDelegate: NSObject {
 	func endCallNotExist(uuid: UUID, timeout: DispatchTime) {
 		DispatchQueue.main.asyncAfter(deadline: timeout) {
 			CoreContext.shared.doOnCoreQueue(synchronous: true) { core in
-				let callId = TelecomManager.shared.providerDelegate.callInfos[uuid]?.callId
+				let callId = self.info(for: uuid)?.callId
 				if callId == nil {
 					// callkit already ended
 					return
@@ -185,14 +301,11 @@ extension ProviderDelegate: CXProviderDelegate {
 	func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
 		
 		let uuid = action.callUUID
-		let callId = callInfos[uuid]?.callId
-		
+		let callId = info(for: uuid)?.callId
+
 		// remove call infos first, otherwise CXEndCallAction will be called more than onece
-		if callId != nil {
-			uuids.removeValue(forKey: callId!)
-		}
-		callInfos.removeValue(forKey: uuid)
-		
+		forget(uuid: uuid)
+
 		CoreContext.shared.doOnCoreQueue { core in
 			if let call = core.getCallByCallid(callId: callId ?? "") {
 				TelecomManager.shared.terminateCall(call: call)
@@ -204,9 +317,9 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
 		let uuid = action.callUUID
-		let callInfo = callInfos[uuid]
+		let callInfo = info(for: uuid)
 		let callId = callInfo?.callId ?? ""
-		
+
 		// An answer can arrive after the call has already ended, in which case its CallInfo is gone.
 		// Setting callInProgress on that path latches it: nothing clears it without a further call
 		// state change, and none is coming for a call that no longer exists.
@@ -266,7 +379,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXSetHeldCallAction) {
 		let uuid = action.callUUID
-		let callId = callInfos[uuid]?.callId ?? ""
+		let callId = info(for: uuid)?.callId ?? ""
 		
 		CoreContext.shared.doOnCoreQueue { core in
 			let call = core.getCallByCallid(callId: callId)
@@ -297,12 +410,12 @@ extension ProviderDelegate: CXProviderDelegate {
 					} else {
 						if call != nil && call?.conference != nil && core.callsNb > 1 {
 							_ = call!.conference!.enter()
-							TelecomManager.shared.actionToFulFill = action
+							self.setActionToFulFill(action)
 						} else {
 							try call!.resume()
 							// We'll notify callkit that the action is fulfilled when receiving the 200Ok, which is the point
 							// where we actually start the media streams.
-							TelecomManager.shared.actionToFulFill = action
+							self.setActionToFulFill(action)
 							// HORRIBLE HACK HERE - PLEASE APPLE FIX THIS !!
 							// When resuming a SIP call after a native call has ended remotely, didActivate: audioSession
 							// is never called.
@@ -330,7 +443,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
 		let uuid = action.callUUID
-		let callInfo = callInfos[uuid]
+		let callInfo = info(for: uuid)
 		let update = CXCallUpdate()
 		update.remoteHandle = action.handle
 		update.localizedCallerName = callInfo?.displayName
@@ -371,7 +484,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
 		let uuid = action.callUUID
-		let callId = callInfos[uuid]?.callId
+		let callId = info(for: uuid)?.callId
 		CoreContext.shared.doOnCoreQueue { core in
 			Log.info( "CallKit: Call muted with call-id: \(String(describing: callId)) an UUID: \(uuid.description).")
 			core.micEnabled = !core.micEnabled
@@ -381,7 +494,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXPlayDTMFCallAction) {
 		let uuid = action.callUUID
-		let callId = callInfos[uuid]?.callId ?? ""
+		let callId = info(for: uuid)?.callId ?? ""
 		
 		CoreContext.shared.doOnCoreQueue { core in
 			Log.info("CallKit: Call send dtmf with call-id: \(callId) an UUID: \(uuid.description).")
@@ -399,7 +512,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, timedOutPerforming action: CXAction) {
 		let uuid = action.uuid
-		let callId = callInfos[uuid]?.callId
+		let callId = info(for: uuid)?.callId
 		Log.error("CallKit: Call time out with call-id: \(String(describing: callId)) an UUID: \(uuid.description).")
 		action.fulfill()
 	}
@@ -407,10 +520,9 @@ extension ProviderDelegate: CXProviderDelegate {
 	func providerDidReset(_ provider: CXProvider) {
 		Log.info("CallKit: did reset.")
 		// CallKit has dropped every call it held, so anything left in these maps is unreachable.
-		uuids.removeAll()
-		callInfos.removeAll()
+		forgetAll()
 		// actionToFulFill holds a CXCallAction from a transaction CallKit has just discarded.
-		TelecomManager.shared.actionToFulFill = nil
+		setActionToFulFill(nil)
 		// CallKit's contract is that the app ends its calls on reset. Without this a core call keeps
 		// running with audio, unreachable from CallKit and no longer holding callInProgress, so the
 		// next backgrounding can stop the core under it.
