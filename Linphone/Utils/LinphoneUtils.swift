@@ -174,4 +174,47 @@ class LinphoneUtils: NSObject {
 	public class func isGroupChatAvailable(core: Core) -> Bool {
 		return core.defaultAccount?.params?.conferenceFactoryUri != nil
 	}
+
+	// AccelerateNetworks: iOS counterpart of Android's LinphoneUtils.getRemoteProvisioningUrlFromUri,
+	// shared by the linphone-config: URI handler and the assistant's login-with-URL field.
+	/// Turns a provisioning link into the URL to hand to `core.provisioningUri`, or nil when it isn't one.
+	/// Accepts `linphone-config:https://host/...`, `linphone-config://host/...`, `linphone-config://https://host/...`,
+	/// `linphone-config:file://...`, a plain http(s) URL and a bare host, all case-insensitively.
+	public class func getRemoteProvisioningUrl(from input: String) -> String? {
+		var urlString = input.trimmingCharacters(in: .whitespacesAndNewlines)
+
+		let configScheme = "linphone-config:"
+		if urlString.lowercased().hasPrefix(configScheme) {
+			urlString = String(urlString.dropFirst(configScheme.count))
+			if urlString.hasPrefix("//") {
+				urlString = String(urlString.dropFirst(2))
+			}
+		}
+
+		// linphone-config://https://host parses with "https" as the host and an empty port, which
+		// can come back canonicalised to linphone-config://https//host: put the colon back.
+		if let range = urlString.range(of: "^https?//", options: [.regularExpression, .caseInsensitive]) {
+			urlString.insert(":", at: urlString.index(before: urlString.index(before: range.upperBound)))
+		}
+
+		if let schemeRange = urlString.range(of: "^[a-z][a-z0-9+.-]*://", options: [.regularExpression, .caseInsensitive]) {
+			let scheme = urlString[schemeRange].dropLast(3).lowercased()
+			guard ["http", "https", "file"].contains(scheme) else {
+				return nil
+			}
+		} else {
+			urlString = "https://" + urlString
+		}
+
+		guard let url = URL(string: urlString), let scheme = url.scheme?.lowercased() else {
+			return nil
+		}
+		if scheme == "file" {
+			return url.path.isEmpty ? nil : urlString
+		}
+		guard let host = url.host, !host.isEmpty else {
+			return nil
+		}
+		return urlString
+	}
 }
