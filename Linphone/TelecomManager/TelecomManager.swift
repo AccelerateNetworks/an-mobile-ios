@@ -72,6 +72,10 @@ class TelecomManager: ObservableObject {
 	
 	var referedFromCall: String?
 	var referedToCall: String?
+	// Core queue only. True while the CXStartCallAction handler is inside doCall, so .OutgoingInit
+	// for the call it is creating doesn't adopt a parked refer-handoff UUID: that call is bound to
+	// its own UUID as soon as doCall returns.
+	var startingCallKitCall = false
 	var actionsToPerformOnceWhenCoreIsOn: [(() -> Void)] = []
 	
 	private init() {
@@ -114,7 +118,7 @@ class TelecomManager: ObservableObject {
 			let transaction = CXTransaction(action: startCallAction)
 			
 			let callInfo = CallInfo.newOutgoingCallInfo(addr: addr!, isSas: isSas, displayName: name, isVideo: isVideo, isConference: isConference)
-			providerDelegate.track(callInfo, uuid: uuid, callId: "")
+			providerDelegate.trackPending(callInfo, uuid: uuid)
 
 			setHeldOtherCalls(core: core, exceptCallid: "")
 			requestTransaction(transaction, action: "startCall")
@@ -208,7 +212,10 @@ class TelecomManager: ObservableObject {
 		return writablePath.path
 	}
 	
-	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws {
+	/// Returns the new core call, or nil when the call was a transfer of the current call (no new
+	/// call is created).
+	@discardableResult
+	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws -> Call? {
 		// let displayName = FastAddressBook.displayName(for: addr.getCobject)
 		
 		let lcallParams = try core.createCallParams(call: nil)
@@ -231,6 +238,7 @@ class TelecomManager: ObservableObject {
 			let call = core.currentCall
 			try call?.transferTo(referTo: addr)
 			nextCallIsTransfer = false
+			return nil
 		} else {
 			// We set the record file name here because we can't do it after the call is started.
 			// let writablePath = AppManager.recordingFilePathFromCall(address: addr.username! )
@@ -292,6 +300,7 @@ class TelecomManager: ObservableObject {
 					}
 				}
 			}
+			return call
 		}
 	}
 	
@@ -643,15 +652,21 @@ class TelecomManager: ObservableObject {
 					.OutgoingEarlyMedia:
 				
 				if TelecomManager.callKitEnabled(core: core) {
-					if let uuid = providerDelegate.uuid(forCallId: "") {
+					if !startingCallKitCall, providerDelegate.uuid(forCallId: callId) == nil,
+					   let uuid = providerDelegate.referHandoffUUID() {
+						// A refer target adopting the UUID its transferred-from call left parked. A call
+						// already bound to its own UUID must not adopt it: the rekey would displace, and
+						// end, that call's own CallKit entry.
 						providerDelegate.rekey(uuid: uuid, to: callId)
 
 						Log.info("CallKit: outgoing call started connecting with uuid \(uuid) and callId \(callId)")
 						providerDelegate.reportOutgoingCallStartedConnecting(uuid: uuid)
 					} else if callId != "" && cstate == .OutgoingInit {
-						if let uuidTmp = providerDelegate.uuid(forCallId: callId) {
-							providerDelegate.rekey(uuid: uuidTmp, to: "")
-						}
+						// CallKit-started calls, including the conference path's, are bound to their
+						// UUID by the CXStartCallAction handler once doCall returns. The conference
+						// path used to move its UUID back to "" here so the call doCall creates could
+						// adopt it; that also blanked the UUID's call-id, so an end action in between
+						// couldn't find the call to terminate.
 					} else {
 						referedToCall = callId
 					}
@@ -731,14 +746,18 @@ class TelecomManager: ObservableObject {
 						referedToCall = nil
 					}
 					if uuid == nil {
-						// the call not yet connected
-						uuid = providerDelegate.uuid(forCallId: "")
+						// a refer target that ended before adopting its parked UUID
+						uuid = providerDelegate.referHandoffUUID()
 					}
 					if let uuid = uuid {
 						if callId == referedFromCall {
 							Log.info("Callkit: end refered from call: \(String(describing: referedFromCall))")
 							referedFromCall = nil
-							providerDelegate.rekey(uuid: uuid, to: referedToCall ?? "")
+							if let referedToCall = referedToCall {
+								providerDelegate.rekey(uuid: uuid, to: referedToCall)
+							} else {
+								providerDelegate.parkForReferTarget(uuid: uuid)
+							}
 							referedToCall = nil
 							break
 						}

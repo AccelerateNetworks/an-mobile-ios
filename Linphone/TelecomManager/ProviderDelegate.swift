@@ -67,6 +67,13 @@ class ProviderDelegate: NSObject {
 	// membership change and read below so the two queues cannot race (an-mobile-ios#44).
 	// `actionToFulFill` has the same two-queue exposure (CXSetHeldCallAction on the core queue,
 	// providerDidReset on the main queue) and is folded into the same lock.
+	//
+	// `callInfos` holds every call CallKit knows about. `uuids` holds only calls bound to a call-id,
+	// plus at most one UUID parked under the `""` key while it waits for a refer target (see
+	// `parkForReferTarget(uuid:)`). A CallKit-started outgoing call that hasn't created its core call
+	// yet is in `callInfos` with `callId == ""` but deliberately absent from `uuids`: each pending call
+	// is identified by its own UUID and bound explicitly by the CXStartCallAction handler, so pending
+	// calls never share a key and nothing can resolve `""` to one of them.
 	private var uuids: [String: UUID] = [:]
 	private var callInfos: [UUID: CallInfo] = [:]
 	private var actionToFulFill: CXCallAction?
@@ -80,7 +87,7 @@ class ProviderDelegate: NSObject {
 
 	// MARK: - Owned, serialized mirror surface (an-mobile-ios#44)
 
-	/// Insert a call, keyed by both its CallKit UUID and its (possibly sentinel `""`) call-id.
+	/// Insert a call bound to a real call-id, keyed by both its CallKit UUID and that call-id.
 	///
 	/// If `callId` is already claimed by a *different* UUID, that UUID is displaced: forgotten from
 	/// the mirror and told to end via CallKit. Without this, CallKit is left believing the displaced
@@ -88,8 +95,15 @@ class ProviderDelegate: NSObject {
 	/// succession (state transitions for one real call raced two `track`/`rekey` calls): the first
 	/// UUID was silently evicted from `uuids` and never ended, leaving CallKit's own call screen
 	/// stuck on it (an-mobile-ios#44's class of bug, a second instance).
+	///
+	/// Displacement only ends CallKit's copy of the displaced call; it does not terminate any core
+	/// call. The collision means another UUID now represents the core call behind `callId`, so that
+	/// call stays reachable through the winner.
+	///
+	/// If `uuid` was already tracked under a different call-id, that old key is released.
 	func track(_ info: CallInfo, uuid: UUID, callId: String) {
 		mirrorLock.lock()
+		releaseKeyLocked(of: uuid)
 		let displaced = displaceLocked(callId: callId, for: uuid)
 		info.callId = callId
 		callInfos[uuid] = info
@@ -100,12 +114,21 @@ class ProviderDelegate: NSObject {
 		}
 	}
 
+	/// Insert a CallKit-started outgoing call whose core call doesn't exist yet. It is reachable only
+	/// by its UUID until the CXStartCallAction handler binds it with `rekey(uuid:to:)` once `doCall`
+	/// returns the core call. Nothing is displaced: pending calls don't occupy a call-id key.
+	func trackPending(_ info: CallInfo, uuid: UUID) {
+		mirrorLock.lock()
+		releaseKeyLocked(of: uuid)
+		info.callId = ""
+		callInfos[uuid] = info
+		mirrorLock.unlock()
+	}
+
 	/// Remove a call's mirror entries. Idempotent: safe to call on an already-forgotten UUID.
 	func forget(uuid: UUID) {
 		mirrorLock.lock()
-		if let callId = callInfos[uuid]?.callId {
-			uuids.removeValue(forKey: callId)
-		}
+		releaseKeyLocked(of: uuid)
 		callInfos.removeValue(forKey: uuid)
 		mirrorLock.unlock()
 	}
@@ -119,9 +142,9 @@ class ProviderDelegate: NSObject {
 		mirrorLock.unlock()
 	}
 
-	/// Move a tracked call's key from its current call-id to `callId` (which may itself be the `""`
-	/// sentinel), keeping `CallInfo.callId` in sync. No-op if `uuid` isn't tracked. Displaces (and
-	/// ends) any other UUID already occupying the destination key - see `track(_:uuid:callId:)`.
+	/// Bind a tracked call to `callId`, releasing whatever key it held before and keeping
+	/// `CallInfo.callId` in sync. No-op if `uuid` isn't tracked. Displaces (and ends) any other UUID
+	/// already occupying the destination key - see `track(_:uuid:callId:)`.
 	func rekey(uuid: UUID, to callId: String) {
 		mirrorLock.lock()
 		guard let info = callInfos[uuid] else {
@@ -129,12 +152,34 @@ class ProviderDelegate: NSObject {
 			return
 		}
 		let displaced = displaceLocked(callId: callId, for: uuid)
-		uuids.removeValue(forKey: info.callId)
+		releaseKeyLocked(of: uuid)
 		info.callId = callId
 		uuids[callId] = uuid
 		mirrorLock.unlock()
 		if let displaced = displaced {
 			endCall(uuid: displaced)
+		}
+	}
+
+	/// A call that received a REFER has ended before its refer target reached a state that names it.
+	/// Park the call's UUID under the `""` key so the target can adopt it via `referHandoffUUID()`,
+	/// keeping CallKit's single call entry across the transfer. This is the only use of the `""`
+	/// key; a stale parked UUID from an earlier refer is displaced and ended.
+	func parkForReferTarget(uuid: UUID) {
+		rekey(uuid: uuid, to: "")
+	}
+
+	/// The UUID parked by `parkForReferTarget(uuid:)`, if any.
+	func referHandoffUUID() -> UUID? {
+		return uuid(forCallId: "")
+	}
+
+	/// Must be called with `mirrorLock` held. Removes `uuid`'s call-id key from `uuids`, but only if
+	/// that key still maps to `uuid`: a pending call's `callId` is `""`, and that key may belong to a
+	/// parked refer handoff rather than to it.
+	private func releaseKeyLocked(of uuid: UUID) {
+		if let callId = callInfos[uuid]?.callId, uuids[callId] == uuid {
+			uuids.removeValue(forKey: callId)
 		}
 	}
 
@@ -157,7 +202,8 @@ class ProviderDelegate: NSObject {
 	}
 
 	/// The call-id currently bound to `uuid`, read under `mirrorLock`. `nil` if `uuid` isn't tracked;
-	/// `""` if it is a pending outgoing call whose call-id hasn't bound yet.
+	/// `""` if it is a pending outgoing call whose core call doesn't exist yet, or a parked refer
+	/// handoff.
 	func callId(for uuid: UUID) -> String? {
 		mirrorLock.lock()
 		defer { mirrorLock.unlock() }
@@ -170,13 +216,14 @@ class ProviderDelegate: NSObject {
 		return uuids[callId]
 	}
 
-	/// A point-in-time (call-id, uuid) snapshot of every tracked entry, for callers that must walk
-	/// the whole mirror (registration-state teardown). Membership changes made after the snapshot is
-	/// taken are not reflected in it.
+	/// A point-in-time (call-id, uuid) snapshot of every tracked call, for callers that must walk
+	/// the whole mirror (registration-state teardown). Walks `callInfos` rather than `uuids` so
+	/// pending outgoing calls (`callId == ""`, no `uuids` key) are included. Membership changes made
+	/// after the snapshot is taken are not reflected in it.
 	func snapshotEntries() -> [(callId: String, uuid: UUID)] {
 		mirrorLock.lock()
 		defer { mirrorLock.unlock() }
-		return uuids.map { (callId: $0.key, uuid: $0.value) }
+		return callInfos.map { (callId: $0.value.callId, uuid: $0.key) }
 	}
 
 	func setActionToFulFill(_ action: CXCallAction?) {
@@ -475,14 +522,30 @@ extension ProviderDelegate: CXProviderDelegate {
 			CoreContext.shared.doOnCoreQueue { core in
 				do {
 					core.configureAudioSession()
-					try TelecomManager.shared.doCall(core: core, addr: addr!, isSas: callInfo?.sasEnabled ?? false, isVideo: callInfo?.videoEnabled ?? false, isConference: callInfo?.isConference ?? false)
+					// Bind this UUID to the core call doCall creates, by identity: pending outgoing
+					// calls hold no call-id key, so the state handler can't adopt the wrong one.
+					// startingCallKitCall keeps .OutgoingInit (fired synchronously inside the invite)
+					// from handing this call a parked refer-handoff UUID instead.
+					TelecomManager.shared.startingCallKitCall = true
+					defer { TelecomManager.shared.startingCallKitCall = false }
+					let call = try TelecomManager.shared.doCall(core: core, addr: addr!, isSas: callInfo?.sasEnabled ?? false, isVideo: callInfo?.videoEnabled ?? false, isConference: callInfo?.isConference ?? false)
+					guard let callId = call?.callLog?.callId, !callId.isEmpty else {
+						// doCall performed a transfer on the current call rather than placing a new
+						// one, so nothing backs this UUID. Fulfilling would leave CallKit showing a
+						// call nothing can ever end.
+						Log.info("CallKit: start action for UUID [\(uuid.description)] created no call (transfer), failing the action.")
+						self.forget(uuid: uuid)
+						action.fail()
+						return
+					}
+					self.rekey(uuid: uuid, to: callId)
+					Log.info("CallKit: outgoing call started connecting with uuid \(uuid) and callId \(callId)")
+					self.reportOutgoingCallStartedConnecting(uuid: uuid)
 					action.fulfill()
 				} catch {
 					Log.info("CallKit: Call started failed because \(error)")
-					// CallKit drops the call on fail(), so the mirrors must drop it too. uuids[""]
-					// is the single slot outgoing calls occupy until their call-id binds; leaving a
-					// dead uuid there makes the next lookup for "" resolve to a call that never existed.
-					// `forget` clears that slot, since a refused call's callId is still "".
+					// CallKit drops the call on fail(), so the mirrors must drop it too, or a stale
+					// pending CallInfo outlives a call that never existed.
 					self.forget(uuid: uuid)
 					action.fail()
 				}
