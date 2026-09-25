@@ -166,7 +166,7 @@ struct SideMenuAccountRow: View {
 		}
 		.frame(height: 61)
 		.padding(.horizontal, 16)
-		.background(model.isDefaultAccount ? Color.grayMain2c100 : .white)
+		.background(model.isDefaultAccount ? Color.grayMain2c100 : Color.cardBackground)
 		.onTapGesture {
 			model.setAsDefault()
 		}

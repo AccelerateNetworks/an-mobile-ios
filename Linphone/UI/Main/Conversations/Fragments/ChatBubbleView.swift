@@ -232,7 +232,7 @@ struct ChatBubbleView: View {
 																}
 																.padding(.all, 10)
 																.frame(width: 70, height: 70)
-																.background(.white)
+																.background(Color.cardBackground)
 																.cornerRadius(15)
 																.shadow(color: .black.opacity(0.1), radius: 15)
 																
@@ -313,10 +313,10 @@ struct ChatBubbleView: View {
 															: 0
 														)
 														.frame(maxWidth: .infinity)
-														.background(.white)
+														.background(Color.cardBackground)
 													}
 													.frame(width: geometryProxy.size.width >= 110 ? geometryProxy.size.width - 110 : geometryProxy.size.width)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(10)
 												}
 												
@@ -564,7 +564,7 @@ struct ChatBubbleView: View {
 				let result = imageDimensions(url: eventLogMessage.message.attachments.first!.thumbnail.absoluteString)
 				ZStack {
 					Rectangle()
-						.fill(Color(.white))
+						.fill(Color.cardBackground)
 						.aspectRatio(result.0/result.1, contentMode: .fit)
 						.if(result.0 < geometryProxy.size.width - 110) { view in
 							view.frame(maxWidth: result.0)
@@ -738,7 +738,7 @@ struct ChatBubbleView: View {
 					.padding(.horizontal, 10)
 					.frame(maxWidth: .infinity, alignment: .leading)
 				}
-				.background(.white)
+				.background(Color.cardBackground)
 				.clipShape(RoundedRectangle(cornerRadius: 10))
 				.onTapGesture {
 					if !isPressed && !didLongPress {
@@ -756,7 +756,7 @@ struct ChatBubbleView: View {
 						|| $0.type == .video }), id: \.id) { attachment in
 							ZStack {
 								Rectangle()
-									.fill(Color(.white))
+									.fill(Color.cardBackground)
 									.frame(width: sizeCard, height: sizeCard)
 								
 								if #available(iOS 16.0, *) {
@@ -877,7 +877,7 @@ struct ChatBubbleView: View {
 						.padding(.horizontal, 10)
 						.frame(maxWidth: .infinity, alignment: .leading)
 					}
-					.background(.white)
+					.background(Color.cardBackground)
 					.clipShape(RoundedRectangle(cornerRadius: 10))
 					.onTapGesture {
 						if !isPressed && !didLongPress {
@@ -1209,7 +1209,7 @@ struct CustomSlider: View {
 						}
 					)
 					.padding(8)
-					.background(.white)
+					.background(Color.cardBackground)
 					.clipShape(RoundedRectangle(cornerRadius: 25))
 					
 					Spacer()
@@ -1220,7 +1220,7 @@ struct CustomSlider: View {
 							.padding(.horizontal, 5)
 					}
 					.padding(8)
-					.background(.white)
+					.background(Color.cardBackground)
 					.clipShape(RoundedRectangle(cornerRadius: 25))
 				}
 				.padding(.horizontal, 10)

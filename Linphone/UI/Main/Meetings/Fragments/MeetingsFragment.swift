@@ -81,7 +81,7 @@ struct MeetingsFragment: View {
 		.padding(.leading, 30)
 		.frame(height: 63)
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.background(.white)
+		.background(Color.cardBackground)
 		.clipShape(RoundedRectangle(cornerRadius: 10))
 		.shadow(color: .black.opacity(0.2), radius: 4)
 		.onTapGesture {

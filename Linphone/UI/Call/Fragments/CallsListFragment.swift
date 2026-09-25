@@ -30,13 +30,19 @@ struct CallsListFragment: View {
 	
 	@ObservedObject var callViewModel: CallViewModel
 	
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	@State var isShowCallsListBottomSheet: Bool = false
 	@State private var isShowPopup = false
 	
 	@Binding var isShowCallsListFragment: Bool
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var sheetContent: some View {
 		ZStack {
 			VStack(spacing: 1) {
 				Rectangle()
@@ -84,7 +90,7 @@ struct CallsListFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				if #available(iOS 16.0, *), idiom != .pad {
 					callsList
@@ -100,7 +106,7 @@ struct CallsListFragment: View {
 						} onDismiss: {}
 				}
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			
 			if self.isShowPopup {
 				PopupView(
@@ -238,7 +244,7 @@ struct CallsListFragment: View {
 	func delayColorDismiss() {
 		Task {
 			try? await Task.sleep(nanoseconds: 80_000_000)
-			delayedColor = .white
+			delayedColor = .cardBackground
 		}
 	}
 	
@@ -293,7 +299,7 @@ struct CallsListFragment: View {
 						.buttonStyle(.borderless)
 						.listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
 						.listRowSeparator(.hidden)
-						.background(.white)
+						.background(Color.cardBackground)
 						.onTapGesture {
 							handleTap(on: call)
 						}

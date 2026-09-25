@@ -75,7 +75,13 @@ struct CallView: View {
 	
 	@State private var didInit = false
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		callViewContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var callViewContent: some View {
 		GeometryReader { geo in
 			let isLandscape = geo.size.width > geo.size.height
 			
@@ -987,7 +993,7 @@ struct CallView: View {
 								.frame(width: 20, height: 20)
 						}
 						.padding(5)
-						.background(.white)
+						.background(Color.cardBackground)
 						.cornerRadius(40)
 						
 						if isLandscapeMode {
@@ -1140,7 +1146,7 @@ struct CallView: View {
 																		.frame(width: 12, height: 12)
 																}
 																.padding(2)
-																.background(.white)
+																.background(Color.cardBackground)
 																.cornerRadius(40)
 															}
 															Spacer()
@@ -1310,7 +1316,7 @@ struct CallView: View {
 																	.frame(width: 12, height: 12)
 															}
 															.padding(2)
-															.background(.white)
+															.background(Color.cardBackground)
 															.cornerRadius(40)
 														}
 														Spacer()
@@ -1461,7 +1467,7 @@ struct CallView: View {
 														.frame(width: 12, height: 12)
 												}
 												.padding(2)
-												.background(.white)
+												.background(Color.cardBackground)
 												.cornerRadius(40)
 											}
 											Spacer()
@@ -1572,7 +1578,7 @@ struct CallView: View {
 															.frame(width: 12, height: 12)
 													}
 													.padding(2)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(40)
 												}
 												Spacer()
@@ -1707,7 +1713,7 @@ struct CallView: View {
 														.frame(width: 12, height: 12)
 												}
 												.padding(2)
-												.background(.white)
+												.background(Color.cardBackground)
 												.cornerRadius(40)
 											}
 											Spacer()
@@ -1818,7 +1824,7 @@ struct CallView: View {
 															.frame(width: 12, height: 12)
 													}
 													.padding(2)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(40)
 												}
 												Spacer()
@@ -1894,7 +1900,7 @@ struct CallView: View {
 											.frame(width: 20, height: 20)
 									}
 									.padding(2)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(40)
 								}
 								
@@ -1936,7 +1942,7 @@ struct CallView: View {
 											.frame(width: 20, height: 20)
 									}
 									.padding(2)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(40)
 								}
 								

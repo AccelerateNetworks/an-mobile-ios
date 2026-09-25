@@ -31,7 +31,7 @@ struct ScheduleMeetingFragment: View {
 	
 	@StateObject private var meetingViewModel: MeetingViewModel
 	
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	@State private var showDatePicker = false
 	@State private var showTimePicker = false
 	@State private var showTimeZonePicker = false
@@ -94,7 +94,7 @@ struct ScheduleMeetingFragment: View {
 					.frame(maxWidth: .infinity)
 					.frame(height: 50)
 					.padding(.horizontal)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					ScrollView(.vertical) {
 						HStack(alignment: .center, spacing: 10) {
@@ -320,7 +320,7 @@ struct ScheduleMeetingFragment: View {
 						
 						Spacer()
 					}
-					.background(.white)
+					.background(Color.cardBackground)
 				}.onTapGesture {
 					isDescriptionTextFocused = false
 					isSubjectTextFocused = false
@@ -389,14 +389,14 @@ struct ScheduleMeetingFragment: View {
 									}
 								}
 								.id(idx)
-								.background(.white)
+								.background(Color.cardBackground)
 							}
 							.frame(width: geometry.size.width - 30, height: 300)
 							.cornerRadius(20)
 							.onAppear {
 								proxyReader.scrollTo(meetingViewModel.selectedTimezoneIdx)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(20)
 							.listStyle(.plain)
 						}
@@ -482,7 +482,7 @@ struct ScheduleMeetingFragment: View {
 			}
 			.padding(.horizontal, 20)
 			.padding(.vertical, 20)
-			.background(.white)
+			.background(Color.cardBackground)
 			.cornerRadius(20)
 			.padding(.horizontal)
 			.frame(maxHeight: .infinity)
@@ -524,7 +524,7 @@ struct ScheduleMeetingFragment: View {
 	func delayColorDismiss() {
 		Task {
 			try? await Task.sleep(nanoseconds: 80_000_000)
-			delayedColor = .white
+			delayedColor = .cardBackground
 		}
 	}
 }

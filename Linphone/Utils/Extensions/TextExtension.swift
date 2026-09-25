@@ -141,7 +141,7 @@ extension View {
 	
 	func profile_mode_text_style_gray_800(styleSize: CGFloat) -> some View {
 		self.font(Font.custom("NotoSans-ExtraBold", size: styleSize))
-			.foregroundStyle(Color.gray900)
+			.foregroundStyle(Color.grayMain2c800)
 	}
 	
 	func profile_mode_text_style_gray(styleSize: CGFloat) -> some View {

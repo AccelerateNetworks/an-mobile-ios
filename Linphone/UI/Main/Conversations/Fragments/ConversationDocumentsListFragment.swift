@@ -63,7 +63,7 @@ struct ConversationDocumentsListFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 						
 						VStack(spacing: 0) {
 							List {
@@ -161,7 +161,7 @@ struct DocumentRow: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 		}
 		.quickLookPreview($selectedURLAttachment, in: viewModel.documentsList.compactMap { URL(fileURLWithPath: $0.originalPath) })
-		.background(.white)
+		.background(Color.cardBackground)
 		.clipShape(RoundedRectangle(cornerRadius: 10))
 		.onTapGesture {
 			selectedURLAttachment = URL(fileURLWithPath: file.originalPath)

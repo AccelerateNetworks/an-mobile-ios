@@ -33,7 +33,7 @@ struct ConversationForwardMessageFragment: View {
 	@Binding var isShowConversationForwardMessageFragment: Bool
 	
 	@FocusState var isSearchFieldFocused: Bool
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	
 	@FocusState var isMessageTextFocused: Bool
 	
@@ -83,7 +83,7 @@ struct ConversationForwardMessageFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 4)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					VStack(spacing: 0) {
 						ZStack(alignment: .trailing) {
@@ -198,7 +198,7 @@ struct ConversationForwardMessageFragment: View {
 					}
 					.frame(maxWidth: .infinity)
 				}
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				if conversationForwardMessageViewModel.operationInProgress {
 					PopupLoadingView()

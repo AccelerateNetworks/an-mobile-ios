@@ -30,7 +30,13 @@ struct ChangeLayoutBottomSheet: View {
 	@Binding var changeLayoutSheet: Bool
 	@Binding var optionsChangeLayout: Int
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var sheetContent: some View {
 		VStack(spacing: 0) {
 			if !SharedMainViewModel.shared.disableVideoCall { // AccelerateNetworks: no video — only audio-only layout offered
 			Button(action: {

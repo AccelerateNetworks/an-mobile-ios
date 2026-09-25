@@ -111,7 +111,7 @@ struct StartGroupCallFragment: View {
 			}
 			.padding(.horizontal, 20)
 			.padding(.vertical, 20)
-			.background(.white)
+			.background(Color.cardBackground)
 			.cornerRadius(20)
 			.padding(.horizontal)
 			.frame(maxHeight: .infinity)

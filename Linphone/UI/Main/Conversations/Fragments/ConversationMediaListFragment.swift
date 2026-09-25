@@ -62,7 +62,7 @@ struct ConversationMediaListFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 						
 						ConversationMediaGridView(viewModel: conversationMediaListViewModel)
 					}

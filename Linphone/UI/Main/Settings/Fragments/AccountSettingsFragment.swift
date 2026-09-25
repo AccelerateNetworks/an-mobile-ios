@@ -82,7 +82,7 @@ struct AccountSettingsFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView {
 					VStack(spacing: 0) {
@@ -105,7 +105,7 @@ struct AccountSettingsFragment: View {
 											.frame(height: 25)
 											.padding(.horizontal, 20)
 											.padding(.vertical, 15)
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(60)
 											.overlay(
 												RoundedRectangle(cornerRadius: 60)
@@ -125,7 +125,7 @@ struct AccountSettingsFragment: View {
 											.frame(height: 25)
 											.padding(.horizontal, 20)
 											.padding(.vertical, 15)
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(60)
 											.overlay(
 												RoundedRectangle(cornerRadius: 60)
@@ -144,7 +144,7 @@ struct AccountSettingsFragment: View {
 								.padding(.vertical, 30)
 								.padding(.horizontal, 20)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.padding(.horizontal)
 							.padding(.top, 10)
@@ -188,7 +188,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -214,7 +214,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -270,7 +270,7 @@ struct AccountSettingsFragment: View {
 										.padding(.vertical, 30)
 										.padding(.horizontal, 20)
 									}
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(15)
 									.padding(.horizontal)
 									.zIndex(-1)
@@ -346,7 +346,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -380,7 +380,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -409,7 +409,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -429,7 +429,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -449,7 +449,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -469,7 +469,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -489,7 +489,7 @@ struct AccountSettingsFragment: View {
 													.frame(height: 25)
 													.padding(.horizontal, 20)
 													.padding(.vertical, 15)
-													.background(.white)
+													.background(Color.cardBackground)
 													.cornerRadius(60)
 													.overlay(
 														RoundedRectangle(cornerRadius: 60)
@@ -511,7 +511,7 @@ struct AccountSettingsFragment: View {
 										.padding(.vertical, 30)
 										.padding(.horizontal, 20)
 									}
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(15)
 									.padding(.horizontal)
 									.zIndex(-2)

@@ -49,7 +49,14 @@ struct BottomSheetContent: View {
 	
 	@Binding var imageAudioRoute: String
     
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	@ViewBuilder
+	private var sheetContent: some View {
 		let minHeight = minBottomSheetHeight * UIScreen.main.bounds.height
 		let maxHeight = maxBottomSheetHeight * UIScreen.main.bounds.height
 		
@@ -707,7 +714,7 @@ struct BottomSheetContent: View {
 											}
 											.buttonStyle(PressedButtonStyle(buttonSize: buttonSize))
 											.frame(width: buttonSize, height: buttonSize)
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(40)
 											.disabled(true)
 											
@@ -981,7 +988,7 @@ struct BottomSheetContent: View {
 										}
 										.buttonStyle(PressedButtonStyle(buttonSize: buttonSize))
 										.frame(width: buttonSize, height: buttonSize)
-										.background(.white)
+										.background(Color.cardBackground)
 										.cornerRadius(40)
 										.disabled(true)
 										

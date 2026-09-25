@@ -470,7 +470,7 @@ struct ToastView: View {
 					}
 				}
 				.frame(maxWidth: .infinity)
-				.background(.white)
+				.background(Color.cardBackground)
 				.cornerRadius(50)
 				.overlay(
 					RoundedRectangle(cornerRadius: 50)

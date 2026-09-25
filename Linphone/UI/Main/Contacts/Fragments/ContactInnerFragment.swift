@@ -115,7 +115,7 @@ struct ContactInnerFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 						
 						ScrollView {
 							VStack(spacing: 0) {
@@ -311,7 +311,7 @@ struct ContactInnerFragment: View {
 						}
 						.background(Color.gray100)
 					}
-					.background(.white)
+					.background(Color.cardBackground)
 					.navigationBarHidden(true)
 					.onRotate { newOrientation in
 						orientation = newOrientation

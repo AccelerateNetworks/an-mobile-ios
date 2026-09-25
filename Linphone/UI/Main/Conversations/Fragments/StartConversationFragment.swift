@@ -36,7 +36,7 @@ struct StartConversationFragment: View {
 	@State private var isShowSipAddressesPopup: Bool = false
 	
 	@FocusState var isSearchFieldFocused: Bool
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	
 	@State var operationInProgress: Bool = false
 	
@@ -81,7 +81,7 @@ struct StartConversationFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 4)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					VStack(spacing: 0) {
 						ZStack(alignment: .trailing) {
@@ -167,7 +167,7 @@ struct StartConversationFragment: View {
 							.padding(.vertical, 10)
 							.padding(.horizontal, 20)
 							.background(
-								LinearGradient(gradient: Gradient(colors: [.grayMain2c100, .white]), startPoint: .leading, endPoint: .trailing)
+								LinearGradient(gradient: Gradient(colors: [.grayMain2c100, Color.cardBackground]), startPoint: .leading, endPoint: .trailing)
 									.padding(.vertical, 10)
 									.padding(.horizontal, 40)
 							)
@@ -231,7 +231,7 @@ struct StartConversationFragment: View {
 					}
 					.frame(maxWidth: .infinity)
 				}
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				if isShowSipAddressesPopup && contactAvatarModel != nil {
 					VStack(alignment: .leading) {
@@ -269,7 +269,7 @@ struct StartConversationFragment: View {
 								.padding(.vertical, 15)
 								.padding(.horizontal, 10)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.onTapGesture {
 								do {
 									let addr = try Factory.Instance.createAddress(addr: contactAvatarModel!.addresses[index])
@@ -298,7 +298,7 @@ struct StartConversationFragment: View {
 								.padding(.vertical, 15)
 								.padding(.horizontal, 10)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.onTapGesture {
 								CoreContext.shared.doOnCoreQueue { core in
 									if let phoneAddr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
@@ -314,7 +314,7 @@ struct StartConversationFragment: View {
 					}
 					.padding(.horizontal, 20)
 					.padding(.vertical, 20)
-					.background(.white)
+					.background(Color.cardBackground)
 					.cornerRadius(20)
 					.frame(maxHeight: .infinity)
 					.shadow(color: Color.orangeMain500, radius: 0, x: 0, y: 2)
@@ -365,7 +365,7 @@ struct StartConversationFragment: View {
 	func delayColorDismiss() {
 		Task {
 			try? await Task.sleep(nanoseconds: 80_000_000)
-			delayedColor = .white
+			delayedColor = .cardBackground
 		}
 	}
 	

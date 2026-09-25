@@ -517,7 +517,7 @@ struct ContentView: View {
 												(orientation == .landscapeLeft
 												 || orientation == .landscapeRight
 												 || UIScreen.main.bounds.size.width > UIScreen.main.bounds.size.height)
-												? Color.white
+												? Color.cardBackground
 												: Color.orangeMain500
 											)
 											.frame(height: 100)
@@ -956,7 +956,7 @@ struct ContentView: View {
 								   : .infinity
 							)
 							.background(
-								Color.white
+								Color.cardBackground
 									.shadow(color: Color.gray200, radius: 4, x: 0, y: 0)
 									.mask(Rectangle().padding(.horizontal, -8))
 							)
@@ -1145,7 +1145,7 @@ struct ContentView: View {
 							}
 							.padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? 0 : 15)
 							.background(
-								Color.white
+								Color.cardBackground
 									.shadow(color: Color.gray200, radius: 4, x: 0, y: 0)
 									.mask(Rectangle().padding(.top, -8))
 							)

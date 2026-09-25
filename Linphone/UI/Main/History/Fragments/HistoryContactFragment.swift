@@ -166,7 +166,7 @@ struct HistoryContactFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView {
 					VStack(spacing: 0) {
@@ -402,7 +402,7 @@ struct HistoryContactFragment: View {
 									.frame(maxHeight: 65)
 								}
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.padding(.all)
 						}
@@ -413,7 +413,7 @@ struct HistoryContactFragment: View {
 				}
 				.background(Color.gray100)
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			.navigationBarHidden(true)
 			.onRotate { newOrientation in
 				orientation = newOrientation

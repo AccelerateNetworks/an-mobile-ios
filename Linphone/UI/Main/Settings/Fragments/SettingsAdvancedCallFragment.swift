@@ -62,7 +62,7 @@ struct SettingsAdvancedCallFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView {
 					VStack(spacing: 0) {
@@ -116,7 +116,7 @@ struct SettingsAdvancedCallFragment: View {
 							}
 							.padding(.vertical, 20)
 							.padding(.horizontal, 20)
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.background(Color.gray100)
 						}
@@ -159,7 +159,7 @@ struct SettingsAdvancedCallFragment: View {
 								.padding(.vertical, 30)
 								.padding(.horizontal, 20)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.padding(.horizontal, 20)
 							.zIndex(-1)
@@ -205,7 +205,7 @@ struct SettingsAdvancedCallFragment: View {
 								.padding(.vertical, 30)
 								.padding(.horizontal, 20)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.padding(.horizontal, 20)
 							.zIndex(-2)
@@ -251,7 +251,7 @@ struct SettingsAdvancedCallFragment: View {
 								.padding(.vertical, 30)
 								.padding(.horizontal, 20)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(15)
 							.padding(.horizontal, 20)
 							.zIndex(-3)

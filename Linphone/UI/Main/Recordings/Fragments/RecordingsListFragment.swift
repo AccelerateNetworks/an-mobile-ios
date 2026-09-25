@@ -104,7 +104,7 @@ struct RecordingsListFragment: View {
 			.frame(height: 50)
 			.padding(.horizontal)
 			.padding(.bottom, 4)
-			.background(.white)
+			.background(Color.cardBackground)
 			
 			ScrollView {
 				VStack(spacing: 0) {
@@ -157,7 +157,7 @@ struct RecordingsListFragment: View {
 								}
 								.frame(height: 60)
 								.padding(20)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(RoundedRectangle(cornerRadius: 10))
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onLongPressGesture(minimumDuration: 0.3) {

@@ -92,7 +92,7 @@ struct ContactRow: View {
 		.buttonStyle(.borderless)
 		.listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
 		.listRowSeparator(.hidden)
-		.background(.white)
+		.background(Color.cardBackground)
 		.onTapGesture {
             if SharedMainViewModel.shared.indexView == 0 {
                 withAnimation {

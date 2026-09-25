@@ -40,7 +40,13 @@ struct MeetingWaitingRoomFragment: View {
 	@State var options: Int = 1
 	@State var angleDegree = 0.0
 	
+	// The call/waiting room UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		waitingRoomContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var waitingRoomContent: some View {
 		GeometryReader { geometry in
 			
 			if #available(iOS 16.0, *), idiom != .pad {

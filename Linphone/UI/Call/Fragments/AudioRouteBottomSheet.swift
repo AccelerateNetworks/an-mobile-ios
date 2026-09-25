@@ -30,7 +30,13 @@ struct AudioRouteBottomSheet: View {
 	
 	@Binding var optionsAudioRoute: Int
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var sheetContent: some View {
 		VStack(spacing: 0) {
 			Button(action: {
 				optionsAudioRoute = 1

@@ -335,7 +335,7 @@ struct ConversationRow: View {
 		.buttonStyle(.borderless)
 		.listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
 		.listRowSeparator(.hidden)
-		.background(.white)
+		.background(Color.cardBackground)
 		.onTapGesture {
 			conversationsListViewModel.changeDisplayedChatRoom(conversationModel: conversation)
 		}

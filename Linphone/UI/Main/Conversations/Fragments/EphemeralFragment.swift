@@ -73,7 +73,7 @@ struct EphemeralFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 						
 						VStack(spacing: 0) {
 							ScrollView {
@@ -106,16 +106,16 @@ struct EphemeralFragment: View {
 														Divider()
 													}
 												}
-												.background(.white)
+												.background(Color.cardBackground)
 											 	.frame(maxWidth: .infinity)
 											}
-											.background(.white)
+											.background(Color.cardBackground)
 											.frame(maxWidth: .infinity)
 											.buttonStyle(PlainButtonStyle())
 										}
 									}
 									.padding()
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(10)
 								}
 								.padding(.horizontal, 10)

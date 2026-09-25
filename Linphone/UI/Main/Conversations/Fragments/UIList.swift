@@ -133,7 +133,7 @@ struct UIList: UIViewRepresentable {
 		tableView.estimatedSectionHeaderHeight = 1
 		tableView.estimatedSectionFooterHeight = UITableView.automaticDimension
 		tableView.keyboardDismissMode = .interactive
-		tableView.backgroundColor = UIColor(.white)
+		tableView.backgroundColor = UIColor(Color.cardBackground)
 		tableView.scrollsToTop = true
 		
 		if let displayedConversation = SharedMainViewModel.shared.displayedConversation, displayedConversation.isEndToEndEncryptionAvailable {
@@ -484,7 +484,7 @@ struct UIList: UIViewRepresentable {
 						.frame(height: 50)
 						.frame(idealWidth: .infinity, maxWidth: .infinity, alignment: .center)
 				).view
-				header?.backgroundColor = UIColor(.white)
+				header?.backgroundColor = UIColor(Color.cardBackground)
 				return header
 			}
 			return nil
@@ -494,7 +494,7 @@ struct UIList: UIViewRepresentable {
 			
 			let tableViewCell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
 			tableViewCell.selectionStyle = .none
-			tableViewCell.backgroundColor = UIColor(.white)
+			tableViewCell.backgroundColor = UIColor(Color.cardBackground)
 			
 			let row = sections[indexPath.section].rows[indexPath.row]
 			

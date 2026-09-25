@@ -35,7 +35,7 @@ struct EditContactFragment: View {
 	@Binding var isShowDismissPopup: Bool
 	let isShowEditContactFragmentAddress: String
 	
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	
 	@FocusState var isFirstNameFocused: Bool
 	@FocusState var isLastNameFocused: Bool
@@ -153,7 +153,7 @@ struct EditContactFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView {
 					VStack(spacing: 0) {
@@ -285,7 +285,7 @@ struct EditContactFragment: View {
 									.frame(height: 25)
 									.padding(.horizontal, 20)
 									.padding(.vertical, 15)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(60)
 									.overlay(
 										RoundedRectangle(cornerRadius: 60)
@@ -306,7 +306,7 @@ struct EditContactFragment: View {
 									.frame(height: 25)
 									.padding(.horizontal, 20)
 									.padding(.vertical, 15)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(60)
 									.overlay(
 										RoundedRectangle(cornerRadius: 60)
@@ -331,7 +331,7 @@ struct EditContactFragment: View {
 											.frame(height: 25)
 											.padding(.horizontal, 20)
 											.padding(.vertical, 15)
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(60)
 											.overlay(
 												RoundedRectangle(cornerRadius: 60)
@@ -380,7 +380,7 @@ struct EditContactFragment: View {
 											.frame(height: 25)
 											.padding(.horizontal, 20)
 											.padding(.vertical, 15)
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(60)
 											.overlay(
 												RoundedRectangle(cornerRadius: 60)
@@ -429,7 +429,7 @@ struct EditContactFragment: View {
 									.frame(height: 25)
 									.padding(.horizontal, 20)
 									.padding(.vertical, 15)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(60)
 									.overlay(
 										RoundedRectangle(cornerRadius: 60)
@@ -450,7 +450,7 @@ struct EditContactFragment: View {
 									.frame(height: 25)
 									.padding(.horizontal, 20)
 									.padding(.vertical, 15)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(60)
 									.overlay(
 										RoundedRectangle(cornerRadius: 60)
@@ -468,7 +468,7 @@ struct EditContactFragment: View {
 				}
 				.background(Color.gray100)
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			
 			if !isShowEditContactFragment {
 				ZStack {
@@ -500,7 +500,7 @@ struct EditContactFragment: View {
 		if editContactViewModel.selectedEditFriend == nil {
 			Task {
 				try? await Task.sleep(nanoseconds: 80_000_000)
-				delayedColor = .white
+				delayedColor = .cardBackground
 			}
 		}
 	}

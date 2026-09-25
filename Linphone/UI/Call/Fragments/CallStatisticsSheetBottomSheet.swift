@@ -29,7 +29,13 @@ struct CallStatisticsSheetBottomSheet: View {
 	
 	@Binding var callStatisticsSheet: Bool
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var sheetContent: some View {
 		VStack {
 			if idiom != .pad && (orientation == .landscapeLeft
 								 || orientation == .landscapeRight

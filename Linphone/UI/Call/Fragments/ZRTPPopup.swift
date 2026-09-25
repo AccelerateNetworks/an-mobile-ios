@@ -32,7 +32,14 @@ struct ZRTPPopup: View {
 	
 	var resizeView: CGFloat
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	@ViewBuilder
+	private var sheetContent: some View {
 		if callViewModel.isNotVerified {
 			alertZRTP
 		} else {
@@ -134,7 +141,7 @@ struct ZRTPPopup: View {
 										.frame(width: 45 / resizeView, height: 45 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -148,7 +155,7 @@ struct ZRTPPopup: View {
 										.frame(width: 45 / resizeView, height: 45 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -162,7 +169,7 @@ struct ZRTPPopup: View {
 										.frame(width: 45 / resizeView, height: 45 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -176,7 +183,7 @@ struct ZRTPPopup: View {
 										.frame(width: 45 / resizeView, height: 45 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -194,7 +201,7 @@ struct ZRTPPopup: View {
 										.frame(width: 60 / resizeView, height: 60 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -208,7 +215,7 @@ struct ZRTPPopup: View {
 										.frame(width: 60 / resizeView, height: 60 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -226,7 +233,7 @@ struct ZRTPPopup: View {
 										.frame(width: 60 / resizeView, height: 60 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -240,7 +247,7 @@ struct ZRTPPopup: View {
 										.frame(width: 60 / resizeView, height: 60 / resizeView)
 								}
 								.padding(10 / resizeView)
-								.background(.white)
+								.background(Color.cardBackground)
 								.clipShape(Circle())
 								.shadow(color: .gray.opacity(0.4), radius: 4)
 								.onTapGesture {
@@ -284,7 +291,7 @@ struct ZRTPPopup: View {
 				}
 				.padding(.top, 20 / resizeView)
 				.padding(.horizontal, 20 / resizeView)
-				.background(.white)
+				.background(Color.cardBackground)
 				.cornerRadius(20)
 			}
 			.background(callViewModel.cacheMismatch ? Color.orangeWarning600 : Color.blueInfo500)
@@ -358,7 +365,7 @@ struct ZRTPPopup: View {
 				}
 				.padding(.top, 20 / resizeView)
 				.padding(.horizontal, 20 / resizeView)
-				.background(.white)
+				.background(Color.cardBackground)
 				.cornerRadius(20)
 			}
 			.background(Color.redDanger500)

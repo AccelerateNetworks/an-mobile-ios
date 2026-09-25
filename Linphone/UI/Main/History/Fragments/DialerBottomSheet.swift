@@ -115,7 +115,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -136,7 +136,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -157,7 +157,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -180,7 +180,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -201,7 +201,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -222,7 +222,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -246,7 +246,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -267,7 +267,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -288,7 +288,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -312,7 +312,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}
@@ -329,7 +329,7 @@ struct DialerBottomSheet: View {
 									.multilineTextAlignment(.center)
 									.frame(width: 100, height: 75)
 									.padding(.top, -15)
-									.background(currentCall != nil ? Color.gray500 : .white)
+									.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 									.cornerRadius(40)
 									.shadow(color: .black.opacity(0.2), radius: 4)
 								Text("+")
@@ -365,7 +365,7 @@ struct DialerBottomSheet: View {
 								.default_text_style(styleSize: 32)
 								.multilineTextAlignment(.center)
 								.frame(width: 100, height: 60)
-								.background(currentCall != nil ? Color.gray500 : .white)
+								.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 								.cornerRadius(40)
 								.shadow(color: .black.opacity(0.2), radius: 4)
 						}
@@ -387,7 +387,7 @@ struct DialerBottomSheet: View {
 							.default_text_style(styleSize: 32)
 							.multilineTextAlignment(.center)
 							.frame(width: 100, height: 60)
-							.background(currentCall != nil ? Color.gray500 : .white)
+							.background(currentCall != nil ? Color.gray600 : Color.cardBackground)
 							.cornerRadius(40)
 							.shadow(color: .black.opacity(0.2), radius: 4)
 					}

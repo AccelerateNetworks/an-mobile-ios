@@ -157,7 +157,7 @@ struct MeetingFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 5)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					ScrollView(.vertical) {
 						HStack(alignment: .center, spacing: 10) {
@@ -287,7 +287,7 @@ struct MeetingFragment: View {
 							.frame(height: 1)
 							.background(Color.gray200)
 					}
-					.background(.white)
+					.background(Color.cardBackground)
 				}.frame(maxHeight: .infinity)
 				
 				Spacer()

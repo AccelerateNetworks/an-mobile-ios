@@ -121,7 +121,7 @@ struct ConversationFragment: View {
 			GeometryReader { geometry in
 				if #available(iOS 16.0, *), idiom != .pad {
 					innerView(geometry: geometry)
-						.background(.white)
+						.background(Color.cardBackground)
 						.navigationBarHidden(true)
 						.onRotate { newOrientation in
 							orientation = newOrientation
@@ -213,7 +213,7 @@ struct ConversationFragment: View {
 						.background(Color.gray100.ignoresSafeArea(.keyboard))
 				} else {
 					innerView(geometry: geometry)
-						.background(.white)
+						.background(Color.cardBackground)
 						.navigationBarHidden(true)
 						.onRotate { newOrientation in
 							orientation = newOrientation
@@ -400,7 +400,7 @@ struct ConversationFragment: View {
 									}
 								}
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.onTapGesture {
 								withAnimation {
 									isShowInfoConversationFragment = true
@@ -559,7 +559,7 @@ struct ConversationFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 					} else {
 						HStack {
 							Image("caret-left")
@@ -621,7 +621,7 @@ struct ConversationFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 					}
 					
 					if #available(iOS 16.0, *) {
@@ -867,7 +867,7 @@ struct ConversationFragment: View {
 											ForEach(conversationViewModel.mediasToSend, id: \.id) { attachment in
 												ZStack {
 													Rectangle()
-														.fill(Color(.white))
+														.fill(Color.cardBackground)
 														.frame(width: 100, height: 100)
 													
 													VStack {
@@ -915,7 +915,7 @@ struct ConversationFragment: View {
 																		.resizable()
 																		.foregroundStyle(Color.orangeMain500)
 																		.padding(4)
-																		.background(.white)
+																		.background(Color.cardBackground)
 																		.cornerRadius(12.5)
 																		.frame(width: 20, height: 20)
 																		.padding(4)
@@ -1232,7 +1232,7 @@ struct ConversationFragment: View {
 								.padding(.trailing, 5)
 								.padding(.vertical, 6)
 								.frame(maxWidth: .infinity, minHeight: 55)
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(30)
 								.overlay(
 									RoundedRectangle(cornerRadius: 30)
@@ -1278,7 +1278,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: iconSize > 50 ? 50 : iconSize)
 										}
 										.padding(.horizontal, 8)
-										.background(conversationViewModel.selectedMessage?.message.ownReaction == "👍" ? Color.gray200 : .white)
+										.background(conversationViewModel.selectedMessage?.message.ownReaction == "👍" ? Color.gray200 : Color.cardBackground)
 										.cornerRadius(10)
 										
 										Button {
@@ -1288,7 +1288,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: iconSize > 50 ? 50 : iconSize)
 										}
 										.padding(.horizontal, 8)
-										.background(conversationViewModel.selectedMessage?.message.ownReaction == "❤️" ? Color.gray200 : .white)
+										.background(conversationViewModel.selectedMessage?.message.ownReaction == "❤️" ? Color.gray200 : Color.cardBackground)
 										.cornerRadius(10)
 										
 										Button {
@@ -1298,7 +1298,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: iconSize > 50 ? 50 : iconSize)
 										}
 										.padding(.horizontal, 8)
-										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😂" ? Color.gray200 : .white)
+										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😂" ? Color.gray200 : Color.cardBackground)
 										.cornerRadius(10)
 										
 										Button {
@@ -1308,7 +1308,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: iconSize > 50 ? 50 : iconSize)
 										}
 										.padding(.horizontal, 8)
-										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😮" ? Color.gray200 : .white)
+										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😮" ? Color.gray200 : Color.cardBackground)
 										.cornerRadius(10)
 										
 										Button {
@@ -1318,7 +1318,7 @@ struct ConversationFragment: View {
 												.default_text_style(styleSize: iconSize > 50 ? 50 : iconSize)
 										}
 										.padding(.horizontal, 8)
-										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😢" ? Color.gray200 : .white)
+										.background(conversationViewModel.selectedMessage?.message.ownReaction == "😢" ? Color.gray200 : Color.cardBackground)
 										.cornerRadius(10)
 										
 										Button {
@@ -1338,7 +1338,7 @@ struct ConversationFragment: View {
 									}
 									.padding(.vertical, 5)
 									.padding(.horizontal, 10)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(20)
 									
 									if !conversationViewModel.selectedMessage!.message.isOutgoing {
@@ -1540,7 +1540,7 @@ struct ConversationFragment: View {
 									}
 									.frame(maxWidth: geometry.size.width / 1.5)
 									.padding(.vertical, 8)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(20)
 									
 									if !conversationViewModel.selectedMessage!.message.isOutgoing {
@@ -1757,7 +1757,7 @@ struct ImdnOrReactionsSheet: View {
 							.disabled(!participant.isMe)
 							.padding(.horizontal)
 							.buttonStyle(.borderless)
-							.background(.white)
+							.background(Color.cardBackground)
 						}
 					}
 				}
@@ -1774,7 +1774,7 @@ struct ImdnOrReactionsSheet: View {
 			isImdnOrReactionsSheetVisible = true
 		}
 		.padding(.top)
-		.background(.white)
+		.background(Color.cardBackground)
 	}
 }
 
@@ -1893,7 +1893,7 @@ struct VoiceRecorderPlayer: View {
 					}
 				)
 				.padding(10)
-				.background(.white)
+				.background(Color.cardBackground)
 				.clipShape(RoundedRectangle(cornerRadius: 25))
 				
 				ZStack(alignment: .leading) {
@@ -1940,7 +1940,7 @@ struct VoiceRecorderPlayer: View {
 							}
 						)
 						.padding(8)
-						.background(.white)
+						.background(Color.cardBackground)
 						.clipShape(RoundedRectangle(cornerRadius: 25))
 						
 						Spacer()
@@ -1959,7 +1959,7 @@ struct VoiceRecorderPlayer: View {
 								.padding(.horizontal, 5)
 						}
 						.padding(8)
-						.background(.white)
+						.background(Color.cardBackground)
 						.clipShape(RoundedRectangle(cornerRadius: 25))
 					}
 					.padding(.horizontal, 10)

@@ -96,7 +96,7 @@ struct ConversationInfoFragment: View {
 						.frame(height: 50)
 						.padding(.horizontal)
 						.padding(.bottom, 4)
-						.background(.white)
+						.background(Color.cardBackground)
 						
 						ScrollView {
 							VStack(spacing: 0) {
@@ -601,7 +601,7 @@ struct ConversationInfoFragment: View {
 													 */
 												}
 											}
-											.background(.white)
+											.background(Color.cardBackground)
 											.cornerRadius(15)
 											.padding(.horizontal)
 											.zIndex(-1)
@@ -668,7 +668,7 @@ struct ConversationInfoFragment: View {
 									}
 									.padding(.horizontal, 20)
 									.padding(.vertical, 4)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(15)
 									.padding(.all)
 									
@@ -829,7 +829,7 @@ struct ConversationInfoFragment: View {
 									}
 									.padding(.horizontal, 20)
 									.padding(.vertical, 4)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(15)
 									.padding(.all)
 								}
@@ -840,7 +840,7 @@ struct ConversationInfoFragment: View {
 						}
 						.background(Color.gray100)
 					}
-					.background(.white)
+					.background(Color.cardBackground)
 					.navigationBarHidden(true)
 					.onAppear {
 						conversationViewModel.getParticipants()

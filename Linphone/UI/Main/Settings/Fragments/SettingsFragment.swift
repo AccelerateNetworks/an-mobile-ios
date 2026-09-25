@@ -73,7 +73,7 @@ struct SettingsFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 4)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					ScrollView {
 						VStack(spacing: 0) {
@@ -130,7 +130,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-1)
@@ -219,7 +219,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-2)
@@ -262,7 +262,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-3)
@@ -393,7 +393,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-4)
@@ -462,7 +462,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-5)
@@ -505,7 +505,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 								.padding(.horizontal, 20)
 								.zIndex(-6)
@@ -551,7 +551,7 @@ struct SettingsFragment: View {
 									.padding(.vertical, 30)
 									.padding(.horizontal, 20)
 								}
-								.background(.white)
+								.background(Color.cardBackground)
 								.cornerRadius(15)
 							 	.padding(.horizontal, 20)
 								.zIndex(-7)

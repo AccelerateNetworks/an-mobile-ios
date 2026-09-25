@@ -167,7 +167,7 @@ struct SideMenu: View {
 					.padding(.trailing, 16)
 				}
 				.frame(width: self.width - safeAreaInsets.leading)
-				.background(.white)
+				.background(Color.cardBackground)
 				.offset(x: self.isOpen ? 0 : -self.width)
 				
 			}

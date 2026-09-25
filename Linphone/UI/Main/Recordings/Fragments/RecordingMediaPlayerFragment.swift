@@ -107,7 +107,7 @@ struct RecordingMediaPlayerFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 4)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					VStack {
 						Spacer()
@@ -151,7 +151,7 @@ struct RecordingMediaPlayerFragment: View {
 									.clipShape(RoundedRectangle(cornerRadius: radius))
                                 
                                 Circle()
-                                        .fill(Color.white)
+                                        .fill(Color.cardBackground)
                                         .frame(width: 14, height: 14)
                                         .shadow(radius: 2)
                                         .offset(x: (self.value / 100) * barWidth - 7)

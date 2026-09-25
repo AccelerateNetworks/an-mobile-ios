@@ -88,7 +88,7 @@ struct AddParticipantsFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView(.horizontal) {
 					HStack {
@@ -105,7 +105,7 @@ struct AddParticipantsFragment: View {
 									.renderingMode(.template)
 									.resizable()
 									.foregroundStyle(Color.grayMain2c500)
-									.background(.white)
+									.background(Color.cardBackground)
 									.cornerRadius(12.5)
 									.frame(width: 25, height: 25)
 									.onTapGesture {
@@ -226,7 +226,7 @@ struct AddParticipantsFragment: View {
 									}
 								}
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.onTapGesture {
 								CoreContext.shared.doOnCoreQueue { core in
 									self.contactAvatarModel = contactsManager.avatarListModel[index]
@@ -330,7 +330,7 @@ struct AddParticipantsFragment: View {
 							.padding(.vertical, 15)
 							.padding(.horizontal, 10)
 						}
-						.background(.white)
+						.background(Color.cardBackground)
 						.onTapGesture {
 							do {
 								let addr = try Factory.Instance.createAddress(addr: contactAvatarModel!.addresses[index])
@@ -360,7 +360,7 @@ struct AddParticipantsFragment: View {
 							.padding(.vertical, 15)
 							.padding(.horizontal, 10)
 						}
-						.background(.white)
+						.background(Color.cardBackground)
 						.onTapGesture {
 							CoreContext.shared.doOnCoreQueue { core in
 								if let phoneAddr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
@@ -375,7 +375,7 @@ struct AddParticipantsFragment: View {
 				}
 				.padding(.horizontal, 20)
 				.padding(.vertical, 20)
-				.background(.white)
+				.background(Color.cardBackground)
 				.cornerRadius(20)
 				.frame(maxHeight: .infinity)
 				.shadow(color: Color.orangeMain500, radius: 0, x: 0, y: 2)

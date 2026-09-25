@@ -102,7 +102,7 @@ struct ContactInnerActionsFragment: View {
 								.padding(.vertical, 15)
 								.padding(.horizontal, 20)
 							}
-							.background(.white)
+							.background(Color.cardBackground)
 							.onTapGesture {
 								CoreContext.shared.doOnCoreQueue { core in
 									do {
@@ -161,7 +161,7 @@ struct ContactInnerActionsFragment: View {
 							.padding(.vertical, 15)
 							.padding(.horizontal, 20)
 						}
-						.background(.white)
+						.background(Color.cardBackground)
 						.onTapGesture {
 							CoreContext.shared.doOnCoreQueue { core in
 								let address = core.interpretUrl(url: contactAvatarModel.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core))
@@ -183,7 +183,7 @@ struct ContactInnerActionsFragment: View {
 						}
 					}
 				}
-				.background(.white)
+				.background(Color.cardBackground)
 				.cornerRadius(15)
 				.padding(.horizontal)
 				.zIndex(-1)
@@ -215,7 +215,7 @@ struct ContactInnerActionsFragment: View {
 						.frame(maxWidth: .infinity, alignment: .leading)
 				}
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			.cornerRadius(15)
 			.padding(.top)
 			.padding(.horizontal)
@@ -368,7 +368,7 @@ struct ContactInnerActionsFragment: View {
 							}
 							.frame(height: 40)
 						}
-						.background(.white)
+						.background(Color.cardBackground)
 						.padding(.vertical, 10)
 						.padding(.horizontal, 20)
 					}
@@ -382,7 +382,7 @@ struct ContactInnerActionsFragment: View {
 				}
 			}
 			.padding(.bottom, 5)
-			.background(.white)
+			.background(Color.cardBackground)
 			.cornerRadius(15)
 			.padding(.horizontal)
 			.zIndex(-2)
@@ -463,7 +463,7 @@ struct ContactInnerActionsFragment: View {
 					.padding(.horizontal, 20)
 				}
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			.cornerRadius(15)
 			.padding(.horizontal)
 			.zIndex(-1)
@@ -629,7 +629,7 @@ struct ContactInnerActionsFragment: View {
 				}
 			}
 		}
-		.background(.white)
+		.background(Color.cardBackground)
 		.cornerRadius(15)
 		.padding(.horizontal)
 		.zIndex(-1)

@@ -37,7 +37,7 @@ struct PopupLoadingView: View {
 		}
 		.padding(.horizontal, 20)
 		.padding(.vertical, 20)
-		.background(.white)
+		.background(Color.cardBackground)
 		.cornerRadius(20)
 		.padding(.horizontal)
 		.shadow(color: Color.orangeMain500, radius: 0, x: 0, y: 2)

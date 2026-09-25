@@ -61,7 +61,7 @@ struct FavoriteContactRow: View {
 						.frame( maxWidth: .infinity, alignment: .center)
 				}
 			}
-			.background(.white)
+			.background(Color.cardBackground)
 			.onTapGesture {
 				withAnimation {
 					SharedMainViewModel.shared.displayedFriend = contactAvatarModel

@@ -284,7 +284,7 @@ struct ThirdPartySipAccountLoginFragment: View {
                 }
                 .padding(.top, 10)
                 .padding(.bottom, 10)
-                .background(.white)
+                .background(Color.cardBackground)
                 .onTapGesture {
                     withAnimation {
                         advancedSettingsIsOpen.toggle()
@@ -303,7 +303,7 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .frame(height: 25)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 15)
-                            .background(.white)
+                            .background(Color.cardBackground)
                             .cornerRadius(60)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 60)
@@ -325,7 +325,7 @@ struct ThirdPartySipAccountLoginFragment: View {
                             .frame(height: 25)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 15)
-                            .background(.white)
+                            .background(Color.cardBackground)
                             .cornerRadius(60)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 60)
@@ -362,7 +362,7 @@ struct ThirdPartySipAccountLoginFragment: View {
 							.frame(height: 25)
 							.padding(.horizontal, 20)
 							.padding(.vertical, 15)
-							.background(.white)
+							.background(Color.cardBackground)
 							.cornerRadius(60)
 							.overlay(
 								RoundedRectangle(cornerRadius: 60)

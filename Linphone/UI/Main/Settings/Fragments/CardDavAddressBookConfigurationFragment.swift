@@ -85,7 +85,7 @@ struct CardDavAddressBookConfigurationFragment: View {
 				.frame(height: 50)
 				.padding(.horizontal)
 				.padding(.bottom, 4)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ScrollView {
 					VStack(spacing: 0) {
@@ -215,7 +215,7 @@ struct CardDavAddressBookConfigurationFragment: View {
 						}
 						.padding(.vertical, 20)
 						.padding(.horizontal, 20)
-						.background(.white)
+						.background(Color.cardBackground)
 						.cornerRadius(15)
 						.background(Color.gray100)
 					}

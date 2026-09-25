@@ -31,7 +31,7 @@ struct ParticipantsListFragment: View {
 	
 	@ObservedObject var addParticipantsViewModel: AddParticipantsViewModel
 	
-	@State private var delayedColor = Color.white
+	@State private var delayedColor = Color.cardBackground
 	
 	@Binding var isShowParticipantsListFragment: Bool
 	
@@ -40,7 +40,13 @@ struct ParticipantsListFragment: View {
 	@State private var isShowPopup = false
 	@State private var indexToRemove = -1
 	
+	// The call UI keeps a permanently dark backdrop regardless of the system appearance.
 	var body: some View {
+		sheetContent
+			.preferredColorScheme(.dark)
+	}
+
+	private var sheetContent: some View {
 		NavigationView {
 			ZStack {
 				VStack(spacing: 1) {
@@ -114,7 +120,7 @@ struct ParticipantsListFragment: View {
 					.frame(height: 50)
 					.padding(.horizontal)
 					.padding(.bottom, 4)
-					.background(.white)
+					.background(Color.cardBackground)
 					
 					participantsList
 					
@@ -144,7 +150,7 @@ struct ParticipantsListFragment: View {
 					}
 					.padding(.trailing, 10)
 				}
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				if self.isShowPopup {
 					let contentPopup = Text(String(format: String(localized: "meeting_call_remove_participant_confirmation_message"), callViewModel.participantList[indexToRemove].name))
@@ -185,7 +191,7 @@ struct ParticipantsListFragment: View {
 	func delayColorDismiss() {
 		Task {
 			try? await Task.sleep(nanoseconds: 80_000_000)
-			delayedColor = .white
+			delayedColor = .cardBackground
 		}
 	}
 	
@@ -233,7 +239,7 @@ struct ParticipantsListFragment: View {
 				.buttonStyle(.borderless)
 				.listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
 				.listRowSeparator(.hidden)
-				.background(.white)
+				.background(Color.cardBackground)
 				
 				ForEach(0..<callViewModel.participantList.count, id: \.self) { index in
 					HStack {
@@ -284,7 +290,7 @@ struct ParticipantsListFragment: View {
 					.buttonStyle(.borderless)
 					.listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
 					.listRowSeparator(.hidden)
-					.background(.white)
+					.background(Color.cardBackground)
 				}
 			}
 			.listStyle(.plain)

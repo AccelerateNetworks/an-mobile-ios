@@ -52,7 +52,7 @@ struct ContactsInnerFragment: View {
 					}
 					.padding(.top, 10)
 					.padding(.horizontal, 16)
-					.background(.white)
+					.background(Color.cardBackground)
 					.onTapGesture {
 						withAnimation {
 							isFavoriteOpen.toggle()
