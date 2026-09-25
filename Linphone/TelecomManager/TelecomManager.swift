@@ -109,8 +109,8 @@ class TelecomManager: ObservableObject {
 
 		if TelecomManager.callKitEnabled(core: core) {// && !nextCallIsTransfer != true {
 			let uuid = UUID()
-			let name = addr?.asStringUriOnly() ?? "Unknown"
-			let handle = CXHandle(type: .generic, value: addr?.asStringUriOnly() ?? "")
+			let name = callKitDisplayName(core: core, address: addr!)
+			let handle = TelecomManager.makeCXHandle(TelecomManager.callKitHandle(core: core, address: addr!))
 			let startCallAction = CXStartCallAction(call: uuid, handle: handle)
 			let transaction = CXTransaction(action: startCallAction)
 			
@@ -411,6 +411,43 @@ class TelecomManager: ObservableObject {
 		}
 	}
 	
+	/// Value used for the CallKit handle (shown in the call UI and Recents) instead of the full SIP URI.
+	/// Uses the bare username/number when the remote is on the default account's domain, otherwise
+	/// "user@domain" so redialing from Recents (via INStartCallIntent + interpretUrl) still resolves.
+	static func callKitHandle(core: Core, address: Address) -> String {
+		guard let username = address.username, !username.isEmpty else {
+			return address.domain ?? address.asStringUriOnly()
+		}
+		guard let domain = address.domain, !domain.isEmpty,
+			  domain != core.defaultAccount?.params?.domain else {
+			return username
+		}
+		return "\(username)@\(domain)"
+	}
+
+	/// Wraps a handle value in a CXHandle, typed as a phone number when it is only digits (optionally
+	/// prefixed with "+") so iOS formats it and matches it against system contacts; generic otherwise.
+	static func makeCXHandle(_ value: String) -> CXHandle {
+		let digits = value.hasPrefix("+") ? value.dropFirst() : Substring(value)
+		let isPhoneNumber = !digits.isEmpty && digits.allSatisfy { $0.isASCII && $0.isNumber }
+		return CXHandle(type: isPhoneNumber ? .phoneNumber : .generic, value: value)
+	}
+
+	/// Name shown by CallKit for an outgoing call: meeting subject, contact name, caller ID, or the handle.
+	/// Must be called on the core queue.
+	func callKitDisplayName(core: Core, address: Address) -> String {
+		if let subject = core.findConferenceInformationFromUri(uri: address)?.subject, !subject.isEmpty {
+			return subject
+		}
+		if let name = ContactsManager.shared.getFriendWithAddress(address: address)?.name, !name.isEmpty {
+			return name
+		}
+		if let name = address.displayName, !name.isEmpty {
+			return name
+		}
+		return TelecomManager.callKitHandle(core: core, address: address)
+	}
+
 	static func isAudioRouteAllowedForCall() -> Bool {
 		guard AppServices.corePreferences.onlyAllowEarpieceDuringCall else { return true }
 		let output = AVAudioSession.sharedInstance().currentRoute.outputs.first
@@ -476,8 +513,8 @@ class TelecomManager: ObservableObject {
 		if !callInProgress && participantsInvited {
 			if let remoteAddress = call.remoteAddress {
 				let uuid = UUID()
-				let name = remoteAddress.asStringUriOnly()
-				let handle = CXHandle(type: .generic, value: remoteAddress.asStringUriOnly())
+				let name = callKitDisplayName(core: core, address: remoteAddress)
+				let handle = TelecomManager.makeCXHandle(TelecomManager.callKitHandle(core: core, address: remoteAddress))
 				let startCallAction = CXStartCallAction(call: uuid, handle: handle)
 				let transaction = CXTransaction(action: startCallAction)
 				
@@ -610,12 +647,12 @@ class TelecomManager: ObservableObject {
 						
 						if uuid != nil {
 							// Tha app is now registered, updated the call already existed.
-							self.providerDelegate.updateCall(uuid: uuid!, handle: addr!.asStringUriOnly(), hasVideo: self.remoteConfVideo, displayName: displayName)
+							self.providerDelegate.updateCall(uuid: uuid!, handle: TelecomManager.callKitHandle(core: core, address: addr!), hasVideo: self.remoteConfVideo, displayName: displayName)
 						} else {
 							let videoEnabled = call.remoteParams?.videoEnabled ?? false
 							let isConference = call.callLog?.wasConference() ?? false
 							let videoDir = call.remoteParams?.videoDirection != MediaDirection.Inactive
-							self.displayIncomingCall(call: call, handle: addr!.asStringUriOnly(), hasVideo: videoEnabled && videoDir && !isConference, callId: callId, displayName: displayName)
+							self.displayIncomingCall(call: call, handle: TelecomManager.callKitHandle(core: core, address: addr!), hasVideo: videoEnabled && videoDir && !isConference, callId: callId, displayName: displayName)
 						}
 					}
 				}

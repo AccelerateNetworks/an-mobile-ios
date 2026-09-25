@@ -87,7 +87,7 @@ class ProviderDelegate: NSObject {
 	
 	func reportIncomingCall(call: Call?, uuid: UUID, handle: String, hasVideo: Bool, displayName: String) {
 		let update = CXCallUpdate()
-		update.remoteHandle = CXHandle(type: .generic, value: handle)
+		update.remoteHandle = TelecomManager.makeCXHandle(handle)
 		update.hasVideo = hasVideo
 		update.localizedCallerName = displayName
 		
@@ -141,7 +141,7 @@ class ProviderDelegate: NSObject {
 	
 	func updateCall(uuid: UUID, handle: String, hasVideo: Bool = false, displayName: String) {
 		let update = CXCallUpdate()
-		update.remoteHandle = CXHandle(type: .generic, value: handle)
+		update.remoteHandle = TelecomManager.makeCXHandle(handle)
 		update.localizedCallerName = displayName
 		update.hasVideo = hasVideo
 		provider.reportCall(with: uuid, updated: update)
