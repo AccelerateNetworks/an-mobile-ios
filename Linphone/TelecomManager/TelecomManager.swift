@@ -61,7 +61,6 @@ class TelecomManager: ObservableObject {
 	@Published var meetingWaitingRoomName: String = ""
 	@Published var participantsInvited: Bool = false
 	
-	var actionToFulFill: CXCallAction?
 	var callkitAudioSessionActivated: Bool?
 	var nextCallIsTransfer: Bool = false
 	var speakerBeforePause: Bool = false
@@ -73,6 +72,10 @@ class TelecomManager: ObservableObject {
 	
 	var referedFromCall: String?
 	var referedToCall: String?
+	// Core queue only. True while the CXStartCallAction handler is inside doCall, so .OutgoingInit
+	// for the call it is creating doesn't adopt a parked refer-handoff UUID: that call is bound to
+	// its own UUID as soon as doCall returns.
+	var startingCallKitCall = false
 	var actionsToPerformOnceWhenCoreIsOn: [(() -> Void)] = []
 	
 	private init() {
@@ -115,9 +118,8 @@ class TelecomManager: ObservableObject {
 			let transaction = CXTransaction(action: startCallAction)
 			
 			let callInfo = CallInfo.newOutgoingCallInfo(addr: addr!, isSas: isSas, displayName: name, isVideo: isVideo, isConference: isConference)
-			providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
-			providerDelegate.uuids.updateValue(uuid, forKey: "")
-			
+			providerDelegate.trackPending(callInfo, uuid: uuid)
+
 			setHeldOtherCalls(core: core, exceptCallid: "")
 			requestTransaction(transaction, action: "startCall")
 			DispatchQueue.main.async {
@@ -150,7 +152,7 @@ class TelecomManager: ObservableObject {
 		}
 #else
 		let callid = call.callLog?.callId ?? ""
-		let uuid = providerDelegate.uuids["\(callid)"]
+		let uuid = providerDelegate.uuid(forCallId: callid)
 		if uuid == nil {
 			Log.error("Can not find correspondant call to set held.")
 			return
@@ -210,7 +212,10 @@ class TelecomManager: ObservableObject {
 		return writablePath.path
 	}
 	
-	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws {
+	/// Returns the new core call, or nil when the call was a transfer of the current call (no new
+	/// call is created).
+	@discardableResult
+	func doCall(core: Core, addr: Address, isSas: Bool, isVideo: Bool, isConference: Bool = false) throws -> Call? {
 		// let displayName = FastAddressBook.displayName(for: addr.getCobject)
 		
 		let lcallParams = try core.createCallParams(call: nil)
@@ -233,6 +238,7 @@ class TelecomManager: ObservableObject {
 			let call = core.currentCall
 			try call?.transferTo(referTo: addr)
 			nextCallIsTransfer = false
+			return nil
 		} else {
 			// We set the record file name here because we can't do it after the call is started.
 			// let writablePath = AppManager.recordingFilePathFromCall(address: addr.username! )
@@ -294,6 +300,7 @@ class TelecomManager: ObservableObject {
 					}
 				}
 			}
+			return call
 		}
 	}
 	
@@ -379,9 +386,8 @@ class TelecomManager: ObservableObject {
 	func displayIncomingCall(call: Call?, handle: String, hasVideo: Bool, callId: String, displayName: String) {
 		let uuid = UUID()
 		let callInfo = CallInfo.newIncomingCallInfo(callId: callId)
-		
-		providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
-		providerDelegate.uuids.updateValue(uuid, forKey: callId)
+
+		providerDelegate.track(callInfo, uuid: uuid, callId: callId)
 		providerDelegate.reportIncomingCall(call: call, uuid: uuid, handle: handle, hasVideo: hasVideo, displayName: displayName)
 	}
 	
@@ -443,16 +449,17 @@ class TelecomManager: ObservableObject {
 	func onAccountRegistrationStateChanged(core: Core, account: Account, state: RegistrationState, message: String) {
 		if core.accountList.count == 1 && (state == .Failed || state == .Cleared) {
 			// terminate callkit immediately when registration failed or cleared, supporting single account configuration
-			for call in providerDelegate.uuids {
-				let callId = providerDelegate.callInfos[call.value]?.callId
-				if callId != nil {
-					let call = core.getCallByCallid(callId: callId!)
-					if call != nil && call?.state != .PushIncomingReceived {
-						// sometimes (for example) due to network, registration failed, in this case, keep the call
-						continue
-					}
+			for entry in providerDelegate.snapshotEntries() {
+				let call = core.getCallByCallid(callId: entry.callId)
+				if call != nil && call?.state != .PushIncomingReceived {
+					// sometimes (for example) due to network, registration failed, in this case, keep the call
+					continue
 				}
-				providerDelegate.endCall(uuid: call.value)
+				providerDelegate.endCall(uuid: entry.uuid)
+				// Ending CallKit's copy without forgetting our own mirror leaves a stale CallInfo
+				// behind: a late CXAnswerCallAction for this UUID would then pass the "no live call"
+				// guard and latch callInProgress for a call that no longer exists (an-mobile-ios#44).
+				providerDelegate.forget(uuid: entry.uuid)
 			}
 			endCallkit = true
 		} else {
@@ -482,9 +489,8 @@ class TelecomManager: ObservableObject {
 				let transaction = CXTransaction(action: startCallAction)
 				
 				let callInfo = CallInfo.newOutgoingCallInfo(addr: remoteAddress, isSas: false, displayName: name, isVideo: true, isConference: true)
-				providerDelegate.callInfos.updateValue(callInfo, forKey: uuid)
-				providerDelegate.uuids.updateValue(uuid, forKey: callId)
-				
+				providerDelegate.track(callInfo, uuid: uuid, callId: callId)
+
 				setHeldOtherCalls(core: core, exceptCallid: callId)
 				requestTransaction(transaction, action: "startCall")
 				DispatchQueue.main.async {
@@ -605,7 +611,7 @@ class TelecomManager: ObservableObject {
 					}
 	#endif
 					if TelecomManager.callKitEnabled(core: core) {
-						let uuid = self.providerDelegate.uuids["\(callId)"]
+						let uuid = self.providerDelegate.uuid(forCallId: callId)
 						TelecomManager.uuidReplacedCall = callId
 						
 						if uuid != nil {
@@ -626,44 +632,41 @@ class TelecomManager: ObservableObject {
 						self.outgoingCallStarted = false
 					}
 					
-					let uuid = providerDelegate.uuids["\(callId)"]
-					if uuid != nil {
-						let callInfo = providerDelegate.callInfos[uuid!]
-						if callInfo != nil && callInfo!.isOutgoing && !callInfo!.connected {
-							Log.info("CallKit: outgoing call connected with uuid \(uuid!) and callId \(callId)")
-							providerDelegate.reportOutgoingCallConnected(uuid: uuid!)
-							callInfo!.connected = true
-							providerDelegate.callInfos.updateValue(callInfo!, forKey: uuid!)
+					if let uuid = providerDelegate.uuid(forCallId: callId), let callInfo = providerDelegate.info(for: uuid) {
+						if callInfo.isOutgoing && !callInfo.connected {
+							Log.info("CallKit: outgoing call connected with uuid \(uuid) and callId \(callId)")
+							providerDelegate.reportOutgoingCallConnected(uuid: uuid)
+							// CallInfo is a class - this mutates the same instance already stored in
+							// the mirror, so no write-back is needed.
+							callInfo.connected = true
 						}
 					}
 				}
-				
-				actionToFulFill?.fulfill()
-				actionToFulFill = nil
+
+				providerDelegate.fulfillAndClearActionToFulFill()
 			case .Paused:
-				actionToFulFill?.fulfill()
-				actionToFulFill = nil
+				providerDelegate.fulfillAndClearActionToFulFill()
 			case .OutgoingInit,
 					.OutgoingProgress,
 					.OutgoingRinging,
 					.OutgoingEarlyMedia:
 				
 				if TelecomManager.callKitEnabled(core: core) {
-					let uuid = providerDelegate.uuids[""]
-					if  uuid != nil {
-						let callInfo = providerDelegate.callInfos[uuid!]
-						callInfo!.callId = callId
-						providerDelegate.callInfos.updateValue(callInfo!, forKey: uuid!)
-						providerDelegate.uuids.removeValue(forKey: "")
-						providerDelegate.uuids.updateValue(uuid!, forKey: callId)
-						
-						Log.info("CallKit: outgoing call started connecting with uuid \(uuid!) and callId \(callId)")
-						providerDelegate.reportOutgoingCallStartedConnecting(uuid: uuid!)
+					if !startingCallKitCall, providerDelegate.uuid(forCallId: callId) == nil,
+					   let uuid = providerDelegate.referHandoffUUID() {
+						// A refer target adopting the UUID its transferred-from call left parked. A call
+						// already bound to its own UUID must not adopt it: the rekey would displace, and
+						// end, that call's own CallKit entry.
+						providerDelegate.rekey(uuid: uuid, to: callId)
+
+						Log.info("CallKit: outgoing call started connecting with uuid \(uuid) and callId \(callId)")
+						providerDelegate.reportOutgoingCallStartedConnecting(uuid: uuid)
 					} else if callId != "" && cstate == .OutgoingInit {
-						if let uuidTmp = providerDelegate.uuids["\(callId)"] {
-							providerDelegate.uuids.removeValue(forKey: callId)
-							providerDelegate.uuids.updateValue(uuidTmp, forKey: "")
-						}
+						// CallKit-started calls, including the conference path's, are bound to their
+						// UUID by the CXStartCallAction handler once doCall returns. The conference
+						// path used to move its UUID back to "" here so the call doCall creates could
+						// adopt it; that also blanked the UUID's call-id, so an end action in between
+						// couldn't find the call to terminate.
 					} else {
 						referedToCall = callId
 					}
@@ -735,7 +738,7 @@ class TelecomManager: ObservableObject {
 				// }
 				
 				if TelecomManager.callKitEnabled(core: core) {
-					var uuid = providerDelegate.uuids["\(callId)"]
+					var uuid = providerDelegate.uuid(forCallId: callId)
 					if callId == referedToCall {
 						// refered call ended before connecting
 						Log.info("Callkit: end refered to call: \(String(describing: referedToCall))")
@@ -743,28 +746,28 @@ class TelecomManager: ObservableObject {
 						referedToCall = nil
 					}
 					if uuid == nil {
-						// the call not yet connected
-						uuid = providerDelegate.uuids[""]
+						// a refer target that ended before adopting its parked UUID
+						uuid = providerDelegate.referHandoffUUID()
 					}
-					if uuid != nil {
+					if let uuid = uuid {
 						if callId == referedFromCall {
 							Log.info("Callkit: end refered from call: \(String(describing: referedFromCall))")
 							referedFromCall = nil
-							let callInfo = providerDelegate.callInfos[uuid!]
-							callInfo!.callId = referedToCall ?? ""
-							providerDelegate.callInfos.updateValue(callInfo!, forKey: uuid!)
-							providerDelegate.uuids.removeValue(forKey: callId)
-							providerDelegate.uuids.updateValue(uuid!, forKey: callInfo!.callId)
+							if let referedToCall = referedToCall {
+								providerDelegate.rekey(uuid: uuid, to: referedToCall)
+							} else {
+								providerDelegate.parkForReferTarget(uuid: uuid)
+							}
 							referedToCall = nil
 							break
 						}
 						if endCallKitReplacedCall {
-							let transaction = CXTransaction(action: CXEndCallAction(call: uuid!))
+							let transaction = CXTransaction(action: CXEndCallAction(call: uuid))
 							requestTransaction(transaction, action: "endCall")
 						} else {
 							endCallKitReplacedCall = true
 						}
-						
+
 					}
 				}
 			case .Released:
