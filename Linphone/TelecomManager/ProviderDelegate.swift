@@ -147,10 +147,21 @@ class ProviderDelegate: NSObject {
 		return existing
 	}
 
+	/// The shared `CallInfo` instance for `uuid`. The lock covers membership only: do not read
+	/// `.callId` off the returned instance, since `track`/`rekey` rewrite it under `mirrorLock` from
+	/// the core queue. Use `callId(for:)` instead.
 	func info(for uuid: UUID) -> CallInfo? {
 		mirrorLock.lock()
 		defer { mirrorLock.unlock() }
 		return callInfos[uuid]
+	}
+
+	/// The call-id currently bound to `uuid`, read under `mirrorLock`. `nil` if `uuid` isn't tracked;
+	/// `""` if it is a pending outgoing call whose call-id hasn't bound yet.
+	func callId(for uuid: UUID) -> String? {
+		mirrorLock.lock()
+		defer { mirrorLock.unlock() }
+		return callInfos[uuid]?.callId
 	}
 
 	func uuid(forCallId callId: String) -> UUID? {
@@ -207,7 +218,7 @@ class ProviderDelegate: NSObject {
 		update.localizedCallerName = displayName
 		
 		let callInfo = info(for: uuid)
-		let callId = callInfo?.callId ?? ""
+		let callId = self.callId(for: uuid) ?? ""
 
 		/*
 		 if (ConfigManager.instance().config?.hasEntry(section: "app", key: "max_calls") == 1)  { // moved from misc to app section intentionally upon app start or remote configuration
@@ -282,7 +293,7 @@ class ProviderDelegate: NSObject {
 	func endCallNotExist(uuid: UUID, timeout: DispatchTime) {
 		DispatchQueue.main.asyncAfter(deadline: timeout) {
 			CoreContext.shared.doOnCoreQueue(synchronous: true) { core in
-				let callId = self.info(for: uuid)?.callId
+				let callId = self.callId(for: uuid)
 				if callId == nil {
 					// callkit already ended
 					return
@@ -301,12 +312,19 @@ extension ProviderDelegate: CXProviderDelegate {
 	func provider(_ provider: CXProvider, perform action: CXEndCallAction) {
 		
 		let uuid = action.callUUID
-		let callId = info(for: uuid)?.callId
-
-		// remove call infos first, otherwise CXEndCallAction will be called more than onece
-		forget(uuid: uuid)
 
 		CoreContext.shared.doOnCoreQueue { core in
+			// Resolve the call-id on the core queue, not here: an outgoing call's call-id is bound by
+			// `rekey` during `.OutgoingInit`, which runs on the core queue inside the CXStartCallAction
+			// block. Reading it on the main queue can observe the `""` sentinel from before that bind,
+			// miss the core call, and then forget the only handle to it. Queued behind the start
+			// block, this read always sees the bound call-id.
+			let callId = self.callId(for: uuid)
+
+			// remove call infos before terminating, otherwise CXEndCallAction will be called more than
+			// once (the resulting `.End` state change would find the uuid still tracked)
+			self.forget(uuid: uuid)
+
 			if let call = core.getCallByCallid(callId: callId ?? "") {
 				TelecomManager.shared.terminateCall(call: call)
 				Log.info("CallKit: Call ended with call-id: \(String(describing: callId)) an UUID: \(uuid.description).")
@@ -318,7 +336,6 @@ extension ProviderDelegate: CXProviderDelegate {
 	func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
 		let uuid = action.callUUID
 		let callInfo = info(for: uuid)
-		let callId = callInfo?.callId ?? ""
 
 		// An answer can arrive after the call has already ended, in which case its CallInfo is gone.
 		// Setting callInProgress on that path latches it: nothing clears it without a further call
@@ -339,6 +356,7 @@ extension ProviderDelegate: CXProviderDelegate {
 			}
 		}
 		CoreContext.shared.doOnCoreQueue { core in
+			let callId = self.callId(for: uuid) ?? ""
 			Log.info("CallKit: answer call with call-id: \(String(describing: callId)) and UUID: \(uuid.description).")
 			
 			let call = core.getCallByCallid(callId: callId)
@@ -379,9 +397,9 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXSetHeldCallAction) {
 		let uuid = action.callUUID
-		let callId = info(for: uuid)?.callId ?? ""
-		
+
 		CoreContext.shared.doOnCoreQueue { core in
+			let callId = self.callId(for: uuid) ?? ""
 			let call = core.getCallByCallid(callId: callId)
 			
 			if call == nil {
@@ -464,10 +482,8 @@ extension ProviderDelegate: CXProviderDelegate {
 					// CallKit drops the call on fail(), so the mirrors must drop it too. uuids[""]
 					// is the single slot outgoing calls occupy until their call-id binds; leaving a
 					// dead uuid there makes the next lookup for "" resolve to a call that never existed.
-					self.callInfos.removeValue(forKey: uuid)
-					if self.uuids[""] == uuid {
-						self.uuids.removeValue(forKey: "")
-					}
+					// `forget` clears that slot, since a refused call's callId is still "".
+					self.forget(uuid: uuid)
 					action.fail()
 				}
 			}
@@ -484,8 +500,8 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
 		let uuid = action.callUUID
-		let callId = info(for: uuid)?.callId
 		CoreContext.shared.doOnCoreQueue { core in
+			let callId = self.callId(for: uuid)
 			Log.info( "CallKit: Call muted with call-id: \(String(describing: callId)) an UUID: \(uuid.description).")
 			core.micEnabled = !core.micEnabled
 			action.fulfill()
@@ -494,9 +510,9 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, perform action: CXPlayDTMFCallAction) {
 		let uuid = action.callUUID
-		let callId = info(for: uuid)?.callId ?? ""
-		
+
 		CoreContext.shared.doOnCoreQueue { core in
+			let callId = self.callId(for: uuid) ?? ""
 			Log.info("CallKit: Call send dtmf with call-id: \(callId) an UUID: \(uuid.description).")
 			if let call = core.getCallByCallid(callId: callId) {
 				let digit = (action.digits.cString(using: String.Encoding.utf8)?[0])!
@@ -512,7 +528,7 @@ extension ProviderDelegate: CXProviderDelegate {
 	
 	func provider(_ provider: CXProvider, timedOutPerforming action: CXAction) {
 		let uuid = action.uuid
-		let callId = info(for: uuid)?.callId
+		let callId = self.callId(for: uuid)
 		Log.error("CallKit: Call time out with call-id: \(String(describing: callId)) an UUID: \(uuid.description).")
 		action.fulfill()
 	}
