@@ -85,6 +85,9 @@
 "assistant_recover_phone_number_account_unavailable_no_push_warning" = "Push notifications do not seem to be available on your device, but they are mandatory for recovering a phone number account in the mobile app.";
 "assistant_invalid_uri_toast" = "Invalid URI";
 "assistant_login_third_party_sip_account" = "Use a third party SIP account";
+"assistant_login_with_url" = "Login with URL";
+"assistant_login_with_url_label" = "Provisioning URL";
+"assistant_login_with_url_placeholder" = "https://";
 "assistant_no_account_yet" = "No account yet?";
 "assistant_permissions_access_camera_title" = "**Access camera:** To capture video during video calls and conferences.";
 "assistant_permissions_grant_all_of_them" = "OK";
