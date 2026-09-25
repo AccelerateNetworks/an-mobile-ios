@@ -97,25 +97,21 @@ class URIHandler {
 	
 	private static func initiateConfiguration(url: URL) {
 		if autoRemoteProvisioningOnConfigUriHandler() {
+			guard let urlString = LinphoneUtils.getRemoteProvisioningUrl(from: url.absoluteString) else {
+				Log.error("[URIHandler] unable to extract a provisioning URL from \(url.absoluteString)")
+				toast("Failed_uri_handler_bad_config_address")
+				return
+			}
 			CoreContext.shared.doOnCoreQueue { core in
-				Log.info("[URIHandler] provisioning app with URI: \(url.resourceSpecifier)")
+				Log.info("[URIHandler] provisioning app with URI: \(urlString)")
 				do {
 					addCoreDelegate()
-					var urlString = url.resourceSpecifier
-					if urlString.starts(with: "//") {
-						urlString = String(urlString.dropFirst(2))
-					}
-					
-					if !urlString.starts(with: "https://") {
-						urlString = "https://" + urlString
-					}
-					
 					core.config?.setString(section: "misc", key: "config-uri", value: urlString)
 					try core.setProvisioninguri(newValue: urlString)
 					core.stop()
 					try core.start()
 				} catch {
-					Log.error("[URIHandler] unable to configure the app with \(url.resourceSpecifier) \(error)")
+					Log.error("[URIHandler] unable to configure the app with \(urlString) \(error)")
 					toast("Failed_uri_handler_bad_config_address")
 				}
 			}
