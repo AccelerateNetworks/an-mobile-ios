@@ -319,10 +319,11 @@ struct LoginFragment: View {
 						Image("link")
 							.renderingMode(.template)
 							.resizable()
-							.foregroundStyle(Color.orangeMain500)
+							.foregroundStyle(Color.grayMain2c500)
 							.frame(width: 20, height: 20)
 
 						Text("assistant_login_with_url")
+							.foregroundStyle(Color.grayMain2c500)
 							.default_text_style_orange_600(styleSize: 20)
 							.frame(height: 35)
 					}
@@ -335,7 +336,7 @@ struct LoginFragment: View {
 				.overlay(
 					RoundedRectangle(cornerRadius: 60)
 						.inset(by: 0.5)
-						.stroke(Color.orangeMain500, lineWidth: 1)
+						.stroke(Color.grayMain2c500, lineWidth: 1)
 				)
 				.padding(.bottom)
 

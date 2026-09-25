@@ -57,7 +57,7 @@ class LoginWithUrlViewModel: ObservableObject {
 	
 	@MainActor
 	func login() {
-		let trimmedUrl = url.trimmingCharacters(in: .whitespacesAndNewlines)
+		let trimmedUrl = LoginWithUrlViewModel.provisioningUrl(from: url.trimmingCharacters(in: .whitespacesAndNewlines))
 		
 		guard let parsedUrl = URL(string: trimmedUrl),
 			  let scheme = parsedUrl.scheme?.lowercased(),
@@ -75,6 +75,26 @@ class LoginWithUrlViewModel: ObservableObject {
 			core.stop()
 			try? core.start()
 		}
+	}
+	
+	/// Turns a `linphone-config://host/path` link into `https://host/path`, the same way
+	/// URIHandler does when the app is opened with one. Other input is returned unchanged.
+	static func provisioningUrl(from input: String) -> String {
+		let configScheme = "linphone-config:"
+		guard input.lowercased().hasPrefix(configScheme) else {
+			return input
+		}
+		
+		var urlString = String(input.dropFirst(configScheme.count))
+		if urlString.hasPrefix("//") {
+			urlString = String(urlString.dropFirst(2))
+		}
+		
+		let lowercased = urlString.lowercased()
+		if !lowercased.hasPrefix("https://") && !lowercased.hasPrefix("http://") {
+			urlString = "https://" + urlString
+		}
+		return urlString
 	}
 	
 	private func handleConfigurationChanged(status: ConfiguringState) {
