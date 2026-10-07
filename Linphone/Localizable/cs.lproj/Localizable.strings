@@ -57,6 +57,10 @@
 "assistant_permissions_title" = "Udělit oprávnění";
 "assistant_qr_code_invalid_toast" = "Neplatný QR kód!";
 "assistant_scan_qr_code" = "Naskenovat QR kód";
+"assistant_login_with_url" = "Přihlásit se pomocí URL";
+"assistant_login_with_url_label" = "URL pro vzdálené nastavení";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Na tomto odkazu nebyl nalezen žádný nový účet";
 "assistant_third_party_sip_account_warning_ok" = "Rozumím";
 "bottom_navigation_calls_label" = "Hovory";
 "bottom_navigation_contacts_label" = "Kontakty";

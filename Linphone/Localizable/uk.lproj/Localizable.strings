@@ -340,6 +340,10 @@
 "assistant_permissions_title" = "Надати дозволи";
 "assistant_qr_code_invalid_toast" = "Недійсний QR-код!";
 "assistant_scan_qr_code" = "Відскануйте QR-код";
+"assistant_login_with_url" = "Увійти за URL";
+"assistant_login_with_url_label" = "URL-адреса віддаленого налаштування";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "За цим посиланням не знайдено нового облікового запису";
 "assistant_sip_account_transport_protocol" = "Транспорт";
 "assistant_third_party_sip_account_create_linphone_account" = "Я надаю перевагу створенню облікового запису";
 "assistant_web_platform_link" = "subscribe.linphone.org";

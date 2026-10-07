@@ -124,6 +124,10 @@
 "assistant_permissions_title" = "Conceder permissões";
 "assistant_qr_code_invalid_toast" = "QR code inválido!";
 "assistant_scan_qr_code" = "Escanear QR code";
+"assistant_login_with_url" = "Entrar com URL";
+"assistant_login_with_url_label" = "URL de provisionamento remoto";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Nenhuma conta nova foi encontrada neste link";
 "assistant_sip_account_transport_protocol" = "Transporte";
 "assistant_third_party_sip_account_warning_ok" = "Eu entendo";
 "authentication_id" = "ID de autenticação (se diferente)";

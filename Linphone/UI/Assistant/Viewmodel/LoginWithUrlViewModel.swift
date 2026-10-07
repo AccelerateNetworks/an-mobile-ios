@@ -30,31 +30,6 @@ class LoginWithUrlViewModel: ObservableObject {
 	@Published var url: String = ""
 	@Published var isProvisioning: Bool = false
 	
-	private var mCoreDelegate: CoreDelegate?
-	
-	init() {
-		mCoreDelegate = CoreDelegateStub(
-			onConfiguringStatus: { (_: Core, status: ConfiguringState, message: String) in
-				Log.info("\(LoginWithUrlViewModel.TAG) New configuration state is \(status) = \(message)")
-				self.handleConfigurationChanged(status: status)
-			}
-		)
-		
-		if let delegate = mCoreDelegate {
-			coreContext.doOnCoreQueue { core in
-				core.addDelegate(delegate: delegate)
-			}
-		}
-	}
-	
-	deinit {
-		if let delegate = mCoreDelegate {
-			coreContext.doOnCoreQueue { core in
-				core.removeDelegate(delegate: delegate)
-			}
-		}
-	}
-	
 	@MainActor
 	func login() {
 		let trimmedUrl = LoginWithUrlViewModel.provisioningUrl(from: url.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -70,8 +45,21 @@ class LoginWithUrlViewModel: ObservableObject {
 		Log.info("\(LoginWithUrlViewModel.TAG) Setting remote provisioning URI and restarting the Core")
 		isProvisioning = true
 		
-		coreContext.doOnCoreQueue { core in
-			try? core.setProvisioninguri(newValue: trimmedUrl)
+		coreContext.doOnCoreQueue { [weak self] core in
+			let accountIdentitiesBefore = ProvisioningObserver.accountIdentities(core: core)
+			do {
+				try core.setProvisioninguri(newValue: trimmedUrl)
+			} catch {
+				Log.error("\(LoginWithUrlViewModel.TAG) Unable to set provisioning URI \(trimmedUrl): \(error)")
+				DispatchQueue.main.async {
+					self?.isProvisioning = false
+					ToastViewModel.shared.show("Invalide URI")
+				}
+				return
+			}
+			ProvisioningObserver.observe(core: core, accountIdentitiesBefore: accountIdentitiesBefore) {
+				self?.isProvisioning = false
+			}
 			core.stop()
 			try? core.start()
 		}
@@ -96,22 +84,90 @@ class LoginWithUrlViewModel: ObservableObject {
 		}
 		return urlString
 	}
+}
+
+/// Reports the outcome of one provisioning attempt, then removes itself from the core.
+/// It is not owned by the screen: from "Add an account" the screen is dismissed as soon as the
+/// core restarts, and the result still has to reach the user.
+private final class ProvisioningObserver {
 	
-	private func handleConfigurationChanged(status: ConfiguringState) {
+	// Keeps each observer alive until its attempt has an outcome. Only touched on the core queue.
+	private static var pending: [ObjectIdentifier: ProvisioningObserver] = [:]
+	
+	private let accountIdentitiesBefore: Set<String>
+	private let onFinished: () -> Void
+	private var delegate: CoreDelegate?
+	private var configurationSucceeded = false
+	
+	static func accountIdentities(core: Core) -> Set<String> {
+		return Set(core.accountList.compactMap { $0.params?.identityAddress?.asStringUriOnly() })
+	}
+	
+	/// Call on the core queue, before restarting the core. `onFinished` runs on the main queue.
+	static func observe(core: Core, accountIdentitiesBefore: Set<String>, onFinished: @escaping () -> Void) {
+		let observer = ProvisioningObserver(accountIdentitiesBefore: accountIdentitiesBefore, onFinished: onFinished)
+		pending[ObjectIdentifier(observer)] = observer
+		observer.start(core: core)
+	}
+	
+	private init(accountIdentitiesBefore: Set<String>, onFinished: @escaping () -> Void) {
+		self.accountIdentitiesBefore = accountIdentitiesBefore
+		self.onFinished = onFinished
+	}
+	
+	private func start(core: Core) {
+		let delegate = CoreDelegateStub(
+			onGlobalStateChanged: { [weak self] (core: Core, state: GlobalState, _: String) in
+				if state == .On {
+					self?.coreStarted(core: core)
+				}
+			},
+			onConfiguringStatus: { [weak self] (core: Core, status: ConfiguringState, message: String) in
+				Log.info("\(LoginWithUrlViewModel.TAG) New configuration state is \(status) = \(message)")
+				self?.configuringStatusChanged(core: core, status: status)
+			}
+		)
+		self.delegate = delegate
+		core.addDelegate(delegate: delegate)
+	}
+	
+	private func configuringStatusChanged(core: Core, status: ConfiguringState) {
 		switch status {
 		case .Successful:
-			// No toast here: the only success toast says "QR code validated", and the
-			// assistant closes on its own once the provisioned account shows up.
-			DispatchQueue.main.async {
-				self.isProvisioning = false
-			}
-		case .Failed:
-			DispatchQueue.main.async {
-				self.isProvisioning = false
-				ToastViewModel.shared.show("Invalide URI")
-			}
+			// Accounts from the provisioned config only exist once the core is On.
+			configurationSucceeded = true
+		case .Failed, .Skipped:
+			finish(core: core, toast: "Invalide URI")
 		default:
 			break
+		}
+	}
+	
+	private func coreStarted(core: Core) {
+		guard configurationSucceeded else { return }
+		
+		// No toast when an account was added: the assistant closes on its own once it shows up.
+		if ProvisioningObserver.accountIdentities(core: core).subtracting(accountIdentitiesBefore).isEmpty {
+			Log.warn("\(LoginWithUrlViewModel.TAG) Provisioning succeeded but did not add any account")
+			finish(core: core, toast: "Failed_login_with_url_no_account")
+		} else {
+			finish(core: core, toast: nil)
+		}
+	}
+	
+	private func finish(core: Core, toast: String?) {
+		if let delegate = delegate {
+			core.removeDelegate(delegate: delegate)
+		}
+		delegate = nil
+		ProvisioningObserver.pending[ObjectIdentifier(self)] = nil
+		
+		let onFinished = self.onFinished
+		DispatchQueue.main.async {
+			onFinished()
+			if let toast = toast {
+				ToastViewModel.shared.show(toast)
+			}
 		}
 	}
 }

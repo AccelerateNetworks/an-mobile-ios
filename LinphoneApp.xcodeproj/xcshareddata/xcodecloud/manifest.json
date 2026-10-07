@@ -1,0 +1,9 @@
+{
+  "id" : "56a10f29-621f-48b5-af89-0380808f4dbe",
+  "targets" : [
+    {
+      "id" : "1B17C9A3-5EAF-43DF-98B7-8DCC62FA100E",
+      "name" : "linphone"
+    }
+  ]
+}

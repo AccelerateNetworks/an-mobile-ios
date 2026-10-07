@@ -49,6 +49,10 @@
 "assistant_permissions_title" = "授予权限";
 "assistant_qr_code_invalid_toast" = "无效二维码！";
 "assistant_scan_qr_code" = "扫描二维码";
+"assistant_login_with_url" = "使用 URL 登录";
+"assistant_login_with_url_label" = "远程部署配置URL";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "此链接中未找到新账户";
 "assistant_sip_account_transport_protocol" = "传输";
 "assistant_third_party_sip_account_warning_ok" = "我明白";
 "bottom_navigation_calls_label" = "通话";

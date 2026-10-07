@@ -52,6 +52,10 @@
 "assistant_permissions_title" = "Предоставить разрешения";
 "assistant_qr_code_invalid_toast" = "Неверный QR-код!";
 "assistant_scan_qr_code" = "Сканировать QR-код";
+"assistant_login_with_url" = "Войти по URL";
+"assistant_login_with_url_label" = "URL-адрес удалённого конфигурирования";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "По этой ссылке не найдено новых учётных записей";
 "assistant_sip_account_transport_protocol" = "Транспорт";
 "assistant_third_party_sip_account_warning_ok" = "Я понял";
 "bottom_navigation_calls_label" = "Звонки";

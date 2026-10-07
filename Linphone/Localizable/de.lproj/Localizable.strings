@@ -57,6 +57,10 @@
 "assistant_permissions_title" = "Berechtigungen erteilen";
 "assistant_qr_code_invalid_toast" = "Ungültiger QR-Code!";
 "assistant_scan_qr_code" = "QR-Code scannen";
+"assistant_login_with_url" = "Mit URL anmelden";
+"assistant_login_with_url_label" = "Remotebereitstellung URL";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Unter diesem Link wurde kein neues Konto gefunden";
 "assistant_sip_account_transport_protocol" = "Transport";
 "assistant_third_party_sip_account_warning_ok" = "Ich verstehe";
 "bottom_navigation_calls_label" = "Anrufe";
