@@ -95,6 +95,10 @@
 "assistant_permissions_title" = "Donner les permissions";
 "assistant_qr_code_invalid_toast" = "Ce QR code est invalide !";
 "assistant_scan_qr_code" = "Scanner un QR code";
+"assistant_login_with_url" = "Se connecter avec une URL";
+"assistant_login_with_url_label" = "URL de configuration distante";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Aucun nouveau compte trouvé à ce lien";
 "assistant_sip_account_transport_protocol" = "Transport";
 "assistant_third_party_sip_account_create_linphone_account" = "Je préfère créer un compte";
 "assistant_third_party_sip_account_warning_explanation" = "Certaines fonctionnalités telles que les conversations de groupe, les vidéo-conférences, etc… nécessitent un compte %@.\n\nCes fonctionnalités seront masquées si vous utilisez un compte SIP tiers.\n\nPour les activer dans un projet commercial, merci de nous contacter.";

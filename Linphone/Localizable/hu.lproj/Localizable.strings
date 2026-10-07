@@ -19,6 +19,10 @@
 "assistant_permissions_title" = "Engedélyek biztosítása";
 "assistant_qr_code_invalid_toast" = "Érvénytelen QR–kód!";
 "assistant_scan_qr_code" = "QR–kód beolvasása";
+"assistant_login_with_url" = "Bejelentkezés URL-lel";
+"assistant_login_with_url_label" = "Távoli konfiguráció URL";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Ezen a hivatkozáson nem található új fiók";
 "assistant_sip_account_transport_protocol" = "SIP átvitel";
 "assistant_third_party_sip_account_warning_ok" = "Elfogadom";
 "authentication_id" = "Azonosító ID (ha különbözik)";

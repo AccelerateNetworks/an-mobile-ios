@@ -233,6 +233,8 @@
 		D7F5F6412C359F3B007FCF2F /* SipAddressesPopup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7F5F6402C359F3B007FCF2F /* SipAddressesPopup.swift */; };
 		D7FB55112AD447FD00A5AB15 /* RegisterFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FB55102AD447FD00A5AB15 /* RegisterFragment.swift */; };
 		D7FC8E4A2EBA12F90080C09D /* Launch Screen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */; };
+		DD32CA5A3067168D00BFCD2C /* LoginWithUrlViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD32CA593067168D00BFCD2C /* LoginWithUrlViewModel.swift */; };
+		DD32CA5C306716AA00BFCD2C /* LoginWithUrlFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD32CA5B306716AA00BFCD2C /* LoginWithUrlFragment.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -539,6 +541,8 @@
 		D7F5F6402C359F3B007FCF2F /* SipAddressesPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipAddressesPopup.swift; sourceTree = "<group>"; };
 		D7FB55102AD447FD00A5AB15 /* RegisterFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterFragment.swift; sourceTree = "<group>"; };
 		D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		DD32CA593067168D00BFCD2C /* LoginWithUrlViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWithUrlViewModel.swift; sourceTree = "<group>"; };
+		DD32CA5B306716AA00BFCD2C /* LoginWithUrlFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginWithUrlFragment.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -879,6 +883,7 @@
 				D72343332ACEFFC3009AA24E /* QRScanner.swift */,
 				D72343312ACEFF58009AA24E /* QRScannerController.swift */,
 				D714DE5F2C1B3B34006C1F1D /* RegisterViewModel.swift */,
+				DD32CA593067168D00BFCD2C /* LoginWithUrlViewModel.swift */,
 			);
 			path = Viewmodel;
 			sourceTree = "<group>";
@@ -1229,6 +1234,7 @@
 				D748BF2B2ACD82D2004844EB /* ThirdPartySipAccountLoginFragment.swift */,
 				D748BF2D2ACD82E7004844EB /* ThirdPartySipAccountWarningFragment.swift */,
 				D714DE612C1C4636006C1F1D /* RegisterCodeConfirmationFragment.swift */,
+				DD32CA5B306716AA00BFCD2C /* LoginWithUrlFragment.swift */,
 			);
 			path = Fragments;
 			sourceTree = "<group>";
@@ -1660,6 +1666,7 @@
 				D7AEB9742F324A6F00298546 /* ConversationDocumentsListFragment.swift in Sources */,
 				D732A9132B04C7A300DB42BA /* HistoryListFragment.swift in Sources */,
 				C65270F82F879D2700FF248C /* EarlyPushkitDelegate.swift in Sources */,
+				DD32CA5C306716AA00BFCD2C /* LoginWithUrlFragment.swift in Sources */,
 				D7C2DA1D2CA44DE400A2441B /* EventModel.swift in Sources */,
 				D719ABC92ABC6FD700B41C10 /* CoreContext.swift in Sources */,
 				D70A26F22B7F5D95006CC8FC /* ConversationFragment.swift in Sources */,
@@ -1814,6 +1821,7 @@
 				D7343FE82D3FA2000059D784 /* CodecModel.swift in Sources */,
 				D77A080E2CB6BCAF0095D589 /* MessageConferenceInfo.swift in Sources */,
 				C6A5A9412C10B5D50070FEA4 /* EncodableExtension.swift in Sources */,
+				DD32CA5A3067168D00BFCD2C /* LoginWithUrlViewModel.swift in Sources */,
 				D719ABCC2ABC769C00B41C10 /* AssistantView.swift in Sources */,
 				C62817342C1C7C7400DBA646 /* HelpView.swift in Sources */,
 				D78E062C2BEA69BC00CE3783 /* CallStatisticsSheetBottomSheet.swift in Sources */,

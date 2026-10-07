@@ -46,6 +46,10 @@
 "assistant_permissions_title" = "Verleen machtigingen";
 "assistant_qr_code_invalid_toast" = "Ongeldige QR-code!";
 "assistant_scan_qr_code" = "Scan de QR-code";
+"assistant_login_with_url" = "Inloggen met URL";
+"assistant_login_with_url_label" = "URL voor externe provisioning";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Geen nieuw account gevonden via deze link";
 "assistant_sip_account_transport_protocol" = "Vervoer";
 "assistant_third_party_sip_account_warning_ok" = "Ik begrijp";
 "authentication_id" = "Authenticatie-ID (indien anders)";

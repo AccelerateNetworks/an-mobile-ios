@@ -197,6 +197,14 @@ struct ToastView: View {
 							.default_text_style(styleSize: 15)
 							.padding(8)
 						
+					// AccelerateNetworks: provisioning from a typed-in URL applied but added no account
+					case "Failed_login_with_url_no_account":
+						Text("assistant_login_with_url_no_account_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+						
 					case "Registration_failed":
 						Text("assistant_account_login_forbidden_error")
 							.multilineTextAlignment(.center)

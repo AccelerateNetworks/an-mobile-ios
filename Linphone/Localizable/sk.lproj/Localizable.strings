@@ -158,6 +158,10 @@
 "assistant_permissions_title" = "Udeliť oprávnenia";
 "assistant_qr_code_invalid_toast" = "Neplatný QR kód!";
 "assistant_scan_qr_code" = "Naskenovať QR kód";
+"assistant_login_with_url" = "Prihlásiť sa pomocou URL";
+"assistant_login_with_url_label" = "URL pre vzdialenú správu";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Na tomto odkaze sa nenašiel žiadny nový účet";
 "assistant_sip_account_transport_protocol" = "Prenos";
 "assistant_third_party_sip_account_warning_ok" = "Rozumiem";
 "contact_call_action" = "Volať";

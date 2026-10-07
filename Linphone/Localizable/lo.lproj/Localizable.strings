@@ -92,6 +92,10 @@
 "assistant_permissions_title" = "ອະນຸຍາດສິດການເຂົ້າເຖິງ";
 "assistant_qr_code_invalid_toast" = "ລະຫັດ QR ບໍ່ຖືກຕ້ອງ!";
 "assistant_scan_qr_code" = "ສະແກນລະຫັດ QR";
+"assistant_login_with_url" = "ເຂົ້າສູ່ລະບົບດ້ວຍ URL";
+"assistant_login_with_url_label" = "URL ສຳລັບການຕັ້ງຄ່າຈາກທາງໄກ";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "ບໍ່ພົບບັນຊີໃໝ່ຢູ່ລິ້ງນີ້";
 "assistant_sip_account_transport_protocol" = "ໂປຣໂຕຄໍການຮັບສົ່ງ";
 "assistant_third_party_sip_account_create_linphone_account" = "ຂ້ອຍຕ້ອງການສ້າງບັນຊີໃໝ່";
 "assistant_third_party_sip_account_warning_explanation" = "ບາງຄຸນສົມບັດຕ້ອງການບັນຊີ %@ ເຊັ່ນ: ການສົ່ງຂໍ້ຄວາມກຸ່ມ, ການປະຊຸມວິດີໂອ...\n\nຄຸນສົມບັດເຫຼົ່ານີ້ຈະຖືກເຊື່ອງໄວ້ເມື່ອເຈົ້າລົງທະບຽນດ້ວຍບັນຊີ SIP ຂອງພາກສ່ວນທີສາມ.\n\nຫາກຕ້ອງການເປີດໃຊ້ງານໃນໂຄງການທາງການຄ້າ, ກະລຸນາຕິດຕໍ່ພວກເຮົາ.";

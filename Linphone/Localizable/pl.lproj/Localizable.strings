@@ -20,6 +20,10 @@
 "bottom_navigation_meetings_label" = "Spotkania";
 "assistant_account_login" = "Login";
 "assistant_scan_qr_code" = "Zeskanuj kod QR";
+"assistant_login_with_url" = "Zaloguj się przez URL";
+"assistant_login_with_url_label" = "URL zdalnej konfiguracji";
+"assistant_login_with_url_placeholder" = "https://";
+"assistant_login_with_url_no_account_toast" = "Pod tym linkiem nie znaleziono nowego konta";
 "assistant_third_party_sip_account_warning_ok" = "Zrozumiałem";
 "assistant_account_register_push_notification_not_received_error" = "Powiadomienie push z tokenem uwierzytelniającym nie zostało otrzymane w ciągu 5 sekund. Spróbuj ponownie później.";
 "assistant_permissions_title" = "Przyznaj uprawnienia";

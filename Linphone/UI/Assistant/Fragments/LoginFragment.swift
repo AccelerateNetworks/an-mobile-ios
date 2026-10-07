@@ -310,7 +310,36 @@ struct LoginFragment: View {
 						.stroke(Color.orangeMain500, lineWidth: 1)
 				)
 				.padding(.bottom)
-				
+
+				// AccelerateNetworks: remote provisioning from a typed-in URL
+				NavigationLink(destination: {
+					LoginWithUrlFragment()
+				}, label: {
+					HStack {
+						Image("link")
+							.renderingMode(.template)
+							.resizable()
+							.foregroundStyle(Color.grayMain2c500)
+							.frame(width: 20, height: 20)
+
+						Text("assistant_login_with_url")
+							.foregroundStyle(Color.grayMain2c500)
+							.default_text_style_orange_600(styleSize: 20)
+							.frame(height: 35)
+					}
+					.frame(maxWidth: .infinity)
+
+				})
+				.padding(.horizontal, 20)
+				.padding(.vertical, 10)
+				.cornerRadius(60)
+				.overlay(
+					RoundedRectangle(cornerRadius: 60)
+						.inset(by: 0.5)
+						.stroke(Color.grayMain2c500, lineWidth: 1)
+				)
+				.padding(.bottom)
+
 				if false { // AccelerateNetworks: third-party SIP account hidden
 				NavigationLink(isActive: $isLinkSIPActive, destination: {
 					ThirdPartySipAccountWarningFragment(accountLoginViewModel: accountLoginViewModel)
