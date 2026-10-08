@@ -48,13 +48,9 @@ class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
 	@Binding var scanResult: String
 	private var lastResult: String = ""
 	
-	private var mCoreDelegate: CoreDelegate?
-	
 	init(_ scanResult: Binding<String>) {
 		self._scanResult = scanResult
 		super.init()
-		
-		addDelegate()
 	}
 	
 	func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
@@ -73,55 +69,20 @@ class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
 		if metadataObj.type == AVMetadataObject.ObjectType.qr,
 		   let result = metadataObj.stringValue {
 			if !result.isEmpty && result != lastResult {
-				if let url = NSURL(string: result) {
-					if UIApplication.shared.canOpenURL(url as URL) {
-						lastResult = result
-						coreContext.doOnCoreQueue { core in
-							try? core.setProvisioninguri(newValue: result)
-							core.stop()
-							try? core.start()
-						}
-					} else {
-						DispatchQueue.main.async {
-							ToastViewModel.shared.show("Invalide URI")
-						}
+				// Remember invalid codes too, so the toast isn't repeated on every frame
+				lastResult = result
+				if let url = ProvisioningUrl.parse(result) {
+					coreContext.doOnCoreQueue { core in
+						// CoreContext displays the outcome
+						self.coreContext.applyRemoteProvisioning(core: core, url: url)
 					}
 				} else {
+					Log.error("[QRScanner] The content of the QR Code [\(result)] doesn't seem to be a valid provisioning URL")
 					DispatchQueue.main.async {
 						ToastViewModel.shared.show("Invalide URI")
 					}
 				}
 			}
-		}
-	}
-	
-	func addDelegate() {
-		mCoreDelegate = CoreDelegateStub(
-			onConfiguringStatus: { (_: Core, status: ConfiguringState, message: String) in
-				Log.info("New configuration state is \(status) = \(message)")
-				self.handleConfigurationChanged(status: status)
-			}
-		)
-		
-		if let delegate = mCoreDelegate {
-			coreContext.doOnCoreQueue { core in
-				core.addDelegate(delegate: delegate)
-			}
-		}
-	}
-	
-	func handleConfigurationChanged(status: ConfiguringState) {
-		switch status {
-		case .Successful:
-			DispatchQueue.main.async {
-				ToastViewModel.shared.show("Success_qr_code_validated")
-			}
-		case .Failed:
-			DispatchQueue.main.async {
-				ToastViewModel.shared.show("Invalide URI")
-			}
-		default:
-			break
 		}
 	}
 }
