@@ -61,6 +61,10 @@ class CoreContext: ObservableObject {
 	private var pendingActions: [((Core) -> Void)]? = []
 	private var callStateCallBacks: [((Call.State) -> Void)] = []
 	private var configuringStateCallBacks: [((ConfiguringState) -> Void)] = []
+
+	// Provisioning URI to restore if the pending remote provisioning attempt fails. Core queue only.
+	private var previousProvisioningUri: String?
+	private var provisioningRollbackPending = false
 	
 	var digestAuthInfoPendingPasswordUpdate: AuthInfo?
 	
@@ -394,8 +398,28 @@ class CoreContext: ObservableObject {
 						ToastViewModel.shared.show("Failed_toast_call_transfer_failed")
 					}
 				}
-			}, onConfiguringStatus: { (_: Core, status: ConfiguringState, message: String) in
+			}, onConfiguringStatus: { (core: Core, status: ConfiguringState, message: String) in
 				Log.info("New configuration state is \(status) = \(message)\n")
+				// Restarting the Core reports Skipped before the fetch itself has finished, wait for the outcome
+				if self.provisioningRollbackPending && status != .Skipped {
+					if status == .Failed {
+						// Passing nil disables remote provisioning, an empty string would throw
+						let previous = self.previousProvisioningUri.flatMap { $0.isEmpty ? nil : $0 }
+						Log.warn("[CoreContext] Remote provisioning from [\(core.provisioningUri ?? "")] failed with [\(message)], restoring [\(previous ?? "nil")]")
+						try? core.setProvisioninguri(newValue: previous)
+						let toast = ProvisioningUrl.failureToast(for: message)
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show(toast)
+						}
+					} else {
+						// On success the served payload sets misc/config-uri itself, nothing to restore
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show("Success_uri_handler_config_success")
+						}
+					}
+					self.previousProvisioningUri = nil
+					self.provisioningRollbackPending = false
+				}
 				self.handleConfigurationChanged(status: status)
 			}, onLogCollectionUploadStateChanged: { (_: Core, _: Core.LogCollectionUploadState, info: String) in
 				if info.starts(with: "https") {
@@ -528,6 +552,35 @@ class CoreContext: ObservableObject {
 		}
 	}
 	
+	/// Sets `url` as the provisioning URI and restarts the Core to fetch it.
+	/// misc/config-uri is written before the fetch, so the previous value is
+	/// restored if the attempt fails, otherwise a bad URL is retried on every start.
+	/// Must run on the core queue, and not from inside a Core callback, as it stops the Core.
+	func applyRemoteProvisioning(core: Core, url: String) {
+		let currentUri = core.provisioningUri
+		do {
+			try core.setProvisioninguri(newValue: url)
+		} catch {
+			Log.error("[CoreContext] Unable to set remote provisioning URI [\(url)]: \(error)")
+			DispatchQueue.main.async {
+				ToastViewModel.shared.show("Failed_remote_provisioning_bad_uri")
+			}
+			return
+		}
+		if !provisioningRollbackPending {
+			// Keep the value from before the first attempt if another one is already in flight
+			previousProvisioningUri = currentUri
+			provisioningRollbackPending = true
+		}
+		Log.info("[CoreContext] Remote provisioning URI set to [\(url)] (previous was [\(previousProvisioningUri ?? "nil")]), restarting Core")
+		core.stop()
+		do {
+			try core.start()
+		} catch {
+			Log.error("[CoreContext] Unable to restart Core after setting remote provisioning URI: \(error)")
+		}
+	}
+
 	func onEnterForeground() {
 		coreQueue.async {
 			Log.info("[onEnterForegroundOrBackground] Entering foreground")
