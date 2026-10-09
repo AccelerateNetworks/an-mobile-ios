@@ -45,8 +45,7 @@ enum ProvisioningUrl {
 	}
 
 	static func isValid(_ url: String) -> Bool {
-		// A bare scheme (e.g. from "linphone-config://") has nothing to fetch
-		return ["https://", "file://"].contains { url.hasPrefix($0) && url.count > $0.count }
+		return url.hasPrefix("https://") || url.hasPrefix("file://")
 	}
 
 	/// Returns the normalised URL, or nil if it isn't an acceptable provisioning URL.
