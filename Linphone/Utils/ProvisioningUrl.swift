@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2023 Belledonne Communications SARL.
+ * Copyright (c) 2026 Accelerate Networks.
  *
  * This file is part of linphone-iphone
  *
@@ -19,18 +19,17 @@
 
 import Foundation
 
-/// Remote provisioning URL grammar shared with an-mobile-android (ProvisioningUrl.kt).
+/// Remote provisioning URL grammar, as specified in an-mobile-ios#64
+/// (same as an-mobile-android#43).
 ///
+/// Replaces URIHandler's previous handling, which prepended https:// to anything,
+/// so http, file and other schemes ended up as https://<scheme>://...
 /// liblinphone compares the scheme case-sensitively, so it must be lowercased here;
 /// the rest of the URL is left alone because provisioning tokens are case-sensitive.
 enum ProvisioningUrl {
-	static let configSchemePrefix = "linphone-config:"
+	private static let configSchemePrefix = "linphone-config:"
 
-	static func isConfigUri(_ uri: String) -> Bool {
-		return hasConfigPrefix(uri.trimmingCharacters(in: .whitespacesAndNewlines))
-	}
-
-	static func normalize(_ uri: String) -> String {
+	private static func normalize(_ uri: String) -> String {
 		var url = uri.trimmingCharacters(in: .whitespacesAndNewlines)
 		if hasConfigPrefix(url) {
 			url = String(url.dropFirst(configSchemePrefix.count))
@@ -44,7 +43,7 @@ enum ProvisioningUrl {
 		return url
 	}
 
-	static func isValid(_ url: String) -> Bool {
+	private static func isValid(_ url: String) -> Bool {
 		return url.hasPrefix("https://") || url.hasPrefix("file://")
 	}
 
