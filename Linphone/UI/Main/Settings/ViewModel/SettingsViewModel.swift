@@ -223,15 +223,32 @@ class SettingsViewModel: ObservableObject {
 	func downloadAndApplyRemoteProvisioning() {
 		Log.info("\(SettingsViewModel.TAG) Updating remote provisioning URI now and then download/apply it")
 		
+		let input = self.remoteProvisioningUrl
 		CoreContext.shared.doOnCoreQueue { core in
-			if core.provisioningUri != self.remoteProvisioningUrl && !(core.provisioningUri == nil && self.remoteProvisioningUrl.isEmpty) {
-				try? core.setProvisioninguri(newValue: self.remoteProvisioningUrl)
-				
-				Log.info("\(SettingsViewModel.TAG) Restarting the Core to apply configuration changes")
-				core.stop()
-				Log.info("\(SettingsViewModel.TAG) Core has been stopped, restarting it")
-				try? core.start()
-				Log.info("\(SettingsViewModel.TAG) Core has been restarted")
+			if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+				// Passing nil disables remote provisioning, an empty string would throw
+				if core.provisioningUri != nil {
+					Log.info("\(SettingsViewModel.TAG) Clearing remote provisioning URI")
+					do {
+						try core.setProvisioninguri(newValue: nil)
+					} catch {
+						Log.error("\(SettingsViewModel.TAG) Unable to clear remote provisioning URI: \(error)")
+					}
+				}
+				return
+			}
+
+			guard let url = ProvisioningUrl.parse(input) else {
+				Log.error("\(SettingsViewModel.TAG) Couldn't parse [\(input)] into a valid remote provisioning URL")
+				DispatchQueue.main.async {
+					ToastViewModel.shared.show("Failed_remote_provisioning_bad_uri")
+				}
+				return
+			}
+
+			if core.provisioningUri != url {
+				// CoreContext displays the outcome
+				CoreContext.shared.applyRemoteProvisioning(core: core, url: url)
 			}
 		}
 	}

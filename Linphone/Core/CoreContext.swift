@@ -394,8 +394,39 @@ class CoreContext: ObservableObject {
 						ToastViewModel.shared.show("Failed_toast_call_transfer_failed")
 					}
 				}
-			}, onConfiguringStatus: { (_: Core, status: ConfiguringState, message: String) in
+			}, onConfiguringStatus: { (core: Core, status: ConfiguringState, message: String) in
 				Log.info("New configuration state is \(status) = \(message)\n")
+				if self.isProvisioningRollbackPending(core: core) {
+					switch status {
+					case .Failed:
+						// Read before the rollback replaces it, the failure toast depends on it
+						let failedUri = core.provisioningUri
+						// Passing nil disables remote provisioning, an empty string would throw
+						let rollbackUri = self.provisioningRollbackUri(core: core)
+						let previous = rollbackUri.isEmpty ? nil : rollbackUri
+						Log.warn("[CoreContext] Remote provisioning from [\(failedUri ?? "")] failed with [\(message)], restoring [\(previous ?? "nil")]")
+						try? core.setProvisioninguri(newValue: previous)
+						self.clearProvisioningRollback(core: core)
+						let toast = ProvisioningUrl.failureToast(for: message, uri: failedUri)
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show(toast)
+						}
+					case .Successful:
+						// The served payload sets misc/config-uri itself, nothing to restore
+						self.clearProvisioningRollback(core: core)
+						DispatchQueue.main.async {
+							ToastViewModel.shared.show("Success_uri_handler_config_success")
+						}
+					case .Skipped:
+						// Skipped is also what liblinphone reports when the Core stops with a fetch in flight
+						// (app killed, Core restarted), so the URI is still unconfirmed: keep the rollback
+						// and let the outcome of its next fetch decide, unless there's nothing left to fetch
+						if (core.provisioningUri ?? "").isEmpty {
+							Log.info("[CoreContext] Remote provisioning is disabled, dropping pending rollback")
+							self.clearProvisioningRollback(core: core)
+						}
+					}
+				}
 				self.handleConfigurationChanged(status: status)
 			}, onLogCollectionUploadStateChanged: { (_: Core, _: Core.LogCollectionUploadState, info: String) in
 				if info.starts(with: "https") {
@@ -528,6 +559,75 @@ class CoreContext: ObservableObject {
 		}
 	}
 	
+	/// Sets `url` as the provisioning URI and restarts the Core to fetch it.
+	/// misc/config-uri is written before the fetch, so the previous value is
+	/// restored if the attempt fails, otherwise a bad URL is retried on every start.
+	/// Must run on the core queue, and not from inside a Core callback, as it stops the Core.
+	func applyRemoteProvisioning(core: Core, url: String) {
+		let previous = core.provisioningUri
+		// Armed before the URI is written so that it's never on disk without its rollback.
+		// If an attempt is already pending, keep the URI from before it, the pending one isn't confirmed
+		let armed = !isProvisioningRollbackPending(core: core)
+		if armed {
+			core.config?.setBool(section: "app", key: CoreContext.provisioningRollbackPendingKey, value: true)
+			core.config?.setString(section: "app", key: CoreContext.provisioningRollbackUriKey, value: previous ?? "")
+		}
+
+		do {
+			try core.setProvisioninguri(newValue: url)
+		} catch {
+			// Nothing was written, and restarting would re-provision from the previous URI
+			Log.error("[CoreContext] Unable to set remote provisioning URI [\(url)], keeping [\(previous ?? "nil")]: \(error)")
+			if armed {
+				clearProvisioningRollback(core: core)
+			}
+			DispatchQueue.main.async {
+				ToastViewModel.shared.show("Failed_remote_provisioning_bad_uri")
+			}
+			return
+		}
+
+		// Flush now, the app may well be killed while the fetch is in flight
+		syncConfig(core: core)
+		Log.info("[CoreContext] Remote provisioning URI set to [\(url)] (rollback is [\(provisioningRollbackUri(core: core))]), restarting Core")
+		core.stop()
+		do {
+			try core.start()
+		} catch {
+			Log.error("[CoreContext] Unable to restart Core after setting remote provisioning URI: \(error)")
+		}
+	}
+
+	// The rollback lives in the Core's config rather than in memory, so it survives the app being killed
+	// mid-fetch: the next launch fetches the unconfirmed URI again, and that outcome resolves it.
+	// Accessed through core.config rather than AppServices.corePreferences, which wraps a different
+	// Config instance after an MDM reset.
+	private static let provisioningRollbackPendingKey = "provisioning_rollback_pending"
+	private static let provisioningRollbackUriKey = "provisioning_rollback_uri"
+
+	private func isProvisioningRollbackPending(core: Core) -> Bool {
+		return core.config?.getBool(section: "app", key: CoreContext.provisioningRollbackPendingKey, defaultValue: false) ?? false
+	}
+
+	/// Provisioning URI to restore if the pending one fails, empty if there was none.
+	private func provisioningRollbackUri(core: Core) -> String {
+		return core.config?.getString(section: "app", key: CoreContext.provisioningRollbackUriKey, defaultString: "") ?? ""
+	}
+
+	private func clearProvisioningRollback(core: Core) {
+		core.config?.setBool(section: "app", key: CoreContext.provisioningRollbackPendingKey, value: false)
+		core.config?.setString(section: "app", key: CoreContext.provisioningRollbackUriKey, value: "")
+		syncConfig(core: core)
+	}
+
+	private func syncConfig(core: Core) {
+		do {
+			try core.config?.sync()
+		} catch {
+			Log.error("[CoreContext] Unable to write config to disk: \(error)")
+		}
+	}
+
 	func onEnterForeground() {
 		coreQueue.async {
 			Log.info("[onEnterForegroundOrBackground] Entering foreground")

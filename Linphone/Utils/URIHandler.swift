@@ -43,16 +43,6 @@ class URIHandler {
 				if state == .End {
 					CoreContext.shared.removeCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
 				}
-			},
-			onConfiguringStatus: { (_: Core, state: ConfiguringState, _: String) in
-				if state == .Failed {
-					toast("Failed_uri_handler_config_failed")
-					CoreContext.shared.removeCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
-				}
-				if state == .Successful {
-					toast("Success_uri_handler_config_success")
-					CoreContext.shared.removeCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
-				}
 			})
 		CoreContext.shared.addCoreDelegateStub(delegate: uriHandlerCoreDelegate!)
 	}
@@ -64,7 +54,7 @@ class URIHandler {
 				initiateCall(url: url, withScheme: "sips")
 			} else if callSchemes.contains(scheme) {
 				initiateCall(url: url, withScheme: "sip")
-			} else if configurationSchemes.contains(scheme) {
+			} else if configurationSchemes.contains(scheme.lowercased()) {
 				initiateConfiguration(url: url)
 			} else if sharedExtensionSchemes.contains(scheme) {
 				processReceivedFiles(url: url)
@@ -97,27 +87,15 @@ class URIHandler {
 	
 	private static func initiateConfiguration(url: URL) {
 		if autoRemoteProvisioningOnConfigUriHandler() {
+			guard let provisioningUrl = ProvisioningUrl.parse(url.absoluteString) else {
+				Log.error("[URIHandler] couldn't parse \(url.absoluteString) into a valid remote provisioning URL")
+				toast("Failed_uri_handler_bad_config_address")
+				return
+			}
 			CoreContext.shared.doOnCoreQueue { core in
-				Log.info("[URIHandler] provisioning app with URI: \(url.resourceSpecifier)")
-				do {
-					addCoreDelegate()
-					var urlString = url.resourceSpecifier
-					if urlString.starts(with: "//") {
-						urlString = String(urlString.dropFirst(2))
-					}
-					
-					if !urlString.starts(with: "https://") {
-						urlString = "https://" + urlString
-					}
-					
-					core.config?.setString(section: "misc", key: "config-uri", value: urlString)
-					try core.setProvisioninguri(newValue: urlString)
-					core.stop()
-					try core.start()
-				} catch {
-					Log.error("[URIHandler] unable to configure the app with \(url.resourceSpecifier) \(error)")
-					toast("Failed_uri_handler_bad_config_address")
-				}
+				Log.info("[URIHandler] provisioning app with URL: \(provisioningUrl)")
+				// CoreContext displays the outcome
+				CoreContext.shared.applyRemoteProvisioning(core: core, url: provisioningUrl)
 			}
 		} else {
 			Log.warn("[URIHandler] received configuration request, but automatic provisioning is disabled.")
