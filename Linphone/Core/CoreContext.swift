@@ -396,25 +396,34 @@ class CoreContext: ObservableObject {
 				}
 			}, onConfiguringStatus: { (core: Core, status: ConfiguringState, message: String) in
 				Log.info("New configuration state is \(status) = \(message)\n")
-				// Restarting the Core reports Skipped before the fetch itself has finished, wait for the outcome
-				if self.isProvisioningRollbackPending(core: core) && status != .Skipped {
-					if status == .Failed {
+				if self.isProvisioningRollbackPending(core: core) {
+					switch status {
+					case .Failed:
 						// Passing nil disables remote provisioning, an empty string would throw
 						let rollbackUri = self.provisioningRollbackUri(core: core)
 						let previous = rollbackUri.isEmpty ? nil : rollbackUri
 						Log.warn("[CoreContext] Remote provisioning from [\(core.provisioningUri ?? "")] failed with [\(message)], restoring [\(previous ?? "nil")]")
 						try? core.setProvisioninguri(newValue: previous)
+						self.clearProvisioningRollback(core: core)
 						let toast = ProvisioningUrl.failureToast(for: message)
 						DispatchQueue.main.async {
 							ToastViewModel.shared.show(toast)
 						}
-					} else {
-						// On success the served payload sets misc/config-uri itself, nothing to restore
+					case .Successful:
+						// The served payload sets misc/config-uri itself, nothing to restore
+						self.clearProvisioningRollback(core: core)
 						DispatchQueue.main.async {
 							ToastViewModel.shared.show("Success_uri_handler_config_success")
 						}
+					case .Skipped:
+						// Skipped is also what liblinphone reports when the Core stops with a fetch in flight
+						// (app killed, Core restarted), so the URI is still unconfirmed: keep the rollback
+						// and let the outcome of its next fetch decide, unless there's nothing left to fetch
+						if (core.provisioningUri ?? "").isEmpty {
+							Log.info("[CoreContext] Remote provisioning is disabled, dropping pending rollback")
+							self.clearProvisioningRollback(core: core)
+						}
 					}
-					self.clearProvisioningRollback(core: core)
 				}
 				self.handleConfigurationChanged(status: status)
 			}, onLogCollectionUploadStateChanged: { (_: Core, _: Core.LogCollectionUploadState, info: String) in
