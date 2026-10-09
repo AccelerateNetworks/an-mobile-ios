@@ -399,13 +399,15 @@ class CoreContext: ObservableObject {
 				if self.isProvisioningRollbackPending(core: core) {
 					switch status {
 					case .Failed:
+						// Read before the rollback replaces it, the failure toast depends on it
+						let failedUri = core.provisioningUri
 						// Passing nil disables remote provisioning, an empty string would throw
 						let rollbackUri = self.provisioningRollbackUri(core: core)
 						let previous = rollbackUri.isEmpty ? nil : rollbackUri
-						Log.warn("[CoreContext] Remote provisioning from [\(core.provisioningUri ?? "")] failed with [\(message)], restoring [\(previous ?? "nil")]")
+						Log.warn("[CoreContext] Remote provisioning from [\(failedUri ?? "")] failed with [\(message)], restoring [\(previous ?? "nil")]")
 						try? core.setProvisioninguri(newValue: previous)
 						self.clearProvisioningRollback(core: core)
-						let toast = ProvisioningUrl.failureToast(for: message)
+						let toast = ProvisioningUrl.failureToast(for: message, uri: failedUri)
 						DispatchQueue.main.async {
 							ToastViewModel.shared.show(toast)
 						}

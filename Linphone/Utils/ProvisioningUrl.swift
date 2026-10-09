@@ -56,11 +56,16 @@ enum ProvisioningUrl {
 	}
 
 	/// Maps the message liblinphone passes along with ConfiguringState.Failed to a ToastView key.
-	static func failureToast(for message: String) -> String {
+	/// `uri` is the provisioning URI that failed, needed because a file:// target that can't be
+	/// loaded is also reported as "Bad URI".
+	static func failureToast(for message: String, uri: String?) -> String {
 		switch message.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
 		case "":
 			return "Failed_uri_handler_config_failed"
 		case "bad uri":
+			if uri?.hasPrefix("file://") == true {
+				return "Failed_remote_provisioning_file_unreadable"
+			}
 			return "Failed_remote_provisioning_bad_uri"
 		case "http error", "http io error":
 			return "Failed_remote_provisioning_network"
@@ -68,8 +73,10 @@ enum ProvisioningUrl {
 			return "Failed_remote_provisioning_timeout"
 		case "http auth requested":
 			return "Failed_remote_provisioning_auth"
+		case "invalid request":
+			return "Failed_remote_provisioning_invalid_request"
 		default:
-			// Anything else is the XML parser's error text
+			// What's left ("invalid xml", or the XML parser's own error text) means the served file couldn't be loaded
 			return "Failed_remote_provisioning_invalid_config"
 		}
 	}

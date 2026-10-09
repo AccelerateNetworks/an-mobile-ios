@@ -372,6 +372,20 @@ struct ToastView: View {
 							.default_text_style(styleSize: 15)
 							.padding(8)
 
+					case "Failed_remote_provisioning_invalid_request":
+						Text("remote_provisioning_failed_invalid_request_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_file_unreadable":
+						Text("remote_provisioning_failed_file_unreadable_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
 					case "Failed_remote_provisioning_invalid_config":
 						Text("remote_provisioning_failed_invalid_config_toast")
 							.multilineTextAlignment(.center)
