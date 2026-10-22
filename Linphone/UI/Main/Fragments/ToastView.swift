@@ -190,13 +190,6 @@ struct ToastView: View {
 							.default_text_style(styleSize: 15)
 							.padding(8)
 						
-					case "Invalide URI":
-						Text("assistant_invalid_uri_toast")
-							.multilineTextAlignment(.center)
-							.foregroundStyle(Color.redDanger500)
-							.default_text_style(styleSize: 15)
-							.padding(8)
-						
 					case "Registration_failed":
 						Text("assistant_account_login_forbidden_error")
 							.multilineTextAlignment(.center)
@@ -337,13 +330,55 @@ struct ToastView: View {
 							.default_text_style(styleSize: 15)
 							.padding(8)
 						
-					case "Failed_uri_handler_bad_config_address":
-						Text("uri_handler_bad_config_address_failed_toast")
+					case "Failed_remote_provisioning_bad_uri":
+						Text("remote_provisioning_failed_bad_uri_toast")
 							.multilineTextAlignment(.center)
 							.foregroundStyle(Color.redDanger500)
 							.default_text_style(styleSize: 15)
 							.padding(8)
-						
+
+					case "Failed_remote_provisioning_network":
+						Text("remote_provisioning_failed_network_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_timeout":
+						Text("remote_provisioning_failed_timeout_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_auth":
+						Text("remote_provisioning_failed_auth_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_invalid_request":
+						Text("remote_provisioning_failed_invalid_request_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_file_unreadable":
+						Text("remote_provisioning_failed_file_unreadable_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
+					case "Failed_remote_provisioning_invalid_config":
+						Text("remote_provisioning_failed_invalid_config_toast")
+							.multilineTextAlignment(.center)
+							.foregroundStyle(Color.redDanger500)
+							.default_text_style(styleSize: 15)
+							.padding(8)
+
 					case "Failed_push_notification_not_received_error":
 						Text("assistant_account_register_push_notification_not_received_error")
 							.multilineTextAlignment(.center)

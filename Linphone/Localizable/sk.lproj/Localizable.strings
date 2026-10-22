@@ -341,7 +341,6 @@
 "assistant_permissions_subtitle" = "Pre plné využívanie %@ potrebujeme udelenie nasledovných oprávnení:";
 "assistant_account_creation_sms_confirmation_explanation" = "Poslali sme Vám overovací kód na Vaše telefónne číslo %@. Zadajte nižšie, prosím, verifikačný kód:";
 "assistant_forgotten_password" = "Zabudnuté heslo?";
-"assistant_invalid_uri_toast" = "Neplatná URI adresa";
 "call_history_deleted_toast" = "História bola vymazaná";
 "call_stats_video_title" = "Video (obraz)";
 "call_transfer_in_progress_toast" = "Hovor je presmerovaný";

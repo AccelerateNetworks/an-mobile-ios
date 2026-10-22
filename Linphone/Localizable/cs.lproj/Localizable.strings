@@ -388,7 +388,6 @@
 "assistant_account_creation_sms_confirmation_explanation" = "Poslali jsme vám ověřovací kód na vaše telefonní číslo %@. Zadejte prosím níže ověřovací kód:";
 "assistant_dialog_confirm_phone_number_message" = "Jste si jistý(á), že chcete použít telefonní číslo %@?";
 "assistant_forgotten_password" = "Zapomenuté heslo?";
-"assistant_invalid_uri_toast" = "Neplatná URI";
 "assistant_permissions_access_camera_title" = "**Přístup ke kameře:** Pro zachycení videa během videohovorů a konferencí.";
 "assistant_permissions_read_contacts_title" = "**Čtení kontaktů:** Pro zobrazení vašich kontaktů a zjištění, kdo používá %@.";
 "assistant_permissions_subtitle" = "Pro plné využívání %@ potřebujeme, abyste nám udělili následující oprávnění:";
@@ -492,7 +491,6 @@
 "settings_contacts_ldap_request_timeout_title" = "Prodleva požadavku";
 "settings_contacts_carddav_realm_title" = "Ověřovací doména";
 "settings_contacts_carddav_use_as_default_title" = "Zde uložte nově vytvořené kontakty";
-"uri_handler_bad_config_address_failed_toast" = "Nelze načíst konfiguraci, neplatná adresa";
 "uri_handler_call_failed_toast" = "Nelze volat";
 "uri_handler_config_failed_toast" = "Nelze načíst konfiguraci";
 "username_error" = "Chybné uživatelské jméno";
