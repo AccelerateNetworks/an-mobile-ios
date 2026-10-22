@@ -598,6 +598,20 @@ class CoreContext: ObservableObject {
 		}
 	}
 
+	/// Turns remote provisioning off without restarting the Core. Must run on the core queue.
+	func disableRemoteProvisioning(core: Core) {
+		Log.info("[CoreContext] Disabling remote provisioning")
+		do {
+			// Passing nil disables remote provisioning, an empty string would throw
+			try core.setProvisioninguri(newValue: nil)
+		} catch {
+			Log.error("[CoreContext] Unable to disable remote provisioning: \(error)")
+		}
+		// Nothing will be fetched anymore, so nothing to roll back to. This also flushes the
+		// cleared URI to disk, as no Core restart follows to do it
+		clearProvisioningRollback(core: core)
+	}
+
 	// The rollback lives in the Core's config rather than in memory, so it survives the app being killed
 	// mid-fetch: the next launch fetches the unconfirmed URI again, and that outcome resolves it.
 	// Accessed through core.config rather than AppServices.corePreferences, which wraps a different

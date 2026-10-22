@@ -226,14 +226,9 @@ class SettingsViewModel: ObservableObject {
 		let input = self.remoteProvisioningUrl
 		CoreContext.shared.doOnCoreQueue { core in
 			if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-				// Passing nil disables remote provisioning, an empty string would throw
 				if core.provisioningUri != nil {
 					Log.info("\(SettingsViewModel.TAG) Clearing remote provisioning URI")
-					do {
-						try core.setProvisioninguri(newValue: nil)
-					} catch {
-						Log.error("\(SettingsViewModel.TAG) Unable to clear remote provisioning URI: \(error)")
-					}
+					CoreContext.shared.disableRemoteProvisioning(core: core)
 				}
 				return
 			}
