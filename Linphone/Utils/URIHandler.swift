@@ -89,7 +89,7 @@ class URIHandler {
 		if autoRemoteProvisioningOnConfigUriHandler() {
 			guard let provisioningUrl = ProvisioningUrl.parse(url.absoluteString) else {
 				Log.error("[URIHandler] couldn't parse \(url.absoluteString) into a valid remote provisioning URL")
-				toast("Failed_uri_handler_bad_config_address")
+				toast("Failed_remote_provisioning_bad_uri")
 				return
 			}
 			CoreContext.shared.doOnCoreQueue { core in

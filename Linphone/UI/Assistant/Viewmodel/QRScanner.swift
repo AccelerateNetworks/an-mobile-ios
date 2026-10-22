@@ -79,7 +79,7 @@ class Coordinator: NSObject, AVCaptureMetadataOutputObjectsDelegate {
 				} else {
 					Log.error("[QRScanner] The content of the QR Code [\(result)] doesn't seem to be a valid provisioning URL")
 					DispatchQueue.main.async {
-						ToastViewModel.shared.show("Invalide URI")
+						ToastViewModel.shared.show("Failed_remote_provisioning_bad_uri")
 					}
 				}
 			}

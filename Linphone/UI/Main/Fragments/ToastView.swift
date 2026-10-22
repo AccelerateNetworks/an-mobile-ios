@@ -190,13 +190,6 @@ struct ToastView: View {
 							.default_text_style(styleSize: 15)
 							.padding(8)
 						
-					case "Invalide URI":
-						Text("assistant_invalid_uri_toast")
-							.multilineTextAlignment(.center)
-							.foregroundStyle(Color.redDanger500)
-							.default_text_style(styleSize: 15)
-							.padding(8)
-						
 					case "Registration_failed":
 						Text("assistant_account_login_forbidden_error")
 							.multilineTextAlignment(.center)
@@ -332,13 +325,6 @@ struct ToastView: View {
 			
 					case "Failed_uri_handler_bad_call_address":
 						Text("uri_handler_bad_call_address_failed_toast")
-							.multilineTextAlignment(.center)
-							.foregroundStyle(Color.redDanger500)
-							.default_text_style(styleSize: 15)
-							.padding(8)
-						
-					case "Failed_uri_handler_bad_config_address":
-						Text("uri_handler_bad_config_address_failed_toast")
 							.multilineTextAlignment(.center)
 							.foregroundStyle(Color.redDanger500)
 							.default_text_style(styleSize: 15)

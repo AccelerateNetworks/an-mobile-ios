@@ -395,7 +395,6 @@
 "assistant_permissions_subtitle" = "Para aproveitar ao máximo o %@, precisamos que você nos conceda as seguintes permissões:";
 "assistant_dialog_general_terms_and_privacy_policy_message" = "Ao continuar, você aceita nossos %@ e %@.";
 "assistant_forgotten_password" = "Esqueceu a senha?";
-"assistant_invalid_uri_toast" = "URI inválido";
 "assistant_permissions_access_camera_title" = "**Acessar a câmera:** Para capturar vídeo durante videochamadas e conferências.";
 "assistant_permissions_post_notifications_title" = "**Publicar notificações:** Para ser informado quando você receber uma mensagem ou uma chamada.";
 "assistant_permissions_read_contacts_title" = "**Ler contatos:** Para exibir seus contatos e encontrar quem está usando o %@.";
@@ -507,7 +506,6 @@
 "TLS" = "TLS";
 "UDP" = "UDP";
 "uri_handler_bad_call_address_failed_toast" = "Não é possível ligar, endereço inválido";
-"uri_handler_bad_config_address_failed_toast" = "Não é possível recuperar a configuração, endereço inválido";
 "uri_handler_call_failed_toast" = "Falha na chamada";
 "uri_handler_config_failed_toast" = "Falha na configuração";
 "web_platform_register_email_url" = "https://subscribe.linphone.org/register/email";

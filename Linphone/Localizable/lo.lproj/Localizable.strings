@@ -79,7 +79,6 @@
 "assistant_dialog_general_terms_label" = "ຂໍ້ກຳນົດທົ່ວໄປ";
 "assistant_dialog_privacy_policy_label" = "ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ";
 "assistant_forgotten_password" = "ລືມລະຫັດຜ່ານບໍ?";
-"assistant_invalid_uri_toast" = "URI ບໍ່ຖືກຕ້ອງ";
 "assistant_login_third_party_sip_account" = "ໃຊ້ບັນຊີ SIP ຂອງພາກສ່ວນທີສາມ";
 "assistant_no_account_yet" = "ຍັງບໍ່ມີບັນຊີບໍ?";
 "assistant_permissions_access_camera_title" = "**ເຂົ້າເຖິງກ້ອງ:** ເພື່ອໃຊ້ວິດີໂອລະຫວ່າງການໂທວິດີໂອ ແລະ ການປະຊຸມ.";
@@ -599,7 +598,6 @@
 "TLS" = "TLS";
 "UDP" = "UDP";
 "uri_handler_bad_call_address_failed_toast" = "ບໍ່ສາມາດໂທໄດ້, ທີ່ຢູ່ບໍ່ຖືກຕ້ອງ";
-"uri_handler_bad_config_address_failed_toast" = "ບໍ່ສາມາດດຶງຂໍ້ມູນການຕັ້ງຄ່າໄດ້, ທີ່ຢູ່ບໍ່ຖືກຕ້ອງ";
 "uri_handler_call_failed_toast" = "ການໂທຫຼົ້ມເຫຼວ";
 "uri_handler_config_failed_toast" = "ການຕັ້ງຄ່າຫຼົ້ມເຫຼວ";
 "uri_handler_config_success_toast" = "ນຳໃຊ້ການຕັ້ງຄ່າສຳເລັດແລ້ວ";

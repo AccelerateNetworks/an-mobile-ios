@@ -390,7 +390,6 @@
 "assistant_account_creation_sms_confirmation_explanation" = "Мы отправили код верификации на ваш номер телефона %@.  Пожалуйста, введите код верификации ниже:";
 "assistant_dialog_confirm_phone_number_message" = "Вы уверены что хотите использовать телефонный номер %@?";
 "assistant_forgotten_password" = "Забыли пароль?";
-"assistant_invalid_uri_toast" = "Неверный URI";
 "assistant_permissions_read_contacts_title" = "**Доступ к контактам:** Чтобы отображать ваши контакты и находить тех, кто использует %@.";
 ": %@" = ": %@";
 "[https://sip.linphone.org](https://sip.linphone.org)" = "[https://sip.linphone.org](https://sip.linphone.org)";

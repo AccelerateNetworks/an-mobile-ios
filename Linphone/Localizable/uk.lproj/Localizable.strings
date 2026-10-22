@@ -330,7 +330,6 @@
 "assistant_dialog_general_terms_label" = "загальні умови";
 "assistant_dialog_privacy_policy_label" = "політика конфіденційності";
 "assistant_forgotten_password" = "Забули пароль?";
-"assistant_invalid_uri_toast" = "Невірний URI";
 "assistant_no_account_yet" = "Ще немає облікового запису?";
 "assistant_permissions_access_camera_title" = "**Доступ до камери:** Для запису відео під час відеодзвінків та конференцій.";
 "assistant_permissions_grant_all_of_them" = "ОК";
@@ -487,7 +486,6 @@
 "TLS" = "TLS";
 "UDP" = "UDP";
 "uri_handler_bad_call_address_failed_toast" = "Неможливо зателефонувати, недійсна адреса";
-"uri_handler_bad_config_address_failed_toast" = "Неможливо отримати конфігурацію, недійсна адреса";
 "uri_handler_call_failed_toast" = "Зателефонувати не вдалося";
 "uri_handler_config_failed_toast" = "Помилка конфігурації";
 "username_error" = "Помилка в імені користувача";

@@ -372,7 +372,6 @@
 "assistant_dialog_confirm_phone_number_message" = "Möchten Sie wirklich die Telefonnummer %@ verwenden?";
 "assistant_dialog_general_terms_and_privacy_policy_message" = "Indem Sie fortfahren, akzeptieren Sie unsere %@ und %@.";
 "assistant_forgotten_password" = "Passwort vergessen?";
-"assistant_invalid_uri_toast" = "Ungültige URI";
 "assistant_permissions_record_audio_title" = "**Audio aufnehmen:** Damit Ihr Gesprächspartner Sie hören kann und um Sprachnachrichten aufzunehmen.";
 "assistant_permissions_subtitle" = "Um %@ in vollem Umfang nutzen zu können, müssen Sie uns die folgenden Berechtigungen erteilen:";
 "history_list_empty_with_filter_history" = "Keine Einträge entsprechen Ihrer Suche";
@@ -497,7 +496,6 @@
 "TLS" = "TLS";
 "UDP" = "UDP";
 "uri_handler_bad_call_address_failed_toast" = "Anruf nicht möglich, ungültige Adresse";
-"uri_handler_bad_config_address_failed_toast" = "Konfiguration konnte nicht abgerufen werden, ungültige Adresse";
 "uri_handler_call_failed_toast" = "Anruf fehlgeschlagen";
 "uri_handler_config_failed_toast" = "Konfiguration fehlgeschlagen";
 "ZRTP" = "ZRTP";
