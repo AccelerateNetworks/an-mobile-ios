@@ -96,7 +96,11 @@ class NotificationService: UNNotificationServiceExtension {
         LoggingService.Instance.logLevel = LogLevel.Debug
         Factory.Instance.logCollectionPath = Factory.Instance.getDataDir(context: UnsafeMutablePointer<Int8>(mutating: (appGroupName as NSString).utf8String))
         Factory.Instance.enableLogCollection(state: LogCollectionState.Enabled)
-        
+
+        // The zone-change observers reach the main app only; this narrows the window where a change
+        // during an extension-only period goes unrecorded.
+        TimezoneAnchor.write()
+
         Log.info("[msgNotificationService] start msgNotificationService extension")
         /*
          if (VFSUtil.vfsEnabled(groupName: AppServices.config.appGroupName) && !VFSUtil.activateVFS()) {
