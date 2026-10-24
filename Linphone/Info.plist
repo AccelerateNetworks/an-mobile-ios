@@ -140,11 +140,16 @@
 		<string>NotoSans-Bold.ttf</string>
 		<string>NotoSans-ExtraBold.ttf</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.acceleratenetworks.mobile.logforwarding.process</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 		<string>voip</string>
 		<string>audio</string>
+		<string>processing</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<false/>

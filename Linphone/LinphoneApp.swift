@@ -77,7 +77,19 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 		// Set up notifications
 		UNUserNotificationCenter.current().delegate = self
 
+		// BGTaskScheduler refuses a registration made after launch has finished.
+		LogForwardingService.shared.register()
+
 		return true
+	}
+
+	func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
+					 completionHandler: @escaping () -> Void) {
+		guard identifier == Dispatcher.sessionIdentifier else {
+			completionHandler()
+			return
+		}
+		LogForwardingService.shared.handleBackgroundSessionEvents(completion: completionHandler)
 	}
 	
 	// Called when the user interacts with the notification

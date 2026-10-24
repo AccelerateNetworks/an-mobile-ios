@@ -11,6 +11,7 @@
 		1670CC6B3A38A0425056B631 /* Outbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94689BA35579BB951DC5DEB3 /* Outbox.swift */; };
 		171309A8B3259650604A0E02 /* LogForwarder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE864CF392E7A9CF4AC5EAC /* LogForwarder.swift */; };
 		30AA5989B219F5790A074C26 /* Extractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D78F819FD53A4351F0D54B9 /* Extractor.swift */; };
+		3A211845D42DE403E2CB4DE8 /* LogForwardingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D283EBBB0D760488E0A27D6 /* LogForwardingService.swift */; };
 		5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71A200E841F8485E281548D /* LogReader.swift */; };
 		5D591229F4D358099A2284F7 /* LogFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AB244EA06A6CF8AF565989 /* LogFormatter.swift */; };
 		660AAF7F2B839272004C0FA6 /* msgNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -311,6 +312,7 @@
 /* Begin PBXFileReference section */
 		26CECD41430F0465849BA847 /* ForwarderDocuments.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ForwarderDocuments.swift; sourceTree = "<group>"; };
 		4CE864CF392E7A9CF4AC5EAC /* LogForwarder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogForwarder.swift; sourceTree = "<group>"; };
+		5D283EBBB0D760488E0A27D6 /* LogForwardingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogForwardingService.swift; sourceTree = "<group>"; };
 		63B7BA66CF1C9EE73FA462AD /* Cursor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Cursor.swift; sourceTree = "<group>"; };
 		660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = msgNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		660AAF842B8392E0004C0FA6 /* msgNotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = msgNotificationService.entitlements; sourceTree = "<group>"; };
@@ -718,6 +720,7 @@
 				94689BA35579BB951DC5DEB3 /* Outbox.swift */,
 				8B68FE19315A7D80868969B9 /* Dispatcher.swift */,
 				4CE864CF392E7A9CF4AC5EAC /* LogForwarder.swift */,
+				5D283EBBB0D760488E0A27D6 /* LogForwardingService.swift */,
 			);
 			name = LogForwarding;
 			path = LogForwarding;
@@ -1936,6 +1939,7 @@
 				1670CC6B3A38A0425056B631 /* Outbox.swift in Sources */,
 				AAAB2EC5BB4B5F0D8930529E /* Dispatcher.swift in Sources */,
 				171309A8B3259650604A0E02 /* LogForwarder.swift in Sources */,
+				3A211845D42DE403E2CB4DE8 /* LogForwardingService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

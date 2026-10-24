@@ -111,6 +111,7 @@ class CoreContext: ObservableObject {
 		let themeMainColor = AppServices.corePreferences.themeMainColor
 		SharedMainViewModel.shared.updateConfigChanges()
 		if status == .Successful {
+			LogForwardingService.shared.onConfigurationUpdated()
 			var accountModels: [AccountModel] = []
 			for account in self.mCore.accountList {
 				accountModels.append(AccountModel(account: account, core: self.mCore))
@@ -185,6 +186,8 @@ class CoreContext: ObservableObject {
 			LoggingService.Instance.logLevel = LogLevel.Debug
 			Factory.Instance.logCollectionPath = Factory.Instance.getDataDir(context: UnsafeMutablePointer<Int8>(mutating: (SharedMainViewModel.appGroupName as NSString).utf8String))
 			Factory.Instance.enableLogCollection(state: LogCollectionState.Enabled)
+
+			LogForwardingService.shared.start(config: AppServices.config)
 
 			MDMManager.shared.loadXMLConfigFromMdm(config: AppServices.config)
 
