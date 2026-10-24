@@ -8,8 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0A7EC6DAC59FAB81B12A03D3 /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B7BA66CF1C9EE73FA462AD /* Cursor.swift */; };
+		1670CC6B3A38A0425056B631 /* Outbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94689BA35579BB951DC5DEB3 /* Outbox.swift */; };
 		30AA5989B219F5790A074C26 /* Extractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D78F819FD53A4351F0D54B9 /* Extractor.swift */; };
 		5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71A200E841F8485E281548D /* LogReader.swift */; };
+		5D591229F4D358099A2284F7 /* LogFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AB244EA06A6CF8AF565989 /* LogFormatter.swift */; };
 		660AAF7F2B839272004C0FA6 /* msgNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		660D8A712B517D260092694D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 660D8A702B517D260092694D /* GoogleService-Info.plist */; };
 		6613A0AE2BAEB7DF008923A4 /* MeetingFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0AD2BAEB7DF008923A4 /* MeetingFragment.swift */; };
@@ -43,6 +45,7 @@
 		66FDB7812C7C689A00561566 /* EventEditViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FDB7802C7C689A00561566 /* EventEditViewController.swift */; };
 		7E6F00B89989FB37AA0BC70D /* ForwardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD867AA312AFC160346527 /* ForwardSettings.swift */; };
 		8886E44C7BC923CB3945A0D4 /* Gzip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A76BE9DC7D46EEA88B3098 /* Gzip.swift */; };
+		D92A172AE55AB245CC668C0E /* Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68777C7FBE9367D1084E154E /* Hex.swift */; };
 		92DECD41C2B2075DDC1AD8F6 /* ForwarderDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CECD41430F0465849BA847 /* ForwarderDocuments.swift */; };
 		95B2693C1232610D57D4E45F /* ReaderTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35A902F6AF2C9A4A1E0490C /* ReaderTypes.swift */; };
 		A33BB7880CE3E8D1DA8AF9A4 /* DurableFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7836A40FAEA4B7AA43C8FE6C /* DurableFile.swift */; };
@@ -335,8 +338,10 @@
 		66F626B12BCEBB86003E2DEC /* AddParticipantsFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddParticipantsFragment.swift; sourceTree = "<group>"; };
 		66FDB7802C7C689A00561566 /* EventEditViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventEditViewController.swift; sourceTree = "<group>"; };
 		73A76BE9DC7D46EEA88B3098 /* Gzip.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Gzip.swift; sourceTree = "<group>"; };
+		68777C7FBE9367D1084E154E /* Hex.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Hex.swift; sourceTree = "<group>"; };
 		7836A40FAEA4B7AA43C8FE6C /* DurableFile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DurableFile.swift; sourceTree = "<group>"; };
 		7D78F819FD53A4351F0D54B9 /* Extractor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Extractor.swift; sourceTree = "<group>"; };
+		94689BA35579BB951DC5DEB3 /* Outbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Outbox.swift; sourceTree = "<group>"; };
 		9CDFD914F326ADF919A9A814 /* TimezoneAnchor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimezoneAnchor.swift; sourceTree = "<group>"; };
 		B1C14F8797794A757E2CBCD7 /* LogForwarding.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogForwarding.swift; sourceTree = "<group>"; };
 		A7DD867AA312AFC160346527 /* ForwardSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ForwardSettings.swift; sourceTree = "<group>"; };
@@ -564,6 +569,7 @@
 		D7F5F6402C359F3B007FCF2F /* SipAddressesPopup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipAddressesPopup.swift; sourceTree = "<group>"; };
 		D7FB55102AD447FD00A5AB15 /* RegisterFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterFragment.swift; sourceTree = "<group>"; };
 		D7FC8E492EBA12F90080C09D /* Launch Screen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = "Launch Screen.storyboard"; sourceTree = "<group>"; };
+		E5AB244EA06A6CF8AF565989 /* LogFormatter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogFormatter.swift; sourceTree = "<group>"; };
 		EF58734144C92FD5A9686867 /* FileId.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FileId.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -695,6 +701,7 @@
 				EF58734144C92FD5A9686867 /* FileId.swift */,
 				7836A40FAEA4B7AA43C8FE6C /* DurableFile.swift */,
 				73A76BE9DC7D46EEA88B3098 /* Gzip.swift */,
+				68777C7FBE9367D1084E154E /* Hex.swift */,
 				B1C14F8797794A757E2CBCD7 /* LogForwarding.swift */,
 				9CDFD914F326ADF919A9A814 /* TimezoneAnchor.swift */,
 				B35A902F6AF2C9A4A1E0490C /* ReaderTypes.swift */,
@@ -703,6 +710,8 @@
 				7D78F819FD53A4351F0D54B9 /* Extractor.swift */,
 				26CECD41430F0465849BA847 /* ForwarderDocuments.swift */,
 				D71A200E841F8485E281548D /* LogReader.swift */,
+				E5AB244EA06A6CF8AF565989 /* LogFormatter.swift */,
+				94689BA35579BB951DC5DEB3 /* Outbox.swift */,
 			);
 			name = LogForwarding;
 			path = LogForwarding;
@@ -1908,6 +1917,7 @@
 				C663380EF9A5417422264DCE /* FileId.swift in Sources */,
 				A33BB7880CE3E8D1DA8AF9A4 /* DurableFile.swift in Sources */,
 				8886E44C7BC923CB3945A0D4 /* Gzip.swift in Sources */,
+				D92A172AE55AB245CC668C0E /* Hex.swift in Sources */,
 				E77547DFA332CA0AC87FCB49 /* LogForwarding.swift in Sources */,
 				C392FA531FFF48865FF0120F /* TimezoneAnchor.swift in Sources */,
 				95B2693C1232610D57D4E45F /* ReaderTypes.swift in Sources */,
@@ -1916,6 +1926,8 @@
 				30AA5989B219F5790A074C26 /* Extractor.swift in Sources */,
 				92DECD41C2B2075DDC1AD8F6 /* ForwarderDocuments.swift in Sources */,
 				5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */,
+				5D591229F4D358099A2284F7 /* LogFormatter.swift in Sources */,
+				1670CC6B3A38A0425056B631 /* Outbox.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
