@@ -49,6 +49,7 @@
 		92DECD41C2B2075DDC1AD8F6 /* ForwarderDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CECD41430F0465849BA847 /* ForwarderDocuments.swift */; };
 		95B2693C1232610D57D4E45F /* ReaderTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35A902F6AF2C9A4A1E0490C /* ReaderTypes.swift */; };
 		A33BB7880CE3E8D1DA8AF9A4 /* DurableFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7836A40FAEA4B7AA43C8FE6C /* DurableFile.swift */; };
+		AAAB2EC5BB4B5F0D8930529E /* Dispatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B68FE19315A7D80868969B9 /* Dispatcher.swift */; };
 		C392FA531FFF48865FF0120F /* TimezoneAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDFD914F326ADF919A9A814 /* TimezoneAnchor.swift */; };
 		E77547DFA332CA0AC87FCB49 /* LogForwarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C14F8797794A757E2CBCD7 /* LogForwarding.swift */; };
 		C60E8F192C0F649200A06DB8 /* UIApplicationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C60E8F182C0F649200A06DB8 /* UIApplicationExtension.swift */; };
@@ -341,6 +342,7 @@
 		68777C7FBE9367D1084E154E /* Hex.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Hex.swift; sourceTree = "<group>"; };
 		7836A40FAEA4B7AA43C8FE6C /* DurableFile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DurableFile.swift; sourceTree = "<group>"; };
 		7D78F819FD53A4351F0D54B9 /* Extractor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Extractor.swift; sourceTree = "<group>"; };
+		8B68FE19315A7D80868969B9 /* Dispatcher.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Dispatcher.swift; sourceTree = "<group>"; };
 		94689BA35579BB951DC5DEB3 /* Outbox.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Outbox.swift; sourceTree = "<group>"; };
 		9CDFD914F326ADF919A9A814 /* TimezoneAnchor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TimezoneAnchor.swift; sourceTree = "<group>"; };
 		B1C14F8797794A757E2CBCD7 /* LogForwarding.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogForwarding.swift; sourceTree = "<group>"; };
@@ -712,6 +714,7 @@
 				D71A200E841F8485E281548D /* LogReader.swift */,
 				E5AB244EA06A6CF8AF565989 /* LogFormatter.swift */,
 				94689BA35579BB951DC5DEB3 /* Outbox.swift */,
+				8B68FE19315A7D80868969B9 /* Dispatcher.swift */,
 			);
 			name = LogForwarding;
 			path = LogForwarding;
@@ -1928,6 +1931,7 @@
 				5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */,
 				5D591229F4D358099A2284F7 /* LogFormatter.swift in Sources */,
 				1670CC6B3A38A0425056B631 /* Outbox.swift in Sources */,
+				AAAB2EC5BB4B5F0D8930529E /* Dispatcher.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
