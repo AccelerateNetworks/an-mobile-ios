@@ -31,7 +31,10 @@ import Firebase
 class Log: LoggingServiceDelegate {
 	
 	static let instance = Log()
-		
+
+	/// The app layer's subsystem, one value in every process, replacing the bundle identifier.
+	static let domain = "linphone-app"
+
 	var debugEnabled = true // Todo : bind to app parameters
 	var service = LoggingService.Instance
 	
@@ -43,7 +46,7 @@ class Log: LoggingServiceDelegate {
 	}()
 
 	private init() {
-		service.domain = Bundle.main.bundleIdentifier!
+		service.domain = Log.domain
 		Core.setLogCollectionPath(path: Factory.Instance.getDataDir(context: UnsafeMutablePointer<Int8>(mutating: (self.appGroupName as NSString).utf8String)))
 		Core.enableLogCollection(state: LogCollectionState.Enabled)
 		setMask()
