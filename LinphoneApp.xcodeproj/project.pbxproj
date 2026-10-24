@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A7EC6DAC59FAB81B12A03D3 /* Cursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B7BA66CF1C9EE73FA462AD /* Cursor.swift */; };
 		30AA5989B219F5790A074C26 /* Extractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D78F819FD53A4351F0D54B9 /* Extractor.swift */; };
+		5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D71A200E841F8485E281548D /* LogReader.swift */; };
 		660AAF7F2B839272004C0FA6 /* msgNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 660AAF7B2B839271004C0FA6 /* msgNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		660D8A712B517D260092694D /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 660D8A702B517D260092694D /* GoogleService-Info.plist */; };
 		6613A0AE2BAEB7DF008923A4 /* MeetingFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6613A0AD2BAEB7DF008923A4 /* MeetingFragment.swift */; };
@@ -395,6 +396,7 @@
 		D719ABCE2ABC779A00B41C10 /* AccountLoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountLoginViewModel.swift; sourceTree = "<group>"; };
 		D719EF882EDF4AFA00509AAB /* AppGitInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGitInfo.swift; sourceTree = "<group>"; };
 		D71A0E182B485ADF0002C6CD /* ViewExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewExtension.swift; sourceTree = "<group>"; };
+		D71A200E841F8485E281548D /* LogReader.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogReader.swift; sourceTree = "<group>"; };
 		D71C266F2E819A0D001A7F92 /* sk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = sk; path = Localizable/sk.lproj/Localizable.strings; sourceTree = "<group>"; };
 		D71FCA802AE14CFC00D2E43E /* ContactsListFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsListFragment.swift; sourceTree = "<group>"; };
 		D71FCA822AE14D6E00D2E43E /* ContactFragment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactFragment.swift; sourceTree = "<group>"; };
@@ -700,6 +702,7 @@
 				A7DD867AA312AFC160346527 /* ForwardSettings.swift */,
 				7D78F819FD53A4351F0D54B9 /* Extractor.swift */,
 				26CECD41430F0465849BA847 /* ForwarderDocuments.swift */,
+				D71A200E841F8485E281548D /* LogReader.swift */,
 			);
 			name = LogForwarding;
 			path = LogForwarding;
@@ -1912,6 +1915,7 @@
 				7E6F00B89989FB37AA0BC70D /* ForwardSettings.swift in Sources */,
 				30AA5989B219F5790A074C26 /* Extractor.swift in Sources */,
 				92DECD41C2B2075DDC1AD8F6 /* ForwarderDocuments.swift in Sources */,
+				5C099B3E0BF83108A6332BD0 /* LogReader.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
