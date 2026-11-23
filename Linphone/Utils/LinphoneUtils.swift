@@ -74,19 +74,28 @@ class LinphoneUtils: NSObject {
 	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, the
 	/// 11-digit no-plus form of a NANP number (14253338358). A 1-on-1 conversation must be both
 	/// searched for and created with the address returned here, or it splits from its inbound half.
+	/// Only exact NANP numbers are rewritten, and only for accounts on the US dial plan or none.
 	/// Must be called on the core queue.
 	public class func getChatPeerAddress(address: Address, account: Account? = nil) -> Address {
 		guard let account = account ?? getDefaultAccount(),
-			  let username = address.username, !username.isEmpty,
+			  let username = address.username,
+			  [nil, "", "1"].contains(account.params?.internationalPrefix),
 			  address.domain?.caseInsensitiveCompare(account.params?.domain ?? "") == .orderedSame,
-			  account.isPhoneNumber(username: username) else {
+			  username.range(of: "^\\+?[0-9 ().-]+$", options: .regularExpression) != nil else {
 			return address
 		}
 
-		let normalized = account.normalizePhoneNumber(username: username)
-		guard normalized.range(of: "^\\+1[0-9]{10}$", options: .regularExpression) != nil,
-			  let peer = address.clone(),
-			  (try? peer.setUsername(newValue: String(normalized.dropFirst()))) != nil else {
+		let digits = username.filter { $0.isNumber }
+		let national: String
+		if digits.count == 11 && digits.hasPrefix("1") {
+			national = String(digits.dropFirst())
+		} else if digits.count == 10 && !username.hasPrefix("+") {
+			national = digits
+		} else {
+			return address
+		}
+
+		guard let peer = address.clone(), (try? peer.setUsername(newValue: "1" + national)) != nil else {
 			return address
 		}
 		Log.info("\(#function) Using [\(peer.asStringUriOnly())] as chat peer for [\(address.asStringUriOnly())]")
