@@ -74,10 +74,11 @@ class LinphoneUtils: NSObject {
 	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, the
 	/// 11-digit no-plus form of a NANP number (14253338358). A 1-on-1 conversation must be both
 	/// searched for and created with the address returned here, or it splits from its inbound half.
-	public class func getChatPeerAddress(address: Address) -> Address {
-		guard let account = getDefaultAccount(),
+	/// Must be called on the core queue.
+	public class func getChatPeerAddress(address: Address, account: Account? = nil) -> Address {
+		guard let account = account ?? getDefaultAccount(),
 			  let username = address.username, !username.isEmpty,
-			  address.domain == account.params?.domain,
+			  address.domain?.caseInsensitiveCompare(account.params?.domain ?? "") == .orderedSame,
 			  account.isPhoneNumber(username: username) else {
 			return address
 		}
@@ -88,6 +89,7 @@ class LinphoneUtils: NSObject {
 			  (try? peer.setUsername(newValue: String(normalized.dropFirst()))) != nil else {
 			return address
 		}
+		Log.info("\(#function) Using [\(peer.asStringUriOnly())] as chat peer for [\(address.asStringUriOnly())]")
 		return peer
 	}
 	
