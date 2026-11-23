@@ -139,7 +139,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 		Log.info("[AppDelegate][INStartCallIntent] Generic call intent received for number: \(number) isVideo: \(isVideo)")
 
 		CoreContext.shared.doOnCoreQueue { core in
-			if let address = core.interpretUrl(url: number, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+			if let address = LinphoneUtils.interpretUrl(core: core, url: number) {
 				TelecomManager.shared.doCallOrJoinConf(address: address, isVideo: isVideo)
 			}
 		}
@@ -351,7 +351,7 @@ struct RootView: View {
 			Log.info("[INStartCallIntent] Generic call intent received for number: \(number) isVideo: \(isVideo)")
 			
 			coreContext.doOnCoreQueue { core in
-				if let address = core.interpretUrl(url: number, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+				if let address = LinphoneUtils.interpretUrl(core: core, url: number) {
 					telecomManager.doCallOrJoinConf(address: address, isVideo: isVideo)
 				}
 			}

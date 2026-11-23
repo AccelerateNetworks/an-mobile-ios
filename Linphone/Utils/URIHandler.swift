@@ -83,8 +83,7 @@ class URIHandler {
 	private static func initiateCall(url: URL, withScheme newScheme: String) {
 		CoreContext.shared.doOnCoreQueue { core in
 			if let newSchemeUrl = url.withNewScheme(newScheme),
-			   let address = core.interpretUrl(url: newSchemeUrl.absoluteString,
-											   applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+			   let address = LinphoneUtils.interpretUrl(core: core, url: newSchemeUrl.absoluteString) {
 				Log.info("[URIHandler] initiating call to address : \(address.asString())")
 				addCoreDelegate()
 				TelecomManager.shared.doCallWithCore(addr: address, isVideo: false, isConference: false)

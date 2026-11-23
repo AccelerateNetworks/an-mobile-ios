@@ -111,7 +111,7 @@ struct SipAddressesPopup: View {
 					.background(.white)
 					.onTapGesture {
 						CoreContext.shared.doOnCoreQueue { core in
-							if let address = core.interpretUrl(url: contactAvatarModel.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+							if let address = LinphoneUtils.interpretUrl(core: core, url: contactAvatarModel.phoneNumbersWithLabel[index].phoneNumber) {
 								DispatchQueue.main.async {
 									if isShowSipAddressesPopupType != 1 {
 										withAnimation {

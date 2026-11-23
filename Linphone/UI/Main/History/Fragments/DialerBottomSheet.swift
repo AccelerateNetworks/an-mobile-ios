@@ -409,7 +409,7 @@ struct DialerBottomSheet: View {
 							if !startCallViewModel.searchField.isEmpty {
 								if callViewModel.isTransferInsteadCall {
 									CoreContext.shared.doOnCoreQueue { core in
-										if let transferAddressTmp = core.interpretUrl(url: startCallViewModel.searchField, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+										if let transferAddressTmp = LinphoneUtils.interpretUrl(core: core, url: startCallViewModel.searchField) {
 											DispatchQueue.main.async {
 												showingDialer = false
 												self.transferAddress = transferAddressTmp

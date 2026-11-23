@@ -359,10 +359,7 @@ class ContactsListViewModel: ObservableObject {
 						  contactAvatarModel.phoneNumbersWithLabel.count == 1 {
 
 					if let firstPhone = contactAvatarModel.phoneNumbersWithLabel.first,
-					   let address = core.interpretUrl(
-							url: firstPhone.phoneNumber,
-							applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)
-					   ) {
+					   let address = LinphoneUtils.interpretUrl(core: core, url: firstPhone.phoneNumber) {
 						remote = address
 					}
 				}

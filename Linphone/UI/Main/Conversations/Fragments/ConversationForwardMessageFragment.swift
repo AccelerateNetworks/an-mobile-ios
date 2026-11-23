@@ -275,29 +275,29 @@ struct ConversationForwardMessageFragment: View {
 		ForEach(0..<contactsManager.lastSearchSuggestions.count, id: \.self) { index in
 			Button {
 				withAnimation {
-					if contactsManager.lastSearchSuggestions[index].address != nil {
-						conversationForwardMessageViewModel.createOneToOneChatRoomWith(remote: contactsManager.lastSearchSuggestions[index].address!)
+					if contactsManager.suggestionAddress(index) != nil {
+						conversationForwardMessageViewModel.createOneToOneChatRoomWith(remote: contactsManager.suggestionAddress(index)!)
 					}
 				}
 			} label: {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
-						&& contactsManager.lastSearchSuggestions[index].address != nil {
-						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
+						&& contactsManager.suggestionAddress(index) != nil {
+						if contactsManager.suggestionAddress(index)!.domain != AppServices.corePreferences.defaultDomain {
 							Image(uiImage: contactsManager.textToImage(
-								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
+								firstName: String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)),
 								lastName: ""))
 							.resizable()
 							.frame(width: 45, height: 45)
 							.clipShape(Circle())
 							
-							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
+							Text(String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)))
 								.default_text_style(styleSize: 16)
 								.lineLimit(1)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.foregroundStyle(Color.orangeMain500)
 						} else {
-							if let address = contactsManager.lastSearchSuggestions[index].address {
+							if let address = contactsManager.suggestionAddress(index) {
 								let nameTmp = address.displayName
 								?? address.username
 								?? String(address.asStringUriOnly().dropFirst(4))

@@ -102,7 +102,15 @@ final class MagicSearchSingleton: ObservableObject {
 						$0.address?.weakEqual(address2: contactAddress) ?? false
 					}
 				}
-				
+
+				let lastSearchSuggestionAddresses: [Address?] = lastSearchSuggestions.map { searchResult in
+					if searchResult.hasSourceFlag(source: .Request),
+					   let address = LinphoneUtils.interpretUrl(core: core, url: self.currentFilter) {
+						return address
+					}
+					return searchResult.address
+				}
+
 				let sortedLastSearch = lastSearchFriend.sorted {
 					let name1 = $0.friend?.name?.lowercased()
 						.folding(options: .diacriticInsensitive, locale: .current) ?? ""
@@ -149,7 +157,7 @@ final class MagicSearchSingleton: ObservableObject {
 					contactAvatarModel.removeFriendDelegate()
 				}
                 
-                self.updateContacts(sortedLastSearch: sortedLastSearch, lastSearchSuggestions: lastSearchSuggestions, addedAvatarListModel: addedAvatarListModel)
+                self.updateContacts(sortedLastSearch: sortedLastSearch, lastSearchSuggestions: lastSearchSuggestions, lastSearchSuggestionAddresses: lastSearchSuggestionAddresses, addedAvatarListModel: addedAvatarListModel)
 			})
 			
 			magicSearch.addDelegate(delegate: self.searchDelegate!)
@@ -165,6 +173,7 @@ final class MagicSearchSingleton: ObservableObject {
     func updateContacts(
         sortedLastSearch: [SearchResult],
         lastSearchSuggestions: [SearchResult],
+        lastSearchSuggestionAddresses: [Address?],
         addedAvatarListModel: [ContactAvatarModel]
     ) {
         DispatchQueue.main.async {			
@@ -175,6 +184,7 @@ final class MagicSearchSingleton: ObservableObject {
 			}
 			
             self.contactsManager.lastSearch = sortedLastSearch
+            self.contactsManager.lastSearchSuggestionAddresses = lastSearchSuggestionAddresses
             self.contactsManager.lastSearchSuggestions = lastSearchSuggestions
             
             self.contactsManager.avatarListModel.removeAll()

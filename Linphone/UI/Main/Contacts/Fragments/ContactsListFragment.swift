@@ -105,7 +105,7 @@ struct ContactRow: View {
 					if let friendAddress = friend.address {
 						startCallFunc(friendAddress)
 					} else if !friend.phoneNumbers.isEmpty {
-						if let address = core.interpretUrl(url: friend.phoneNumbers.first ?? "", applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+						if let address = LinphoneUtils.interpretUrl(core: core, url: friend.phoneNumbers.first ?? "") {
 							startCallFunc(address)
 						}
 					}

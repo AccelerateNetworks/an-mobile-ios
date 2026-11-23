@@ -19,6 +19,7 @@
 
 import Foundation
 import linphonesw
+import PhoneNumberKit
 
 class LinphoneUtils: NSObject {
 	static let RECORDING_FILE_NAME_HEADER = "call_recording_sip_"
@@ -71,31 +72,53 @@ class LinphoneUtils: NSObject {
 		|| core.defaultAccount?.params?.useInternationalPrefixForCallsAndChats == true
 	}
 
-	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, the
-	/// 11-digit no-plus form of a NANP number (14253338358). A 1-on-1 conversation must be both
+	private static let phoneNumberUtility = PhoneNumberUtility()
+
+	/// Parses `number` in the account's country with libphonenumber's rules. Returns nil when the
+	/// number isn't valid there, instead of trimming it to fit as liblinphone's dial plan does.
+	public class func getE164(number: String, account: Account) -> String? {
+		guard let parsed = try? phoneNumberUtility.parse(number, withRegion: getCountryIso(account: account), ignoreType: false) else {
+			return nil
+		}
+		return phoneNumberUtility.format(parsed, toType: .e164)
+	}
+
+	private class func getCountryIso(account: Account) -> String {
+		if let iso = account.params?.internationalPrefixIsoCountryCode, iso.count == 2 {
+			return iso
+		}
+		let prefix = account.params?.internationalPrefix ?? ""
+		if prefix.isEmpty || prefix == "1" {
+			return "US"
+		}
+		return Factory.Instance.dialPlans.first(where: { $0.countryCallingCode == prefix })?.isoCountryCode ?? "US"
+	}
+
+	/// Use instead of Core.interpretUrl for typed and contact input. When liblinphone applies the
+	/// international prefix it keeps only the last national-length digits, so a mistyped
+	/// 42533383589 would become +12533383589. Here a valid number becomes E.164 and anything else
+	/// is kept as typed. Must be called on the core queue.
+	public class func interpretUrl(core: Core, url: String, account: Account? = nil) -> Address? {
+		let applyPrefix = applyInternationalPrefix(core: core, account: account)
+		guard applyPrefix, let account = account ?? getDefaultAccount(), account.isPhoneNumber(username: url) else {
+			return core.interpretUrl(url: url, applyInternationalPrefix: applyPrefix)
+		}
+		return core.interpretUrl(url: getE164(number: url, account: account) ?? url, applyInternationalPrefix: false)
+	}
+
+	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, a
+	/// number's E.164 form without the plus (14253338358). A 1-on-1 conversation must be both
 	/// searched for and created with the address returned here, or it splits from its inbound half.
-	/// Only exact NANP numbers are rewritten, and only for accounts on the US dial plan or none.
 	/// Must be called on the core queue.
 	public class func getChatPeerAddress(address: Address, account: Account? = nil) -> Address {
 		guard let account = account ?? getDefaultAccount(),
+			  account.params?.useInternationalPrefixForCallsAndChats == true,
 			  let username = address.username,
-			  [nil, "", "1"].contains(account.params?.internationalPrefix),
 			  address.domain?.caseInsensitiveCompare(account.params?.domain ?? "") == .orderedSame,
-			  username.range(of: "^\\+?[0-9 ().-]+$", options: .regularExpression) != nil else {
-			return address
-		}
-
-		let digits = username.filter { $0.isNumber }
-		let national: String
-		if digits.count == 11 && digits.hasPrefix("1") {
-			national = String(digits.dropFirst())
-		} else if digits.count == 10 && !username.hasPrefix("+") {
-			national = digits
-		} else {
-			return address
-		}
-
-		guard let peer = address.clone(), (try? peer.setUsername(newValue: "1" + national)) != nil else {
+			  account.isPhoneNumber(username: username),
+			  let e164 = getE164(number: username, account: account),
+			  let peer = address.clone(),
+			  (try? peer.setUsername(newValue: String(e164.dropFirst()))) != nil else {
 			return address
 		}
 		Log.info("\(#function) Using [\(peer.asStringUriOnly())] as chat peer for [\(address.asStringUriOnly())]")
