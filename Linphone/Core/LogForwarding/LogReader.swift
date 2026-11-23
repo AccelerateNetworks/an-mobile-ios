@@ -106,7 +106,8 @@ final class LogReader {
 
 			var at = position
 			var produced = false
-			while let found = extractor.next(window: window, from: at, acceptWindowEnd: false) {
+			let final = window.end >= fileSize && successor != nil
+			while let found = extractor.next(window: window, from: at, acceptWindowEnd: final) {
 				produced = true
 				let record = stamp(found, from: at, chased: frameCursor.chased)
 				if first == nil { first = (record.localTime, record.timezone) }
@@ -158,8 +159,8 @@ final class LogReader {
 					 payload: payload, filtered: filtered, first: first, successor: successor)
 	}
 
-	/// The chase. The only caller that passes `acceptWindowEnd` true, and only with a window whose
-	/// end is the file's end.
+	/// The chase. Passes `acceptWindowEnd` true against a window whose end is the file's end, as
+	/// `read` now does too once the file has a successor.
 	func readLastElseRead(settings: ForwardSettings, replay: Replay?) -> Frame {
 		prepare()
 		guard let handle = handle else {
