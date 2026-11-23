@@ -1426,7 +1426,7 @@ class CallViewModel: ObservableObject {
 			existingConversation = call.conference?.chatRoom
 		} else {
 			let params = getChatRoomParams(call: call)
-			let participants = [remoteAddress!]
+			let participants = [LinphoneUtils.getChatPeerAddress(address: remoteAddress!)]
 			existingConversation = call.core?.searchChatRoom(
 				params: params,
 				localAddr: localAddress,
@@ -1446,7 +1446,7 @@ class CallViewModel: ObservableObject {
 	
 	func createCurrentCallConversation(call: Call) {
 		if let remoteAddress = call.remoteAddress {
-			let participants = [remoteAddress]
+			let participants = [LinphoneUtils.getChatPeerAddress(address: remoteAddress)]
 			let core = call.core
 			DispatchQueue.main.async {
 				self.operationInProgress = true

@@ -70,6 +70,26 @@ class LinphoneUtils: NSObject {
 		return	account?.params?.useInternationalPrefixForCallsAndChats == true 
 		|| core.defaultAccount?.params?.useInternationalPrefixForCallsAndChats == true
 	}
+
+	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, the
+	/// 11-digit no-plus form of a NANP number (14253338358). A 1-on-1 conversation must be both
+	/// searched for and created with the address returned here, or it splits from its inbound half.
+	public class func getChatPeerAddress(address: Address) -> Address {
+		guard let account = getDefaultAccount(),
+			  let username = address.username, !username.isEmpty,
+			  address.domain == account.params?.domain,
+			  account.isPhoneNumber(username: username) else {
+			return address
+		}
+
+		let normalized = account.normalizePhoneNumber(username: username)
+		guard normalized.range(of: "^\\+1[0-9]{10}$", options: .regularExpression) != nil,
+			  let peer = address.clone(),
+			  (try? peer.setUsername(newValue: String(normalized.dropFirst()))) != nil else {
+			return address
+		}
+		return peer
+	}
 	
 	public class func isEndToEndEncryptedChatAvailable(core: Core) -> Bool {
 		return core.limeX3DhEnabled &&
