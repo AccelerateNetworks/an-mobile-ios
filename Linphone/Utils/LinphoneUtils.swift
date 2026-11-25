@@ -107,16 +107,23 @@ class LinphoneUtils: NSObject {
 	}
 
 	/// AN's messaging service delivers inbound texts from, and keys server-side threads on, a
-	/// number's E.164 form without the plus (14253338358). A 1-on-1 conversation must be both
-	/// searched for and created with the address returned here, or it splits from its inbound half.
+	/// +1 number's E.164 form without the plus (14253338358). Other countries' numbers are
+	/// returned unchanged. A 1-on-1 conversation must be both searched for and created with the
+	/// address returned here, or it splits from its inbound half.
 	/// Must be called on the core queue.
 	public class func getChatPeerAddress(address: Address, account: Account? = nil) -> Address {
 		guard let account = account ?? getDefaultAccount(),
 			  account.params?.useInternationalPrefixForCallsAndChats == true,
 			  let username = address.username,
 			  address.domain?.caseInsensitiveCompare(account.params?.domain ?? "") == .orderedSame,
-			  account.isPhoneNumber(username: username),
-			  let e164 = getE164(number: username, account: account),
+			  account.isPhoneNumber(username: username) else {
+			return address
+		}
+		guard let e164 = getE164(number: username, account: account) else {
+			Log.info("\(#function) [\(username)] isn't a valid number for the account's country, using it as typed for chat peer [\(address.asStringUriOnly())]")
+			return address
+		}
+		guard e164.hasPrefix("+1"),
 			  let peer = address.clone(),
 			  (try? peer.setUsername(newValue: String(e164.dropFirst()))) != nil else {
 			return address
