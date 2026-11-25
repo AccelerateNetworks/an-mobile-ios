@@ -304,8 +304,10 @@ class CoreContext: ObservableObject {
 						if account.params?.internationalPrefix == nil {
 							Log.info("Account \(account.displayName()): no international prefix set, adding 1 US by default: \(account.params?.internationalPrefix ?? "NIL")")
 							newParams?.internationalPrefix = "1"
-							newParams?.internationalPrefixIsoCountryCode = "USA"
+							newParams?.internationalPrefixIsoCountryCode = "US"
 							newParams?.useInternationalPrefixForCallsAndChats = true
+						} else if account.params?.internationalPrefixIsoCountryCode == "USA" {
+							newParams?.internationalPrefixIsoCountryCode = "US"
 						}
 						account.params = newParams
 					}

@@ -44,6 +44,15 @@ final class ContactsManager: ObservableObject {
 	
 	@Published var lastSearch: [SearchResult] = []
 	@Published var lastSearchSuggestions: [SearchResult] = []
+	@Published var lastSearchSuggestionAddresses: [Address?] = []
+
+	/// Use instead of lastSearchSuggestions[index].address, which for the typed-input row is liblinphone's dial-plan form.
+	func suggestionAddress(_ index: Int) -> Address? {
+		if index < lastSearchSuggestionAddresses.count {
+			return lastSearchSuggestionAddresses[index]
+		}
+		return index < lastSearchSuggestions.count ? lastSearchSuggestions[index].address : nil
+	}
 	@Published var avatarListModel: [ContactAvatarModel] = [] {
 		didSet {
 			setupSubscriptions()
@@ -333,7 +342,7 @@ final class ContactsManager: ObservableObject {
 				// Clear existing addresses and add new ones
 				friend.addresses.forEach { friend.removeAddress(address: $0) }
 				for sipAddress in contact.sipAddresses where !sipAddress.isEmpty {
-					if let address = core.interpretUrl(url: sipAddress, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)),
+					if let address = LinphoneUtils.interpretUrl(core: core, url: sipAddress),
 					   !friend.addresses.contains(where: { $0.asString() == address.asString() }) {
 						friend.addAddress(address: address)
 					}

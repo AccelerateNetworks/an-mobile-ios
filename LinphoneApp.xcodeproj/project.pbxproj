@@ -217,6 +217,7 @@
 		D7DC096F2CFA1D7600A6D47C /* AccountProfileFragment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7DC096E2CFA1D7400A6D47C /* AccountProfileFragment.swift */; };
 		D7DC09712CFDBF9A00A6D47C /* AccountProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7DC09702CFDBF8300A6D47C /* AccountProfileViewModel.swift */; };
 		D7DF8BE72E2104DC003A3BC7 /* ElegantEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = D7DF8BE62E2104DC003A3BC7 /* ElegantEmojiPicker */; };
+		775046785E224869BD2F15F4 /* PhoneNumberKit in Frameworks */ = {isa = PBXBuildFile; productRef = 721EC14858E11EF1F3C2F852 /* PhoneNumberKit */; };
 		D7DF8BE92E2104EC003A3BC7 /* EmojiPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7DF8BE82E2104E5003A3BC7 /* EmojiPickerView.swift */; };
 		D7E2E69F2CE356C90080DA0D /* PopupViewWithTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E2E69E2CE356C90080DA0D /* PopupViewWithTextField.swift */; };
 		D7E394C52DAC6561005FA0DD /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = D737AEED2DA011F2005C1280 /* Localizable.strings */; };
@@ -596,6 +597,7 @@
 			files = (
 				D7D5AD7F2DD34F0E00016721 /* AppAuth in Frameworks */,
 				D7DF8BE72E2104DC003A3BC7 /* ElegantEmojiPicker in Frameworks */,
+				775046785E224869BD2F15F4 /* PhoneNumberKit in Frameworks */,
 				C618BF562D75CA03005A00E0 /* linphonesw in Frameworks */,
 				D7D5AD832DD34F2300016721 /* FirebaseCrashlytics in Frameworks */,
 				D7D5AD812DD34F1A00016721 /* FirebaseAnalytics in Frameworks */,
@@ -1481,6 +1483,7 @@
 				D7D5AD7B2DD34E4D00016721 /* XCRemoteSwiftPackageReference "AppAuth-iOS" */,
 				D7D5AD7C2DD34E7C00016721 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				D7DF8BE42E2104D0003A3BC7 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */,
+				EFD4E66F489AAE9226488561 /* XCRemoteSwiftPackageReference "PhoneNumberKit" */,
 				D7127F822FE995D400631F65 /* XCRemoteSwiftPackageReference "linphone-sdk-swift-ios" */,
 			);
 			productRefGroup = D719ABB42ABC67BF00B41C10 /* Products */;
@@ -2615,6 +2618,14 @@
 				revision = 598ff0a72198375d7317b61982fa8648d0ba3a44;
 			};
 		};
+		EFD4E66F489AAE9226488561 /* XCRemoteSwiftPackageReference "PhoneNumberKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PhoneNumberKit/PhoneNumberKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.15;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -2657,6 +2668,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D7DF8BE42E2104D0003A3BC7 /* XCRemoteSwiftPackageReference "Elegant-Emoji-Picker" */;
 			productName = ElegantEmojiPicker;
+		};
+		721EC14858E11EF1F3C2F852 /* PhoneNumberKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = EFD4E66F489AAE9226488561 /* XCRemoteSwiftPackageReference "PhoneNumberKit" */;
+			productName = PhoneNumberKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

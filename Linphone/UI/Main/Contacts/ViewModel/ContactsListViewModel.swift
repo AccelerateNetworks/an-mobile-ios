@@ -104,7 +104,7 @@ class ContactsListViewModel: ObservableObject {
 					return
 				}
 				
-				let participants = [remote]
+				let participants = [LinphoneUtils.getChatPeerAddress(address: remote)]
 				let localAddress = account?.params?.identityAddress
 				let existingChatRoom = core.searchChatRoom(params: params, localAddr: localAddress, remoteAddr: nil, participants: participants)
 				if existingChatRoom == nil {
@@ -359,10 +359,7 @@ class ContactsListViewModel: ObservableObject {
 						  contactAvatarModel.phoneNumbersWithLabel.count == 1 {
 
 					if let firstPhone = contactAvatarModel.phoneNumbersWithLabel.first,
-					   let address = core.interpretUrl(
-							url: firstPhone.phoneNumber,
-							applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)
-					   ) {
+					   let address = LinphoneUtils.interpretUrl(core: core, url: firstPhone.phoneNumber) {
 						remote = address
 					}
 				}
@@ -421,7 +418,7 @@ class ContactsListViewModel: ObservableObject {
 						return
 					}
 					
-					let participants = [remote]
+					let participants = [LinphoneUtils.getChatPeerAddress(address: remote)]
 					let localAddress = account?.params?.identityAddress
 					if let existingChatRoomTmp = core.searchChatRoom(params: params, localAddr: localAddress, remoteAddr: nil, participants: participants) {
 						Log.warn(

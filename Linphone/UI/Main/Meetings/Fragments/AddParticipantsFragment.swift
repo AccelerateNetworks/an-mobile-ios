@@ -236,7 +236,7 @@ struct AddParticipantsFragment: View {
 												addParticipantsViewModel.selectParticipant(addr: addr)
 											}
 										} else if contactAvatarModelTmp.addresses.isEmpty && contactAvatarModelTmp.phoneNumbersWithLabel.count == 1 {
-											if let address = core.interpretUrl(url: contactAvatarModelTmp.phoneNumbersWithLabel.first?.phoneNumber ?? "", applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+											if let address = LinphoneUtils.interpretUrl(core: core, url: contactAvatarModelTmp.phoneNumbersWithLabel.first?.phoneNumber ?? "") {
 												addParticipantsViewModel.selectParticipant(addr: address)
 											}
 										} else {
@@ -363,7 +363,7 @@ struct AddParticipantsFragment: View {
 						.background(.white)
 						.onTapGesture {
 							CoreContext.shared.doOnCoreQueue { core in
-								if let phoneAddr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+								if let phoneAddr = LinphoneUtils.interpretUrl(core: core, url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber) {
 									addParticipantsViewModel.selectParticipant(addr: phoneAddr)
 									self.isShowSipAddressesPopup = false
 								} else {
@@ -401,28 +401,28 @@ struct AddParticipantsFragment: View {
 	var suggestionsList: some View {
 		ForEach(0..<contactsManager.lastSearchSuggestions.count, id: \.self) { index in
 			Button {
-				if let addr = contactsManager.lastSearchSuggestions[index].address {
+				if let addr = contactsManager.suggestionAddress(index) {
 					addParticipantsViewModel.selectParticipant(addr: addr)
 				}
 			} label: {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
-						&& contactsManager.lastSearchSuggestions[index].address != nil {
-						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
+						&& contactsManager.suggestionAddress(index) != nil {
+						if contactsManager.suggestionAddress(index)!.domain != AppServices.corePreferences.defaultDomain {
 							Image(uiImage: contactsManager.textToImage(
-								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
+								firstName: String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)),
 								lastName: ""))
 							.resizable()
 							.frame(width: 45, height: 45)
 							.clipShape(Circle())
 							
-							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
+							Text(String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)))
 								.default_text_style(styleSize: 16)
 								.lineLimit(1)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.foregroundStyle(Color.orangeMain500)
 						} else {
-							if let address = contactsManager.lastSearchSuggestions[index].address {
+							if let address = contactsManager.suggestionAddress(index) {
 								let nameTmp = address.displayName
 								?? address.username
 								?? String(address.asStringUriOnly().dropFirst(4))
@@ -442,7 +442,7 @@ struct AddParticipantsFragment: View {
 							}
 						}
 						
-						if let searchAddress = contactsManager.lastSearchSuggestions[index].address?.asStringUriOnly() {
+						if let searchAddress = contactsManager.suggestionAddress(index)?.asStringUriOnly() {
 							if addParticipantsViewModel.participantsToAdd.contains(where: {
 								$0.address.asStringUriOnly() == searchAddress
 							}) {

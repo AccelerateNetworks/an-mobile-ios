@@ -331,7 +331,7 @@ struct StartCallFragment: View {
 													}
 												}
 											} else if contactAvatarModel.addresses.isEmpty && contactAvatarModel.phoneNumbersWithLabel.count == 1 {
-												if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let addr = core.interpretUrl(url: firstPhoneNumbersWithLabel.phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+												if let firstPhoneNumbersWithLabel = contactAvatarModel.phoneNumbersWithLabel.first, let addr = LinphoneUtils.interpretUrl(core: core, url: firstPhoneNumbersWithLabel.phoneNumber) {
 													if callViewModel.isTransferInsteadCall {
 														self.transferAddress = addr
 														self.isShowTransferPopup = true
@@ -487,7 +487,7 @@ struct StartCallFragment: View {
 						.background(.white)
 						.onTapGesture {
 							CoreContext.shared.doOnCoreQueue { core in
-								if let addr = core.interpretUrl(url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core)) {
+								if let addr = LinphoneUtils.interpretUrl(core: core, url: contactAvatarModel!.phoneNumbersWithLabel[index].phoneNumber) {
 									DispatchQueue.main.async {
 										if callViewModel.isTransferInsteadCall {
 											self.isShowSipAddressesPopup = false
@@ -698,7 +698,7 @@ struct StartCallFragment: View {
 		ForEach(0..<contactsManager.lastSearchSuggestions.count, id: \.self) { index in
 			Button {
 				if callViewModel.isTransferInsteadCall {
-					self.transferAddress = contactsManager.lastSearchSuggestions[index].address
+					self.transferAddress = contactsManager.suggestionAddress(index)
 					self.isShowTransferPopup = true
 				} else {
 					showingDialer = false
@@ -718,30 +718,30 @@ struct StartCallFragment: View {
 					
 					withAnimation {
 						isShowStartCallFragment.toggle()
-						if contactsManager.lastSearchSuggestions[index].address != nil {
-							telecomManager.doCallOrJoinConf(address: contactsManager.lastSearchSuggestions[index].address!)
+						if contactsManager.suggestionAddress(index) != nil {
+							telecomManager.doCallOrJoinConf(address: contactsManager.suggestionAddress(index)!)
 						}
 					}
 				}
 			} label: {
 				HStack {
 					if index < contactsManager.lastSearchSuggestions.count
-						&& contactsManager.lastSearchSuggestions[index].address != nil {
-						if contactsManager.lastSearchSuggestions[index].address!.domain != AppServices.corePreferences.defaultDomain {
+						&& contactsManager.suggestionAddress(index) != nil {
+						if contactsManager.suggestionAddress(index)!.domain != AppServices.corePreferences.defaultDomain {
 							Image(uiImage: contactsManager.textToImage(
-								firstName: String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)),
+								firstName: String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)),
 								lastName: ""))
 							.resizable()
 							.frame(width: 45, height: 45)
 							.clipShape(Circle())
 							
-							Text(String(contactsManager.lastSearchSuggestions[index].address!.asStringUriOnly().dropFirst(4)))
+							Text(String(contactsManager.suggestionAddress(index)!.asStringUriOnly().dropFirst(4)))
 								.default_text_style(styleSize: 16)
 								.lineLimit(1)
 								.frame(maxWidth: .infinity, alignment: .leading)
 								.foregroundStyle(Color.orangeMain500)
 						} else {
-							if let address = contactsManager.lastSearchSuggestions[index].address {
+							if let address = contactsManager.suggestionAddress(index) {
 								let nameTmp = address.displayName
 								?? address.username
 								?? String(address.asStringUriOnly().dropFirst(4))

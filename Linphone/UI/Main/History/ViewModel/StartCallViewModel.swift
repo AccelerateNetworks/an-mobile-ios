@@ -156,7 +156,7 @@ class StartCallViewModel: ObservableObject {
 	
 	func interpretAndStartCall() {
 		CoreContext.shared.doOnCoreQueue { core in
-			let address = core.interpretUrl(url: self.searchField, applyInternationalPrefix: LinphoneUtils.applyInternationalPrefix(core: core))
+			let address = LinphoneUtils.interpretUrl(core: core, url: self.searchField)
 			if address != nil {
 				TelecomManager.shared.doCallOrJoinConf(address: address!)
 			}
